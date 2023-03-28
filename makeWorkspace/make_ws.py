@@ -22,6 +22,8 @@ def cli_args():
     parser = argparse.ArgumentParser(prog='Convert input histograms into RooWorkspace.')
     parser.add_argument('file', type=str, help='Input file to use.')
     parser.add_argument('--out', type=str, help='Path to save output under.', default='mono-x.root')
+    parser.add_argument('-v', '--variable', type=str, help='Name of the variable to fit.', default='particlenet_score')
+    parser.add_argument('--nosys', action='store_true', help='Do not save systematical uncertainty shapes into the workspace.')
     parser.add_argument('--categories', type=str, default=None, help='Analysis category')
     parser.add_argument('--standalone', default=False, action='store_true', help='Treat this as a standalone conversion.')
     parser.add_argument('--indir', default=None, type=str, help='Input directory in the input file.')
@@ -494,7 +496,9 @@ def create_workspace(fin, fout, category, args):
   if args.standalone:
     variable_name = ("mjj_{0}" if ("vbf" in category) else "met_{0}").format(category)
   else:
-    variable_name = "mjj" if ("vbf" in category) else "met"
+    variable_name = args.variable
+
+  # Construct the variable that we're going to fit
   varl = ROOT.RooRealVar(variable_name, variable_name, 0,100000)
 
   # Helper function
@@ -539,7 +543,7 @@ def create_workspace(fin, fout, category, args):
     write_obj(obj, name)
 
     # Save varied shapes for simulation
-    if not 'data' in name:
+    if not 'data' in name and not args.nosys:
       # JES variations: Get them from the source file and save them to workspace
       jes_varied_hists = get_jes_variations(obj, f_jes, category)
       write_dict(jes_varied_hists)
