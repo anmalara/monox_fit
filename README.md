@@ -16,16 +16,19 @@ elif [[ $REL == 7 ]]; then
     export SCRAM_ARCH=slc7_amd64_gcc530
 fi
 
-cmsrel CMSSW_8_1_0
-cd CMSSW_8_1_0/src
+cmsrel CMSSW_11_3_4
+cd CMSSW_11_3_4/src
 cmsenv
 git clone https://github.com/cms-analysis/HiggsAnalysis-CombinedLimit.git HiggsAnalysis/CombinedLimit
 cd HiggsAnalysis/CombinedLimit
 git fetch origin
-git checkout v7.0.13
+git checkout v9.0.0
 scramv1 b clean; scramv1 b -j4
 
-cd $CMSSW_BASE/src
 git clone https://github.com/cms-analysis/CombineHarvester.git CombineHarvester
+cd CombineHarvester/
+git fetch origin
+git checkout v2.0.0
+cd ../
 scram b -j4
 ```
