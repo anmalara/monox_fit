@@ -3,8 +3,8 @@
 
 ## Setup combine
 
-Start by setting up [combine in CMSSW 8](http://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/#slc6cc7-release-cmssw_8_1_x), 
-and then also set up [combineHarvester](http://cms-analysis.github.io/CombineHarvester/index.html):
+Start by setting up [combine v9.0.0](http://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/#combine-v9-recommended-version), 
+and then also set up [combineHarvester v2.0.0](https://github.com/cms-analysis/CombineHarvester/tree/v2.0.0):
 
 ```bash
 source /cvmfs/cms.cern.ch/cmsset_default.sh
