@@ -29,6 +29,7 @@ def cli_args():
     parser.add_argument('--out', type=str, help='Path to save output under.', default='combined_model.root')
     parser.add_argument('--categories', type=str, default=None, help='Analysis categories')
     parser.add_argument('--rename', type=str, default="", help='New name for analysis variable to pass to convertToCombineWorkspace')
+    parser.add_argument('--simple', action='store_true', help='Use the simplified flat uncertainties')
     args = parser.parse_args()
 
     args.file = os.path.abspath(args.file)
@@ -51,7 +52,20 @@ def main():
     if any(re.match('mono(jet|v).*',x) for x in args.categories):
         controlregions_def = ["Z_constraints","W_constraints"]
     elif any(['vbf' in x for x in args.categories]):
-         controlregions_def = ["Z_constraints_qcd_withphoton","W_constraints_qcd","Z_constraints_ewk_withphoton","W_constraints_ewk"]
+        if args.simple:
+            controlregions_def = [
+                "Z_constraints_qcd_withphoton_simple",
+                "W_constraints_qcd_simple",
+                "Z_constraints_ewk_withphoton_simple",
+                "W_constraints_ewk_simple"
+            ]
+        else:
+            controlregions_def = [
+                "Z_constraints_qcd_withphoton",
+                "W_constraints_qcd",
+                "Z_constraints_ewk_withphoton",
+                "W_constraints_ewk"
+            ]
 
     # Determine year from name
     bname = os.path.basename(args.file)
@@ -102,6 +116,7 @@ def main():
 
     # Save a Pre-fit snapshot
     out_ws.saveSnapshot("PRE_EXT_FIT_Clean",out_ws.allVars())
+    _fOut.WriteTObject(out_ws)
     # Now convert workspace to combine friendly workspace
     convertToCombineWorkspace(out_ws,_f,args.categories,cmb_categories,controlregions_def, args.rename)
     _fOut.WriteTObject(out_ws)

@@ -38,20 +38,9 @@ process                                     vbf               ggh               
 process                                     -1                0                  3                 4                5                 6                 7                 8                 9                 10                9                 10                 4                       5                       6                       8                    4                       5                       6                       8                       11                12                
 rate                                        -1                -1                 1                 -1               1                 -1                1                 1                 1                 1                 1                 1                 -1                       1                      -1                       1                   -1                       1                      -1                       1                       1                 1                 
 --------------------------------------------------------------------------------                                                                                                                                                                                                                                                                                                                                                                                                                        
-CMS_L1prefire_2017              shape?       1.0               1.0                -                 1.03             -                 1.03              -                 -                 -                 -                 -                 -                  1.03                    -                       1.03                    -                    1.03                    -                       1.03                    -                       -                 -                 
-CMS_pileup                      shape        1.0               1.0                -                 1.03             -                 1.03              -                 -                 -                 -                 -                 -                  1.0                     -                       1.0                     -                    1.0                     -                       1.0                     -                       -                 -                 
-jer_@YEAR                       shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesAbsolute                     shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesAbsolute_@YEAR               shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesBBEC1                        shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesBBEC1_@YEAR                  shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesEC2                          shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                   
-jesEC2_@YEAR                    shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesFlavorQCD                    shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesHF                           shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesHF_@YEAR                     shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesRelativeBal                  shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
-jesRelativeSample_@YEAR         shape        1                 1                  -                 1                -                 1                 -                 -                 -                 -                 -                 -                  1                       -                       1                       -                    1                       -                       1                       -                       -                 -                 
+CMS_pileup                      lnN          1.03              1.03               -                 1.03             -                 1.03              -                 -                 -                 -                 -                 -                  1.03                    -                       1.03                    -                    1.03                    -                       1.03                    -                       -                 -                 
+CMS_jesTotal                    lnN          1.1               1.1                -                 1.1              -                 1.1               -                 -                 -                 -                 -                 -                  1.1                     -                       1.1                     -                    1.1                     -                       1.1                     -                       -                 -                 
+CMS_jer_@YEAR                   lnN          1.05              1.05               -                 1.05             -                 1.05              -                 -                 -                 -                 -                 -                  1.05                    -                       1.05                    -                    1.05                    -                       1.05                    -                       -                 -                 
 CMS_eff_e_idiso_@YEAR           lnN          -                 -                  -                 -                -                 -                 -                 -                 -                 -                 1.04              1.04               -                       -                       -                       -                    1.02                    1.02                    1.02                    1.02                    -                 -                 
 CMS_eff_e_reco_@YEAR            lnN          -                 -                  -                 -                -                 -                 -                 -                 -                 -                 1.02              1.02               -                       -                       -                       -                    1.01                    1.01                    1.01                    1.01                    -                 -                 
 CMS_eff_e_idiso_veto_@YEAR      lnN          1.005             1.005              -                 1.005            -                 1.005             -                 -                 -                 -                 -                 -                  -                       -                       -                       -                    -                       -                       -                       -                       -                 -                 
@@ -104,180 +93,17 @@ CMS_eff_m_id_veto param 0.0 1
 CMS_eff_m_iso_veto param 0.0 1
 CMS_L1prefire_2017 param 0.0 1
 CMS_pileup param 0.0 1
-jer_@YEAR param 0.0 1
-jesAbsolute param 0.0 1
-jesAbsolute_@YEAR param 0.0 1
-jesBBEC1 param 0.0 1
-jesBBEC1_@YEAR param 0.0 1
-jesEC2 param 0.0 1
-jesEC2_@YEAR param 0.0 1
-jesFlavorQCD param 0.0 1
-jesHF param 0.0 1
-jesHF_@YEAR param 0.0 1
-jesRelativeBal param 0.0 1
-jesRelativeSample_@YEAR param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dimuonCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_dielectronCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_wzCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_photonCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewkqcdzCR_bin8 param 0.0 1
+CMS_jesTotal param 0.0 1
+CMS_jer_@YEAR param 0.0 1
 ZnunuWJets_QCD_renscale_vbf param 0.0 1
 ZnunuWJets_QCD_facscale_vbf param 0.0 1
 ZnunuWJets_QCD_pdf_vbf param 0.0 1
-qcd_ewk_vbf_bin0 param 0.0 1
-qcd_ewk_vbf_bin1 param 0.0 1
-qcd_ewk_vbf_bin2 param 0.0 1
-qcd_ewk_vbf_bin3 param 0.0 1
-qcd_ewk_vbf_bin4 param 0.0 1
-qcd_ewk_vbf_bin5 param 0.0 1
-qcd_ewk_vbf_bin6 param 0.0 1
-qcd_ewk_vbf_bin7 param 0.0 1
-qcd_ewk_vbf_bin8 param 0.0 1
 Photon_QCD_renscale_vbf param 0.0 1
 Photon_QCD_facscale_vbf param 0.0 1
 Photon_QCD_pdf_vbf param 0.0 1
-qcd_photon_ewk_vbf_bin0 param 0.0 1
-qcd_photon_ewk_vbf_bin1 param 0.0 1
-qcd_photon_ewk_vbf_bin2 param 0.0 1
-qcd_photon_ewk_vbf_bin3 param 0.0 1
-qcd_photon_ewk_vbf_bin4 param 0.0 1
-qcd_photon_ewk_vbf_bin5 param 0.0 1
-qcd_photon_ewk_vbf_bin6 param 0.0 1
-qcd_photon_ewk_vbf_bin7 param 0.0 1
-qcd_photon_ewk_vbf_bin8 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singlemuon_bin8 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin0 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin1 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin2 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin3 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin4 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin5 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin6 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin7 param 0.0 1
-vbf_@YEAR_stat_error_qcd_singleelectron_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dimuonCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_dielectronCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_wzCR_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_photonCR_bin8 param 0.0 1
 ZnunuWJets_EWK_renscale_vbf param 0.0 1
 ZnunuWJets_EWK_facscale_vbf param 0.0 1
 ZnunuWJets_EWK_pdf_vbf param 0.0 1
-ewk_ewk_vbf_bin0 param 0.0 1
-ewk_ewk_vbf_bin1 param 0.0 1
-ewk_ewk_vbf_bin2 param 0.0 1
-ewk_ewk_vbf_bin3 param 0.0 1
-ewk_ewk_vbf_bin4 param 0.0 1
-ewk_ewk_vbf_bin5 param 0.0 1
-ewk_ewk_vbf_bin6 param 0.0 1
-ewk_ewk_vbf_bin7 param 0.0 1
-ewk_ewk_vbf_bin8 param 0.0 1
 Photon_EWK_renscale_vbf param 0.0 1
 Photon_EWK_facscale_vbf param 0.0 1
 Photon_EWK_pdf_vbf param 0.0 1
-ewkphoton_ewk_vbf_bin0 param 0.0 1
-ewkphoton_ewk_vbf_bin1 param 0.0 1
-ewkphoton_ewk_vbf_bin2 param 0.0 1
-ewkphoton_ewk_vbf_bin3 param 0.0 1
-ewkphoton_ewk_vbf_bin4 param 0.0 1
-ewkphoton_ewk_vbf_bin5 param 0.0 1
-ewkphoton_ewk_vbf_bin6 param 0.0 1
-ewkphoton_ewk_vbf_bin7 param 0.0 1
-ewkphoton_ewk_vbf_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singlemuon_bin8 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin0 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin1 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin2 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin3 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin4 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin5 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin6 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin7 param 0.0 1
-vbf_@YEAR_stat_error_ewk_singleelectron_bin8 param 0.0 1

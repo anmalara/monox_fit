@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 TAG='28Mar2023_vbfml_test'
-INDIR=../input/merged_2023-03-20_vbfml
+INDIR=../input/merged_2023-03-28_vbfml
 INDIR="$(readlink -e $INDIR)"
 
 OUTDIR="../vbf/$(basename $INDIR)/${TAG}/root"
@@ -28,8 +28,8 @@ git diff >> ${INFOFILE}
 # Define the name of the variable to fit
 VARIABLE="particlenet_score"
 
-./make_ws.py ${INFILE} --out ${WSFILE} --categories vbf_2018 --nosys -v ${VARIABLE}
-./runModel.py ${WSFILE} --categories vbf_2018 --out ${OUTDIR}/combined_model_vbf.root
+./make_ws.py ${INFILE} --categories vbf_2018 --out ${WSFILE} --simple -v ${VARIABLE}
+./runModel.py ${WSFILE} --categories vbf_2018 --out ${OUTDIR}/combined_model_vbf.root --simple
 
 # Split for IC
 # ./runModel.py ${WSFILE} --categories vbf_2017 --out ${OUTDIR}/combined_model_vbf_forIC_2017.root --rename "mjj_MTR_2017"
