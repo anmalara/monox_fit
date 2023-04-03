@@ -32,7 +32,7 @@ fitDiagDir = 'diagnostics{}'.format(dirnameSuffix)
 outdirTop = './plots{}'.format(dirnameSuffix) 
 
 ### Years fit separately
-for year in [2017, 2018]:
+for year in [2018]:
     ws_file = './root/ws_vbf.root'.format(year=year)
     fitdiag_file = pjoin(fitDiagDir, 'fitDiagnostics_vbf_{year}.root'.format(year=year))
     diffnuis_file = pjoin(fitDiagDir, 'diffnuisances_vbf_{year}.root'.format(year=year))
@@ -64,7 +64,7 @@ outdir=pjoin(outdirTop, "combined")
 diffnuis_file = pjoin(fitDiagDir, 'diffnuisances_vbf_combined.root')
 plot_nuis(diffnuis_file, outdir)
 
-for year in [2017,2018]:
+for year in [2018]:
     ws_file = "root/ws_vbf.root".format(year=year)
     fitdiag_file = pjoin(fitDiagDir, 'fitDiagnostics_vbf_combined.root')
     category='vbf_{year}'.format(year=year)

@@ -24,7 +24,7 @@ pushd ${OUTDIR}
 FILEPATH="`dirname $0`/`basename $0`"
 cat ${FILEPATH} > "diagScript.sh"
 
-for YEAR in 2017 2018; do
+for YEAR in 2018; do
     combine -M FitDiagnostics \
             --saveShapes \
             --saveWithUncertainties \
@@ -39,15 +39,15 @@ done
 
 
 # Combined
-combine -M FitDiagnostics \
-        --saveShapes \
-        --saveWithUncertainties \
-        --robustFit 1 \
-        --setParameters mask_vbf_2017_signal=${MASK_SIGNAL},mask_vbf_2018_signal=${MASK_SIGNAL} \
-        -n _vbf_combined \
-        ../cards/card_vbf_combined.root
+# combine -M FitDiagnostics \
+#         --saveShapes \
+#         --saveWithUncertainties \
+#         --robustFit 1 \
+#         --setParameters mask_vbf_2017_signal=${MASK_SIGNAL},mask_vbf_2018_signal=${MASK_SIGNAL} \
+#         -n _vbf_combined \
+#         ../cards/card_vbf_combined.root
 
-python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
-        fitDiagnostics_vbf_combined.root \
-        -g diffnuisances_vbf_combined.root
+# python ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
+#         fitDiagnostics_vbf_combined.root \
+#         -g diffnuisances_vbf_combined.root
 popd
