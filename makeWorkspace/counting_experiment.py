@@ -392,7 +392,7 @@ class Channel:
                     name, self.catid, self.chid, b+1)
             func = r.RooFormulaVar(
                 fname,
-                "Systematic Varation",
+                "Systematic Variation",
                 "@0*%f" % size, r.RooArgList(self.wspace_out.var("%s" % name))
             )
             if not self.wspace_out.function(func.GetName()):

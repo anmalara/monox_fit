@@ -488,7 +488,8 @@ def create_workspace(fin, fout, category, args):
     fdir = fin.Get("category_"+category)
   foutdir = fout.mkdir("category_"+category)
   # Get the relevant JES source file for the given category
-  f_jes = get_jes_file(category)
+  if not args.simple:
+    f_jes = get_jes_file(category)
 
   wsin_combine = ROOT.RooWorkspace("wspace_"+category,"wspace_"+category)
   wsin_combine._import = SafeWorkspaceImporter(wsin_combine)

@@ -120,7 +120,7 @@ def cmodel(cid,nam,_f,_fOut, out_ws, diag, year, convention="BU"):
   #######################################################################################################
 
   cat = Category(model,cid,nam,_fin,_fOut,_wspace,out_ws,_bins,metname,target.GetName(),CRs,diag,convention=convention)
-  cat.setDependant("qcd_zjets","ewkqcd_signal")
+  # cat.setDependant("qcd_zjets","ewkqcd_signal")
   # Return of course
   return cat
 

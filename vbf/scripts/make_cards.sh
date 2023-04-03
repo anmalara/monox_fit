@@ -3,7 +3,7 @@ set -e
 
 mkdir -p cards
 # Fill templates
-for YEAR in 2017 2018; do
+for YEAR in 2018; do
     CARD=cards/card_vbf_${YEAR}.txt
     cp ../../templates/vbf_template_simplified.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
@@ -32,19 +32,19 @@ for YEAR in 2017 2018; do
 done
 
 
-COMBINED=cards/card_vbf_combined.txt
-combineCards.py cards/card_vbf_201*.txt > ${COMBINED}
-sed -i 's/ch\(1\|2\)_//g' ${COMBINED}
-text2workspace.py ${COMBINED} --channel-masks
+# COMBINED=cards/card_vbf_combined.txt
+# combineCards.py cards/card_vbf_201*.txt > ${COMBINED}
+# sed -i 's/ch\(1\|2\)_//g' ${COMBINED}
+# text2workspace.py ${COMBINED} --channel-masks
 
 
-# Cards for IC
-for YEAR in 2017 2018; do
-    CARDIN=cards/card_vbf_${YEAR}.txt
-    CARD=cards/card_vbf_photons_${YEAR}.txt
-
-    combineCards.py ${CARDIN} --ic=vbf_${YEAR}_photon > ${CARD}
-    sed -i '/lnN[ -]*$/d' ${CARD}
-    sed -i 's/ch\(1\|2\)_//g' ${CARD}
-    sed -i "s|../root/combined_model_vbf.root|../root/combined_model_vbf_forIC_${YEAR}.root|g" ${CARD}
-done
+# # Cards for IC
+# for YEAR in 2018; do
+#    CARDIN=cards/card_vbf_${YEAR}.txt
+#    CARD=cards/card_vbf_photons_${YEAR}.txt
+#
+#    combineCards.py ${CARDIN} --ic=vbf_${YEAR}_photon > ${CARD}
+#    sed -i '/lnN[ -]*$/d' ${CARD}
+#    sed -i 's/ch\(1\|2\)_//g' ${CARD}
+#    sed -i "s|../root/combined_model_vbf.root|../root/combined_model_vbf_forIC_${YEAR}.root|g" ${CARD}
+#done

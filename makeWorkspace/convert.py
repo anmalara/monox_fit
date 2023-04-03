@@ -78,7 +78,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                 print "No explicit additional convertHistograms defined"
 
             expectations = ROOT.RooArgList()
-            for b in range(nbins+1):
+            for b in range(nbins):
                 #print "model_mu_cat_%d_bin_%d"%(10*crd+icat,b), wsin_combine.var( "model_mu_cat_%d_bin_%d"%(10*crd+icat,b))
                 expectations.add(wsin_combine.var(naming_convention(
                     b, cat+'_'+x.model, "IC" if "MTR" in renameVariable else "BU")))
