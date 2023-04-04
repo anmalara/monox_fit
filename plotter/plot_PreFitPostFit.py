@@ -13,12 +13,12 @@ new_dic = defaultdict(dict)
 def get_ylim(region):
   '''Get y-axis limit for the given region'''
   mapping = {
-    'singlemuon' : (1e-3,1e3),
-    'singleelectron' : (1e-3,1e3),
-    'dimuon' : (1e-3,1e2),
-    'dielectron' : (1e-3,1e2),
-    'gjets' : (1e-3,1e3),
-    'signal' : (1e-3,1e3),
+    'singlemuon' : (1,1e10),
+    'singleelectron' : (1,1e10),
+    'dimuon' : (1,1e10),
+    'dielectron' : (1,1e10),
+    'gjets' : (1,1e10),
+    'signal' : (1,1e10),
   }
   return mapping[region]
 
@@ -162,7 +162,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
     content = h_postfit['totalv2'].GetBinContent(i)
 
   for process in processes:
-    print "\n\n",process
+    # print "\n\n",process
     h_postfit[process] = f_mlfit.Get("shapes_fit_b/"+channel[region]+"/"+process)
     if (not h_postfit[process]): continue
     if (str(h_postfit[process].Integral())=="nan"): continue
@@ -279,9 +279,10 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
 
   #legend.SetTextSize(0.04)
   if region in 'signal' :
-    legend = TLegend(0.50, 0.60, 0.92, .92);
-    legend.SetFillStyle(0);
-    legend.SetBorderSize(0);
+    legend = TLegend(0.50,  0.91-0.025*(10 if sb else 9), 0.91, 0.91)
+    legend.SetFillStyle(0)
+    legend.SetBorderSize(0)
+    legend.SetTextSize(0.035)
     legend.AddEntry(h_data, "Data", "elp")
     if 'mono' in category:
       legend.AddEntry(h_postfit['zjets'], "Z(#nu#nu)+jets", "f")
@@ -305,15 +306,17 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
       legend.AddEntry(h_postfit['totalsig'], "S+B post-fit", "f")
 
   else:
-    legend = TLegend(.5,.65,.90,.90)
+    # legend = TLegend(.5,.65,.90,.90)
+    legend = TLegend(0.50,  0.91-0.035*(5), 0.91, 0.91)
+    legend.SetTextSize(0.03)
     legend.AddEntry(h_data,"Data","elp")
     legend.AddEntry(h_all_postfit, "Post-fit ("+legname+")", "l")
     legend.AddEntry(h_all_prefit, "Pre-fit ("+legname+")", "l")
     legend.AddEntry(h_other_prefit, "Other Backgrounds", "f")
 
-  legend.SetShadowColor(0);
-  legend.SetFillColor(0);
-  legend.SetLineColor(0);
+  legend.SetShadowColor(0)
+  legend.SetFillColor(0)
+  legend.SetLineColor(0)
   legend.Draw("same")
 
   latex2 = TLatex()
@@ -549,11 +552,11 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   for hbin in range(0,data_pull.GetNbinsX()+1):
     if (h_postfit['totalv2'].GetBinContent(hbin)>0):
 
-      addedsqrt +=  (data_pull.GetBinContent(hbin)*data_pull.GetBinContent(hbin))/(h_postfit['totalv2'].GetBinError(hbin)*h_postfit['totalv2'].GetBinError(hbin))
+      addedsqrt +=  (data_pull.GetBinContent(hbin)*data_pull.GetBinContent(hbin))/(h_postfit['totalv2'].GetBinError(hbin)*h_postfit['totalv2'].GetBinError(hbin)) if h_postfit['totalv2'].GetBinError(hbin)*h_postfit['totalv2'].GetBinError(hbin) else 0
 
       sigma = math.sqrt(h_postfit['totalv2'].GetBinError(hbin)* h_postfit['totalv2'].GetBinError(hbin) + h_data.GetBinError(hbin)*h_data.GetBinError(hbin))
 
-      data_pull.SetBinContent(hbin,data_pull.GetBinContent(hbin)/sigma)
+      data_pull.SetBinContent(hbin,data_pull.GetBinContent(hbin)/sigma if sigma!=0 else 0)
       #data_pull.SetBinContent(hbin,data_pull.GetBinContent(hbin)/h_postfit['totalv2'].GetBinError(hbin))
 
       data_pull.SetBinError(hbin,0)
@@ -580,7 +583,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   for hbin in range(0,data_pull_sig.GetNbinsX()+1):
     if (h_postfit['totalv2'].GetBinContent(hbin)>0):
       #print "bin",hbin,"data pull diff", data_pull_sig.GetBinContent(hbin), "sys", h_postfit['totalv2'].GetBinError(hbin)
-      data_pull_sig.SetBinContent(hbin,data_pull_sig.GetBinContent(hbin)/h_postfit['totalv2'].GetBinError(hbin))
+      data_pull_sig.SetBinContent(hbin,data_pull_sig.GetBinContent(hbin)/h_postfit['totalv2'].GetBinError(hbin) if h_postfit['totalv2'].GetBinError(hbin)!=0 else 0)
       data_pull_sig.SetBinError(hbin,0)
 
   data_pull_sig.SetLineColor(2)

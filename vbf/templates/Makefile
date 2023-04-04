@@ -30,7 +30,7 @@ printlimits:
 	cat $(TOPDIR)/scripts/limits.sh
 
 plots:
-	python $(TOPDIR)/scripts/make_plots.py --crFit=$(crFit)
+	python $(TOPDIR)/scripts/make_plots.py --crFit=$(or $(crFit), 0)
 
 upload:
 	bash $(TOPDIR)/scripts/upload_to_eos.sh $(versionTag)
