@@ -300,7 +300,8 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
                         theory_sumw2 += pow( 0.5 * (hist_unc.GetBinContent(findbin)-1) * nom, 2)
                 
                 # After QCD and EWK have been summed over, we divide by the denominator
-                theory_sumw2 /= pow(h_prefit[region2].GetBinContent(iBin),2)
+                if h_prefit[region2].GetBinContent(iBin)!=0:
+                    theory_sumw2 /= pow(h_prefit[region2].GetBinContent(iBin),2)
 
                 # And add to the total
                 sumw2 += theory_sumw2

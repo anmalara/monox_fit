@@ -67,6 +67,7 @@ def plot_ratio(process,category, model_file, outdir, lumi, year):
             label   = "R_{W(#mu#nu)}"
             addsys  = sqrt(0.01**2 + 0.01**2 + 0.01**2)
         dirname = dirname.format(**replacements)
+        dirname = dirname.replace('category', 'simple_category')
         base = base.format(**replacements)
         print(dirname+"/"+base)
         ratio = f.Get(dirname+"/"+base)

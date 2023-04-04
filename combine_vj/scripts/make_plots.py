@@ -8,13 +8,13 @@ from plot_ratio import plot_ratio
 from plot_diffnuis import plot_nuis
 lumi ={
     2017 : 41.5,
-    2018: 59.7
+    2018: 59.8
 }
 regions = ['singlemuon','dimuon','gjets','singleelectron','dielectron','signal']
 procs = ['zmm','zee','w_weights','photon','wen','wmn']
 
 ### Years fit separately
-for year in [2017,2018]:
+for year in [2018]:
     ws_file = "root/ws_monojet.root"
     fitdiag_file = 'diagnostics/fitDiagnostics_monojet_monov_{year}.root'.format(year=year)
     diffnuis_file = 'diagnostics/diffnuisances_monojet_monov_combined_{year}.root'.format(year=year)
@@ -46,7 +46,7 @@ diffnuis_file = 'diagnostics/diffnuisances_monojet_monov_combined_combined.root'
 plot_nuis(diffnuis_file, outdir)
 
 ws_file = "root/ws_monojet.root"
-for year in [2017,2018]:
+for year in [2018]:
     fitdiag_file = 'diagnostics/fitDiagnostics_monojet_monov_combined.root'.format(year=year)
     category='monojet_{year}'.format(year=year)
     outdir = './plots/combined_{year}/'.format(year=year)
@@ -57,7 +57,7 @@ for wp in ['tight','loose']:
     ### Years fit separately
     ws_file="root/ws_monov_nominal_{WP}.root".format(WP=wp)
     model_file = "root/combined_model_monov_nominal_{WP}.root".format(WP=wp)
-    for year in [2017,2018]:
+    for year in [2018]:
         category='monov{WP}_{YEAR}'.format(WP=wp,YEAR=year)
         filler = {
             "year" : year,
@@ -93,7 +93,7 @@ for wp in ['tight','loose']:
     fitdiag_file = 'diagnostics/fitDiagnostics_monojet_monov_combined.root'
     model_file = "root/combined_model_monov_nominal_{WP}.root".format(**filler)
 
-    for year in [2017,2018]:
+    for year in [2018]:
         filler["YEAR"]=year
         outdir = './plots/combined_{YEAR}/'.format(**filler)
         category = 'monov{WP}_{YEAR}'.format(**filler)
