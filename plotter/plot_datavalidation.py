@@ -214,16 +214,13 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     #print uncertainties
 
     regions = (region1, region2)
-    for iBin in range(h_prefit[region1].GetNbinsX()):
-        if iBin == 0:
-            continue
-
+    for iBin in range(1, h_prefit[region1].GetNbinsX()):
+        
         # Bare minimum is the prefit stat unc.
         sumw2 = pow(h_prefit[region1].GetBinError(iBin),2)
 
         # Systematic uncertainties
         for uncert in uncertainties:
-
 
             ### Experimental uncertainties are treated the same for all channes
             if uncert == "experiment":
@@ -303,8 +300,11 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
                 if h_prefit[region2].GetBinContent(iBin)!=0:
                     theory_sumw2 /= pow(h_prefit[region2].GetBinContent(iBin),2)
 
-                # And add to the total
-                sumw2 += theory_sumw2
+                # And add to the total: 
+                # Don't do this for now since this theory uncertainty file does not apply to DNN score!
+                # print((theory_sumw2, sumw2))
+                # sumw2 += theory_sumw2
+
         h_prefit[region1].SetBinError(iBin,sqrt(sumw2))
 
 
@@ -339,6 +339,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
     h_clone.Draw("e2")
 
+    # Draw data/data and MC/MC ratios
     h_prefit[region1].SetLineColor(2)
     h_prefit[region1].Draw("samehist")
     h_data_1.SetLineColor(1)
@@ -349,9 +350,9 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
     #legend = TLegend(0.35, 0.79, 0.95, .92);
 
-    legend = TLegend(0.35, 0.77, 0.95, 0.90);
+    legend = TLegend(0.35, 0.77, 0.95, 0.90)
 
-    legend.SetFillStyle(0);
+    legend.SetFillStyle(0)
     legend.AddEntry(h_data_1, name+" Data", "elp")
 
     if region2 is 'gjets' and region1 is 'combinedW':
@@ -361,11 +362,11 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     else:
         legend.AddEntry(h_prefit[region1], name+" MC", "l")
 
-    legend.SetShadowColor(0);
-    legend.SetFillColor(0);
-    legend.SetLineColor(0);
-    legend.SetLineStyle(0);
-    legend.SetBorderSize(0);
+    legend.SetShadowColor(0)
+    legend.SetFillColor(0)
+    legend.SetLineColor(0)
+    legend.SetLineStyle(0)
+    legend.SetBorderSize(0)
     legend.Draw("same")
 
     latex2 = TLatex()
@@ -384,14 +385,14 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     offset = 0.005
     #latex2.DrawLatex(0.20, 0.80, "Preliminary")
 
-    categoryLabel = TLatex();
-    categoryLabel.SetNDC();
+    categoryLabel = TLatex()
+    categoryLabel.SetNDC()
     #categoryLabel.SetTextSize(0.5*c.GetTopMargin());
-    categoryLabel.SetTextSize(0.042);
-    categoryLabel.SetTextFont(42);
-    categoryLabel.SetTextAlign(11);
-    categoryLabel.DrawLatex(0.200,0.80,re.sub("_.*","",category));
-    categoryLabel.Draw("same");
+    categoryLabel.SetTextSize(0.042)
+    categoryLabel.SetTextFont(42)
+    categoryLabel.SetTextAlign(11)
+    categoryLabel.DrawLatex(0.200,0.80,re.sub("_.*","",category))
+    categoryLabel.Draw("same")
 
 
     pad = TPad("pad", "pad", 0.0, 0.0, 1.0, 0.9)
@@ -422,7 +423,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
             ratiosys.SetBinError(hbin+1,h_clone.GetBinError(hbin+1)/h_clone.GetBinContent(hbin+1))
 
     dummy2.GetYaxis().SetTitle("Data / Pred.")
-    dummy2.GetXaxis().SetTitle("Hadronic recoil p_{T} [GeV]" if "mono" in category else  "M_{jj} [GeV]")
+    dummy2.GetXaxis().SetTitle("Hadronic recoil p_{T} [GeV]" if "mono" in category else "DNN score")
     dummy2.GetXaxis().SetTitleOffset(1.15)
     dummy2.GetXaxis().SetTitleSize(0.05)
     dummy2.GetXaxis().SetLabelSize(0.04)
@@ -432,7 +433,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     #dummy2.SetLineWidth(0)
     #dummy2.SetMarkerSize(0)
     dummy2.GetYaxis().SetLabelSize(0.04)
-    dummy2.GetYaxis().SetNdivisions(5);
+    dummy2.GetYaxis().SetNdivisions(5)
     #dummy2.GetXaxis().SetNdivisions(510)
     dummy2.GetYaxis().CenterTitle()
     dummy2.GetYaxis().SetTitleSize(0.04)
@@ -451,10 +452,10 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
     dummy2.Draw("same")
 
-    f1 = TF1("f1","1",-5000,5000);
-    f1.SetLineColor(1);
-    f1.SetLineStyle(2);
-    f1.SetLineWidth(1);
+    f1 = TF1("f1","1",-5000,5000)
+    f1.SetLineColor(1)
+    f1.SetLineStyle(2)
+    f1.SetLineWidth(1)
     f1.Draw("same")
 
     pad.RedrawAxis("G sameaxis")
