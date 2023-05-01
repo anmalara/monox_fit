@@ -26,6 +26,7 @@ cat ${FILEPATH} > "diagScript.sh"
 
 for YEAR in 2018; do
     combine -M FitDiagnostics \
+            -t -1 \
             --saveShapes \
             --saveWithUncertainties \
             --setParameters mask_vbf_${YEAR}_signal=${MASK_SIGNAL} \
