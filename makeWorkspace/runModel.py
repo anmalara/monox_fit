@@ -26,6 +26,7 @@ pjoin = os.path.join
 def cli_args():
     parser = argparse.ArgumentParser(prog='Construct fit model from RooWorkspace.')
     parser.add_argument('file', type=str, help='Input file to use.')
+    parser.add_argument('-v', '--variable', type=str, help='Variable to fit.', default='particlenet_score')
     parser.add_argument('--out', type=str, help='Path to save output under.', default='combined_model.root')
     parser.add_argument('--categories', type=str, default=None, help='Analysis categories')
     parser.add_argument('--rename', type=str, default="", help='New name for analysis variable to pass to convertToCombineWorkspace')
@@ -105,9 +106,9 @@ def main():
             _fDir = _fOut.mkdir("%s_category_%s"%(crn,cn))
 
             if "MTR" in args.rename:
-                cmb_categories.append(x.cmodel(cn,crn,_f,_fDir,out_ws,diag_combined, year, convention="IC"))
+                cmb_categories.append(x.cmodel(cn,crn,_f,_fDir,out_ws,diag_combined, year, args.variable, convention="IC"))
             else:
-                cmb_categories.append(x.cmodel(cn,crn,_f,_fDir,out_ws,diag_combined, year))
+                cmb_categories.append(x.cmodel(cn,crn,_f,_fDir,out_ws,diag_combined, year, args.variable))
 
     for cid,cn in enumerate(cmb_categories):
         print "Run Model: cid, cn", cid,cn

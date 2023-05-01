@@ -7,7 +7,7 @@ from W_constraints import do_stat_unc, add_variation
 # First define simple string which will be used for the datacard
 model = "qcd_zjets"
 
-def cmodel(cid,nam,_f,_fOut, out_ws, diag, year,convention="BU"):
+def cmodel(cid,nam,_f,_fOut, out_ws, diag, year,variable,convention="BU"):
 
   # Some setup
   _fin = _f.Get("category_%s"%cid)
@@ -19,7 +19,7 @@ def cmodel(cid,nam,_f,_fOut, out_ws, diag, year,convention="BU"):
   # special datasets/histograms representing these and systematic effects
   # example below for creating shape systematic for photon which is just every bin up/down 30%
 
-  metname    = 'particlenet_score'          # Observable variable name
+  metname    = variable          # Observable variable name
 
   target             = _fin.Get("signal_qcdzjets")      # define monimal (MC) of which process this config will model
   controlmc          = _fin.Get("Zmm_qcdzll")           # defines Zmm MC of which process will be controlled by

@@ -9,7 +9,7 @@ cat ${FILEPATH} > "limitScript.sh"
 
 # Limits per year
 for YEAR in 2018; do
-    combine -M AsymptoticLimits -n _vbf_${YEAR} ../cards/card_vbf_${YEAR}.root | tee log_limits_${YEAR}.txt
+    # combine -M AsymptoticLimits -n _vbf_${YEAR} ../cards/card_vbf_${YEAR}.root | tee log_limits_${YEAR}.txt
     
     # combine -M AsymptoticLimits -n _vbf_nodilepton_${YEAR} \
     #     --setParameters mask_vbf_${YEAR}_dielec=1,mask_vbf_${YEAR}_dimuon=1 \

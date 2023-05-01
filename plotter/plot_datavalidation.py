@@ -202,8 +202,10 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
                 uncFile.ZW_PDF_met
                 ]
         uncertainties += ["experiment"]
+    
+    # Uncertainties on VBF H(inv)
     else:
-        uncFile = TFile(os.path.join(DIR,'../makeWorkspace/sys/vbf_z_w_gjets_theory_unc_ratio_unc.root'))
+        uncFile = TFile(os.path.join(DIR,'../makeWorkspace/sys/particlenet/vbf_z_w_gjets_theory_unc_ratio_unc.root'))
         uncertainties = [
             "w_ewkcorr_overz_common",
             "zoverw_nlo_muf",
@@ -279,7 +281,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
                 for proc in ['qcd','ewk']:
                     for direction in 'up','down':
                         # Uncertainties are stored in histogram form
-                        hname = "uncertainty_ratio_z_{PROC}_mjj_unc_{UNC}_{DIR}_{YEAR}".format(PROC=proc, UNC=uncert, DIR=direction, YEAR=year)
+                        hname = "uncertainty_ratio_z_{PROC}_particlenet_score_unc_{UNC}_{DIR}_{YEAR}".format(PROC=proc, UNC=uncert, DIR=direction, YEAR=year)
                         print hname
                         hist_unc = uncFile.Get(hname)
 
@@ -302,8 +304,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
                 # And add to the total: 
                 # Don't do this for now since this theory uncertainty file does not apply to DNN score!
-                # print((theory_sumw2, sumw2))
-                # sumw2 += theory_sumw2
+                sumw2 += theory_sumw2
 
         h_prefit[region1].SetBinError(iBin,sqrt(sumw2))
 
@@ -408,19 +409,13 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     pad.Draw()
     pad.cd(0)
 
+    # Ratio pad: Data/data ratio
     dummy2 = h_data_1.Clone("dummy")
     dummy2.Sumw2()
     dummy2.Divide(h_prefit[region1])
     #for i in range(1,dummy2.GetNbinsX()):
     #    print dummy2.GetBinContent(i)
     #    dummy2.SetBinContent(i,1.0)
-
-    ratiosys = dummy2.Clone("ratiosys")
-    for hbin in range(0,ratiosys.GetNbinsX()+1):
-        print "RATIOSYS", ratiosys.GetBinError(hbin+1), h_clone.GetBinError(hbin+1), h_data_1.GetBinError(hbin+1)
-        ratiosys.SetBinContent(hbin+1,1.0)
-        if h_clone.GetBinContent(hbin+1)>0:
-            ratiosys.SetBinError(hbin+1,h_clone.GetBinError(hbin+1)/h_clone.GetBinContent(hbin+1))
 
     dummy2.GetYaxis().SetTitle("Data / Pred.")
     dummy2.GetXaxis().SetTitle("Hadronic recoil p_{T} [GeV]" if "mono" in category else "DNN score")
@@ -443,6 +438,14 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     dummy2.SetMinimum(0.4)
 
     dummy2.Draw()
+    
+    # Systematic uncertainty on the bkg/bkg ratio
+    ratiosys = dummy2.Clone("ratiosys")
+    for hbin in range(0,ratiosys.GetNbinsX()+1):
+        print "RATIOSYS", ratiosys.GetBinError(hbin+1), h_clone.GetBinError(hbin+1), h_data_1.GetBinError(hbin+1)
+        ratiosys.SetBinContent(hbin+1,1.0)
+        if h_clone.GetBinContent(hbin+1)>0:
+            ratiosys.SetBinError(hbin+1,h_clone.GetBinError(hbin+1)/h_clone.GetBinContent(hbin+1))
 
     ratiosys.SetFillColor(kGray) #SetFillColor(ROOT.kYellow)
     ratiosys.SetLineColor(kGray) #SetLineColor(1)

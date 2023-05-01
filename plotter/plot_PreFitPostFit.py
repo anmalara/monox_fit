@@ -209,8 +209,8 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   c.SetLogy()
   c.SetBottomMargin(0.38)
   c.SetRightMargin(0.06)
-  c.SetTickx(1);
-  c.SetTicky(1);
+  c.SetTickx(1)
+  c.SetTicky(1)
 
   dummy = h_all_prefit.Clone("dummy")
   dummy.SetFillColor(0)
@@ -243,9 +243,9 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
 
   if region in 'signal':
 
-    h_postfit['totalsig'].SetLineColor(1);
-    h_postfit['totalsig'].SetFillColor(1);
-    h_postfit['totalsig'].SetFillStyle(3144);
+    h_postfit['totalsig'].SetLineColor(1)
+    h_postfit['totalsig'].SetFillColor(1)
+    h_postfit['totalsig'].SetFillStyle(3144)
     if sb:
       h_postfit['totalsig'].Draw("samehist")
 
@@ -339,17 +339,17 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   offset = 0.005
   #latex2.DrawLatex(0.28+offset, 0.85, "Preliminary")
 
-  categoryLabel = TLatex();
-  categoryLabel.SetNDC();
-  categoryLabel.SetTextSize(0.5*c.GetTopMargin());
-  categoryLabel.SetTextFont(42);
-  categoryLabel.SetTextAlign(11);
+  categoryLabel = TLatex()
+  categoryLabel.SetNDC()
+  categoryLabel.SetTextSize(0.5*c.GetTopMargin())
+  categoryLabel.SetTextFont(42)
+  categoryLabel.SetTextAlign(11)
   if region is "signal" and category is "monojet":
-    categoryLabel.DrawLatex(0.200,0.80,"monojet");
-    categoryLabel.Draw("same");
+    categoryLabel.DrawLatex(0.200,0.80,"monojet")
+    categoryLabel.Draw("same")
   elif region is "signal" and category is "monov":
-    categoryLabel.DrawLatex(0.175,0.80,"mono-V");
-    categoryLabel.Draw("same");
+    categoryLabel.DrawLatex(0.175,0.80,"mono-V")
+    categoryLabel.Draw("same")
 
   gPad.RedrawAxis()
 
@@ -452,7 +452,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   g_ratio_post.SetMarkerColor(kAzure-4)
   g_ratio_post.SetMarkerStyle(20)
 
-  ratiosys = h_postfit['totalv2'].Clone();
+  ratiosys = h_postfit['totalv2'].Clone()
   for hbin in range(0,ratiosys.GetNbinsX()+1):
 
     ratiosys.SetBinContent(hbin+1,1.0)
@@ -480,7 +480,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   #if region is 'signal':
   dummy2.GetYaxis().SetLabelSize(0.03)
   dummy2.GetXaxis().SetLabelSize(0)
-  dummy2.GetYaxis().SetNdivisions(5);
+  dummy2.GetYaxis().SetNdivisions(5)
   dummy2.GetYaxis().CenterTitle()
   dummy2.GetYaxis().SetTitleSize(0.03)
   dummy2.GetYaxis().SetTitleOffset(1.6)
@@ -503,26 +503,26 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   ratiosys.SetMarkerSize(0)
   ratiosys.Draw("e2same")
 
-  f1 = TF1("f1","1",-5000,5000);
-  f1.SetLineColor(1);
-  f1.SetLineStyle(2);
-  f1.SetLineWidth(2);
+  f1 = TF1("f1","1",-5000,5000)
+  f1.SetLineColor(1)
+  f1.SetLineStyle(2)
+  f1.SetLineWidth(2)
   f1.Draw("same")
 
   if not blind:
     g_ratio_pre.Draw("epsame")
     g_ratio_post.Draw("epsame")
 
-  legend2 = TLegend(0.147651,0.2314815,0.6979866,0.2810847,"","brNDC");
+  legend2 = TLegend(0.147651,0.2314815,0.6979866,0.2810847,"","brNDC")
 
   legend2.AddEntry(g_ratio_post, "Background (post-fit)", "ple")
   legend2.AddEntry(g_ratio_pre, "Background (pre-fit)", "ple")
 
   legend2.SetNColumns(2)
 
-  legend2.SetShadowColor(0);
-  legend2.SetFillColor(0);
-  legend2.SetLineColor(0);
+  legend2.SetShadowColor(0)
+  legend2.SetFillColor(0)
+  legend2.SetLineColor(0)
   #legend2.Draw("same")
 
   pad = TPad("pad", "pad", 0.0, 0.0, 1.0, 1.0)
@@ -592,21 +592,21 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   data_pull_sig.SetMarkerColor(2)
 
 
-  legend3 = TLegend(0.20,0.21,0.60,0.23,"","brNDC");
+  legend3 = TLegend(0.20,0.21,0.60,0.23,"","brNDC")
   legend3.AddEntry(data_pull    , "Background only", "f")
   legend3.SetNColumns(2)
-  legend3.SetShadowColor(0);
-  legend3.SetFillColor(0);
-  legend3.SetLineColor(0);
+  legend3.SetShadowColor(0)
+  legend3.SetFillColor(0)
+  legend3.SetLineColor(0)
 
   dummy3 = TH1F("dummy3","dummy3",len(binLowE)-1,array('d',binLowE))
   for i in range(1,dummy3.GetNbinsX()):
     dummy3.SetBinContent(i,1.0)
   dummy3.GetYaxis().SetTitle("#frac{(Data-Pred.)}{#sigma}")
   if region in 'signal':
-      dummy3.GetXaxis().SetTitle("E_{T}^{miss} [GeV]"  if 'mono' in category else "M_{jj} [GeV]")
+      dummy3.GetXaxis().SetTitle("E_{T}^{miss} [GeV]"  if 'mono' in category else "DNN score")
   else:
-    dummy3.GetXaxis().SetTitle("Recoil [GeV]" if 'mono' in category else "M_{jj} [GeV]")
+    dummy3.GetXaxis().SetTitle("Recoil [GeV]" if 'mono' in category else "DNN score")
   dummy3.SetLineColor(0)
   dummy3.SetMarkerColor(0)
   dummy3.SetLineWidth(0)
@@ -614,7 +614,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy3.GetYaxis().SetLabelSize(0.04)
   if region is 'signal':
     dummy3.GetYaxis().SetLabelSize(0.03)
-  dummy3.GetYaxis().SetNdivisions(5);
+  dummy3.GetYaxis().SetNdivisions(5)
   dummy3.GetYaxis().CenterTitle()
   dummy3.GetYaxis().SetTitleSize(0.03)
   dummy3.GetYaxis().SetTitleOffset(1.3)

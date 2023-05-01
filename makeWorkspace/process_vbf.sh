@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-TAG='28Mar2023_vbfml_test'
+TAG='12Apr23_coarser_score_binning'
 INDIR=../input/merged_2023-03-28_vbfml
 INDIR="$(readlink -e $INDIR)"
 
@@ -29,7 +29,7 @@ git diff >> ${INFOFILE}
 VARIABLE="particlenet_score"
 
 ./make_ws.py ${INFILE} --categories vbf_2018 --out ${WSFILE} --simple -v ${VARIABLE}
-./runModel.py ${WSFILE} --categories vbf_2018 --out ${OUTDIR}/combined_model_vbf.root --simple
+./runModel.py ${WSFILE} --categories vbf_2018 --out ${OUTDIR}/combined_model_vbf.root --simple -v ${VARIABLE}
 
 # Split for IC
 # ./runModel.py ${WSFILE} --categories vbf_2017 --out ${OUTDIR}/combined_model_vbf_forIC_2017.root --rename "mjj_MTR_2017"

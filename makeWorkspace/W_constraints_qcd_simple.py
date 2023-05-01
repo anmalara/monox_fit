@@ -6,7 +6,7 @@ from W_constraints import do_stat_unc, add_variation
 # Define how a control region(s) transfer is made by defining cmodel provide, the calling pattern must be unchanged!
 # First define simple string which will be used for the datacard 
 model = "qcd_wjets"
-def cmodel(cid,nam,_f,_fOut, out_ws, diag,year, convention="BU"):
+def cmodel(cid,nam,_f,_fOut, out_ws, diag,year, variable, convention="BU"):
   
   # Some setup
   _fin    = _f.Get("category_%s"%cid)
@@ -19,7 +19,7 @@ def cmodel(cid,nam,_f,_fOut, out_ws, diag,year, convention="BU"):
   # special datasets/histograms representing these and systematic effects 
   # but for now this is just kept simple 
   processName  = "WJets" # Give a name of the process being modelled
-  metname      = 'particlenet_score'    # Observable variable name 
+  metname      = variable    # Observable variable name 
   targetmc     = _fin.Get("signal_qcdwjets")      # define monimal (MC) of which process this config will model
   controlmc    = _fin.Get("Wmn_qcdwjets")  # defines in / out acceptance
   controlmc_e  = _fin.Get("Wen_qcdwjets")  # defines in / out acceptance
