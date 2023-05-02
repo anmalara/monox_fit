@@ -84,7 +84,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                     b, cat+'_'+x.model, "IC" if "MTR" in renameVariable else "BU")))
 
                 #print "DAVID", b, expectations.Print("V"),wsin_combine.var("model_mu_cat_%s_bin_%d"%(cat+'_'+x.model,b)).getVal()
-            if not ('wjet' in x.model):
+            if not (('wjet' in x.model) or ('ewk_zjet' in x.model)):
                 phist = ROOT.RooParametricHist("%s_signal_%s_model" % (
                     cat, x.model), "Model Shape for %s in Category %s" % (x.model, cat), varl, expectations, samplehist)
                 phist_norm = ROOT.RooAddition("%s_norm" % phist.GetName(
