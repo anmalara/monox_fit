@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/bin/env python3
 import sys
 import os
 sys.path.append(os.path.abspath("../../../plotter"))
@@ -14,7 +14,8 @@ regions = ['singlemuon','dimuon','gjets','singleelectron','dielectron','signal']
 procs = ['zmm','zee','w_weights','photon','wen','wmn']
 
 ### Years fit separately
-for year in [2017, 2018]:
+# for year in [2017, 2018]:
+for year in [2017]:
     ws_file = './root/ws_vbf.root'.format(year=year)
     fitdiag_file = 'diagnostics/fitDiagnostics_vbf_{year}.root'.format(year=year)
     diffnuis_file = 'diagnostics/diffnuisances_vbf_{year}.root'.format(year=year)
@@ -44,7 +45,8 @@ outdir="plots/combined"
 diffnuis_file = 'diagnostics/diffnuisances_vbf_combined.root'
 plot_nuis(diffnuis_file, outdir)
 
-for year in [2017,2018]:
+# for year in [2017,2018]:
+for year in [2017]:
     ws_file = "root/ws_vbf.root".format(year=year)
     fitdiag_file = 'diagnostics/fitDiagnostics_vbf_combined.root'.format(year=year)
     category='vbf_{year}'.format(year=year)

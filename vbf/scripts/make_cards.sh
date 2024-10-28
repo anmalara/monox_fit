@@ -3,9 +3,11 @@ set -e
 
 mkdir -p cards
 # Fill templates
-for YEAR in 2017 2018; do
+# for YEAR in 2017 2018; do
+for YEAR in 2017; do
     CARD=cards/card_vbf_${YEAR}.txt
-    cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
+    # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
+    cp ../../templates/vbf_template_pyrat2.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
 
     if [ $YEAR -eq 2017 ]; then
@@ -29,7 +31,7 @@ for YEAR in 2017 2018; do
     sed -i "s|combined_model.root|../root/combined_model_vbf.root|g" ${CARD}
     sed -i "s|vbf_qcd_nckw_ws_${YEAR}.root|../root/vbf_qcd_nckw_ws_${YEAR}.root|g" ${CARD}
     text2workspace.py ${CARD} --channel-masks
-    python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py --all -f html ${CARD} > cards/systematics_${YEAR}.html
+    python3 $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py --all -f html ${CARD} > cards/systematics_${YEAR}.html
 done
 
 
@@ -40,12 +42,12 @@ text2workspace.py ${COMBINED} --channel-masks
 
 
 # Cards for IC
-for YEAR in 2017 2018; do
-    CARDIN=cards/card_vbf_${YEAR}.txt
-    CARD=cards/card_vbf_photons_${YEAR}.txt
-
-    combineCards.py ${CARDIN} --ic=vbf_${YEAR}_photon > ${CARD}
-    sed -i '/lnN[ -]*$/d' ${CARD}
-    sed -i 's/ch\(1\|2\)_//g' ${CARD}
-    sed -i "s|../root/combined_model_vbf.root|../root/combined_model_vbf_forIC_${YEAR}.root|g" ${CARD}
-done
+# for YEAR in 2017 2018; do
+    # CARDIN=cards/card_vbf_${YEAR}.txt
+    # CARD=cards/card_vbf_photons_${YEAR}.txt
+# 
+    # combineCards.py ${CARDIN} --ic=vbf_${YEAR}_photon > ${CARD}
+    # sed -i '/lnN[ -]*$/d' ${CARD}
+    # sed -i 's/ch\(1\|2\)_//g' ${CARD}
+    # sed -i "s|../root/combined_model_vbf.root|../root/combined_model_vbf_forIC_${YEAR}.root|g" ${CARD}
+# done
