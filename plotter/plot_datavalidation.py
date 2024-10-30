@@ -42,29 +42,29 @@ def scale_uncertainty_histogram(histogram, scale):
 
 def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi, year):
 
-    if region1 is "combined" and region2 is "gjets":
+    if region1 == "combined" and region2 == "gjets":
         name = "Z(ll)+jets / #gamma+jets"
-    if region1 is "combined" and region2 is "combinedW":
+    if region1 == "combined" and region2 == "combinedW":
         name = "Z(ll)+jets / W(l#nu)+jets"
-    if region1 is "dielectron" and region2 is "gjets":
+    if region1 == "dielectron" and region2 == "gjets":
         name = "Z(ee)/#gamma"
-    if region1 is "dimuon" and region2 is "gjets":
+    if region1 == "dimuon" and region2 == "gjets":
         name = "Z(mm)/#gamma"
-    if region1 is "combinedW" and region2 is "gjets":
+    if region1 == "combinedW" and region2 == "gjets":
         name = "W(l#nu)+jets / #gamma+jets"
-    if region1 is "singleelectron" and region2 is "gjets":
+    if region1 == "singleelectron" and region2 == "gjets":
         name = "W(en)/#gamma"
-    if region1 is "singlemuon" and region2 is "gjets":
+    if region1 == "singlemuon" and region2 == "gjets":
         name = "W(mn)/#gamma"
-    if region1 is "dielectron" and region2 is "singleelectron":
+    if region1 == "dielectron" and region2 == "singleelectron":
         name = "Z(ee)/W(en)"
-    if region1 is "dimuon" and region2 is "singlemuon":
+    if region1 == "dimuon" and region2 == "singlemuon":
         name = "Z(mm)/W(mn)"
 
 
-    if region1 is "dimuon" and region2 is "dielectron":
+    if region1 == "dimuon" and region2 == "dielectron":
         name = "Z(mm)/Z(ee)"
-    if region1 is "singlemuon" and region2 is "singleelectron":
+    if region1 == "singlemuon" and region2 == "singleelectron":
         name = "W(mn)/W(en)"
 
     datalab = {"singlemuon":"Wmn", "dimuon":"Zmm", "gjets":"gjets", "signal":"signal", "singleelectron":"Wen", "dielectron":"Zee"}
@@ -72,11 +72,11 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     f_data = TFile(ws_file,"READ")
     f_data.cd("category_"+category)
 
-    if region1 is "combined":
+    if region1 == "combined":
         h_data_1 = gDirectory.Get("Zmm_data")
         h_data_1_b = gDirectory.Get("Zee_data")
         h_data_1.Add(h_data_1_b)
-    elif region1 is "combinedW":
+    elif region1 == "combinedW":
         h_data_1 = gDirectory.Get("Wmn_data")
         h_data_1_b = gDirectory.Get("Wen_data")
         h_data_1.Add(h_data_1_b)
@@ -87,7 +87,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     if "monojet" in category:
         h_data_1.Rebin(2)
 
-    if region2 is "combinedW":
+    if region2 == "combinedW":
         h_data_2 = gDirectory.Get("Wmn_data")
         h_data_2_b = gDirectory.Get("Wen_data")
         h_data_2.Add(h_data_2_b)
@@ -123,14 +123,14 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
     ### Step 1: Read prefit histogram
     for region in [region1, region2]:
-        if region is "combined":
+        if region == "combined":
             regions_to_retrieve = ["dimuon","dielec"]
             h_prefit[region] = get_shape_sum(regions_to_retrieve,"total_background")
 
             if "vbf" in category:
                 h_qcd_prefit[region] = get_shape_sum(regions_to_retrieve, "qcd_zll")
                 h_ewk_prefit[region] = get_shape_sum(regions_to_retrieve, "ewk_zll")
-        elif region is "combinedW":
+        elif region == "combinedW":
             regions_to_retrieve = ["singlemu","singleel"]
             h_prefit[region] = get_shape_sum(regions_to_retrieve,"total_background")
             if "vbf" in category:
@@ -156,7 +156,7 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
 
     uncertainties = []
     if "mono" in category:
-        if region2 is "gjets":
+        if region2 == "gjets":
             uncFile              = TFile(os.path.join(DIR,'../makeWorkspace/sys/vjets_reco_theory_unc.root'))
             uncFile_pdf          = TFile(os.path.join(DIR,'../makeWorkspace/sys/tf_pdf_unc.root'))
             uncFile_photon       = TFile(os.path.join(DIR,'../makeWorkspace/sys/photon_id_unc.root'))
@@ -248,6 +248,9 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     regions = (region1, region2)
     for iBin in range(1,h_prefit[region1].GetNbinsX()+1):
         if iBin == 0:
+            continue
+
+        if h_prefit[region1].GetBinContent(iBin) <= 0.:
             continue
 
         # Bare minimum is the prefit stat unc.
@@ -384,9 +387,9 @@ def dataValidation(region1,region2,category,ws_file, fitdiag_file, outdir, lumi,
     legend.SetFillStyle(0);
     legend.AddEntry(h_data_1, name+" Data", "elp")
 
-    if region2 is 'gjets' and region1 is 'combinedW':
+    if region2 == 'gjets' and region1 == 'combinedW':
         legend.AddEntry(h_prefit[region1], name+" MC      ", "l")
-    elif region2 is 'gjets' and region1 is 'combined':
+    elif region2 == 'gjets' and region1 == 'combined':
         legend.AddEntry(h_prefit[region1], name+" MC        ", "l")
     else:
         legend.AddEntry(h_prefit[region1], name+" MC", "l")

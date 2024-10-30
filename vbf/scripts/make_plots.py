@@ -41,15 +41,15 @@ for year in [2017]:
 
 
 ### Years fit together
-outdir="plots/combined"
-diffnuis_file = 'diagnostics/diffnuisances_vbf_combined.root'
-plot_nuis(diffnuis_file, outdir)
-
+# outdir="plots/combined"
+# diffnuis_file = 'diagnostics/diffnuisances_vbf_combined.root'
+# plot_nuis(diffnuis_file, outdir)
+# 
 # for year in [2017,2018]:
-for year in [2017]:
-    ws_file = "root/ws_vbf.root".format(year=year)
-    fitdiag_file = 'diagnostics/fitDiagnostics_vbf_combined.root'.format(year=year)
-    category='vbf_{year}'.format(year=year)
-    outdir = './plots/combined_{year}/'.format(year=year)
-    for region in regions:
-        plotPreFitPostFit(region,     category,ws_file, fitdiag_file, outdir, lumi[year], year)
+# for year in [2017]:
+    # ws_file = "root/ws_vbf.root".format(year=year)
+    # fitdiag_file = 'diagnostics/fitDiagnostics_vbf_combined.root'.format(year=year)
+    # category='vbf_{year}'.format(year=year)
+    # outdir = './plots/combined_{year}/'.format(year=year)
+    # for region in regions:
+        # plotPreFitPostFit(region,     category,ws_file, fitdiag_file, outdir, lumi[year], year)

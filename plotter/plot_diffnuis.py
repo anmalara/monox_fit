@@ -47,8 +47,6 @@ def plot_nuis(fname, outdir):
         nplots = nplots - 1
         perplot = perplot + int(math.ceil(float(rest))/nplots)
 
-    nplots = nbins / perplot
-
     for i in range(nplots+1):
         for item in c.GetListOfPrimitives():
             try:

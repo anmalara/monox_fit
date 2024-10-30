@@ -4,7 +4,7 @@
 mkdir -p impacts_nocondor
 pushd impacts_nocondor
 # for YEAR in 2018 combined; do
-for YEAR in 2017 combined; do
+for YEAR in 2017; do
     mkdir ${YEAR}
     pushd ${YEAR}
     combineTool.py -M Impacts -d ../../cards/card_vbf_${YEAR}.root -m 125 --doInitialFit --robustFit 1 --parallel=4 --rMin=-1

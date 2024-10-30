@@ -167,22 +167,22 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
     h_postfit[process].Scale(1,"width")
 
     if region in 'signal':
-      if process is 'gjets' or process is 'zll':
+      if process == 'gjets' or process == 'zll':
         h_postfit[process].SetFillColor(TColor.GetColor(colors['gjets']))
         h_postfit[process].SetLineColor(TColor.GetColor(colors['gjets']))
         h_minor_postfit.Add(h_postfit[process])
 
-      if process is 'gjets':
+      if process == 'gjets':
         h_postfit[process].SetLineColor(1)
 
-    if process is 'zll':
+    if process == 'zll':
       continue
-    elif process is 'gjets':
+    elif process == 'gjets':
       h_minor_postfit.SetLineColor(1)
       h_minor_postfit.SetFillColor(TColor.GetColor(colors['gjets']))
       h_stack_postfit.Add(h_minor_postfit)
     else:
-      #if region is not 'signal':
+      #if region != 'signal':
       h_stack_postfit.Add(h_postfit[process])
 
   h_all_postfit.Scale(1,"width")
@@ -209,7 +209,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy.GetXaxis().SetTitle("")
   dummy.GetXaxis().SetTitleSize(0)
   dummy.GetXaxis().SetLabelSize(0)
-  if region is 'signal':
+  if region == 'signal':
     dummy.SetMaximum(50*dummy.GetMaximum())
   else:
     dummy.SetMaximum(25*dummy.GetMaximum())
@@ -311,7 +311,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   latex2.SetTextSize(0.6*c.GetTopMargin())
   latex2.SetTextFont(62)
   latex2.SetTextAlign(11) # align right
-  if region is "signal" and category is "monojet":
+  if region == "signal" and category == "monojet":
     latex2.DrawLatex(0.200, 0.85, "CMS")
   else:
     latex2.DrawLatex(0.175, 0.85, "CMS")
@@ -327,10 +327,10 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   categoryLabel.SetTextSize(0.5*c.GetTopMargin());
   categoryLabel.SetTextFont(42);
   categoryLabel.SetTextAlign(11);
-  if region is "signal" and category is "monojet":
+  if region == "signal" and category == "monojet":
     categoryLabel.DrawLatex(0.200,0.80,"monojet");
     categoryLabel.Draw("same");
-  elif region is "signal" and category is "monov":
+  elif region == "signal" and category == "monov":
     categoryLabel.DrawLatex(0.175,0.80,"mono-V");
     categoryLabel.Draw("same");
 
@@ -460,7 +460,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy2.SetLineWidth(0)
   dummy2.SetMarkerSize(0)
   dummy2.GetYaxis().SetLabelSize(0.04)
-  #if region is 'signal':
+  #if region == 'signal':
   dummy2.GetYaxis().SetLabelSize(0.03)
   dummy2.GetXaxis().SetLabelSize(0)
   dummy2.GetYaxis().SetNdivisions(5);
@@ -468,7 +468,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy2.GetYaxis().SetTitleSize(0.03)
   dummy2.GetYaxis().SetTitleOffset(1.6)
 
-  if region is 'signal':
+  if region == 'signal':
     dummy2.SetMaximum(1.20)
     dummy2.SetMinimum(0.80)
 
@@ -533,7 +533,8 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy_pull = TH1F("dummy33","dummy33",len(binLowE)-1,array('d',binLowE))
 
   for hbin in range(0,data_pull.GetNbinsX()+1):
-    if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+    # if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+    if (h_postfit['totalv2'].GetBinError(hbin)>0):
 
       addedsqrt +=  (data_pull.GetBinContent(hbin)*data_pull.GetBinContent(hbin))/(h_postfit['totalv2'].GetBinError(hbin)*h_postfit['totalv2'].GetBinError(hbin))
 
@@ -564,7 +565,8 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   data_pull_sig = h_data.Clone("pull")
   data_pull_sig.Sumw2()
   for hbin in range(0,data_pull_sig.GetNbinsX()+1):
-    if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+    # if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+    if (h_postfit['totalv2'].GetBinError(hbin)>0):
       #print "bin",hbin,"data pull diff", data_pull_sig.GetBinContent(hbin), "sys", h_postfit['totalv2'].GetBinError(hbin)
       data_pull_sig.SetBinContent(hbin,data_pull_sig.GetBinContent(hbin)/h_postfit['totalv2'].GetBinError(hbin))
       data_pull_sig.SetBinError(hbin,0)
@@ -595,7 +597,7 @@ def plotPreFitPostFit(region,category,ws_file, fitdiag_file,outdir,lumi,year,sb=
   dummy3.SetLineWidth(0)
   dummy3.SetMarkerSize(0)
   dummy3.GetYaxis().SetLabelSize(0.04)
-  if region is 'signal':
+  if region == 'signal':
     dummy3.GetYaxis().SetLabelSize(0.03)
   dummy3.GetYaxis().SetNdivisions(5);
   dummy3.GetYaxis().CenterTitle()
