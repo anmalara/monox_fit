@@ -1,9 +1,19 @@
 #!/bin/bash
 set -e
-TAG='default'
+#TAG='default'
+TAG='250218'
 # INDIR=../input/vbf/2020-07-16_vbf_eemitigation_jerfix_circular_nohfhf_v2
 # INDIR="/eos/home-h/hevard/misc/24_10_16_test_fit"
-INDIR="/eos/home-h/hevard/misc/24_10_24_test_fit"
+# INDIR="/eos/home-h/hevard/misc/24_10_24_test_fit"
+#INDIR="/eos/home-h/hevard/misc/24_11_20_for_fit_2023/Run3Summer23"
+#INDIR="/eos/home-h/hevard/misc/25_02_05_forfit"
+#INDIR="/eos/home-h/hevard/misc/25_02_10_plots_for_fit/for_fit/Run3Summer22"
+#INDIR="/eos/home-h/hevard/misc/25_02_10_plots_for_fit/for_fit/Run3Summer22EE"
+#INDIR="/eos/home-h/hevard/misc/25_02_10_plots_for_fit/for_fit/Run3Summer23"
+#INDIR="/eos/home-h/hevard/misc/25_02_10_plots_for_fit/for_fit/Run3Summer23BPix"
+#INDIR="/eos/home-h/hevard/misc/25_02_10_plots_for_fit/for_fit/Run3_22_23"
+INDIR="/eos/home-h/hevard/misc/25_02_18_forfit/Run3_22_23/"
+
 INDIR="$(readlink -e $INDIR)"
 
 OUTDIR="../vbf/$(basename $INDIR)/${TAG}/root"

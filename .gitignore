@@ -3,3 +3,9 @@
 *.d
 *.*~
 .vscode/
+vbf/*
+!vbf/scripts
+!vbf/templates
+monojet/*
+!monojet/scripts
+!monojet/templates

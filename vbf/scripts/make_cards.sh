@@ -7,7 +7,8 @@ mkdir -p cards
 for YEAR in 2017; do
     CARD=cards/card_vbf_${YEAR}.txt
     # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
-    cp ../../templates/vbf_template_pyrat2.txt ${CARD}
+    #cp ../../templates/vbf_template_pyrat2.txt ${CARD}
+    cp ../../templates/vbf_template_debug.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
 
     if [ $YEAR -eq 2017 ]; then
@@ -35,10 +36,10 @@ for YEAR in 2017; do
 done
 
 
-COMBINED=cards/card_vbf_combined.txt
-combineCards.py cards/card_vbf_201*.txt > ${COMBINED}
-sed -i 's/ch\(1\|2\)_//g' ${COMBINED}
-text2workspace.py ${COMBINED} --channel-masks
+#COMBINED=cards/card_vbf_combined.txt
+#combineCards.py cards/card_vbf_201*.txt > ${COMBINED}
+#sed -i 's/ch\(1\|2\)_//g' ${COMBINED}
+#text2workspace.py ${COMBINED} --channel-masks
 
 
 # Cards for IC
