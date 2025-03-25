@@ -4,10 +4,11 @@ set -e
 mkdir -p cards
 # Fill templates
 # for YEAR in 2017 2018; do
-for YEAR in 2017; do
+#for YEAR in 2017; do
+for YEAR in 2018; do
     CARD=cards/card_vbf_${YEAR}.txt
     # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
-    #cp ../../templates/vbf_template_pyrat2.txt ${CARD}
+    # cp ../../templates/vbf_template_pyrat2.txt ${CARD}
     cp ../../templates/vbf_template_debug.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
 
@@ -31,7 +32,7 @@ for YEAR in 2017; do
     fi
     sed -i "s|combined_model.root|../root/combined_model_vbf.root|g" ${CARD}
     sed -i "s|vbf_qcd_nckw_ws_${YEAR}.root|../root/vbf_qcd_nckw_ws_${YEAR}.root|g" ${CARD}
-    text2workspace.py ${CARD} --channel-masks
+    text2workspace.py ${CARD} --channel-masks #--verbose 2
     python3 $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/systematicsAnalyzer.py --all -f html ${CARD} > cards/systematics_${YEAR}.html
 done
 

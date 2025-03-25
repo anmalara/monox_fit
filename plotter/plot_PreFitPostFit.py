@@ -352,9 +352,10 @@ def plotPreFitPostFit(
     latex2.DrawLatex(
         0.94,
         0.95,
-        "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(
-            LUMI=lumi if region != "signal" else lumi / 5
-        ),
+        # "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(
+        #    LUMI=lumi if region != "signal" else lumi / 5
+        # ),
+        "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(LUMI=lumi),
     )
     latex2.SetTextSize(0.6 * c.GetTopMargin())
     latex2.SetTextFont(62)

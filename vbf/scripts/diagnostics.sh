@@ -4,18 +4,21 @@
 mkdir -p diagnostics
 pushd diagnostics
 # for YEAR in 2017 2018; do
-for YEAR in 2017; do
+#for YEAR in 2017; do
+for YEAR in 2018; do
     combine -M FitDiagnostics \
             --saveShapes \
-            --verbose 2 \
             --saveWithUncertainties \
             -n _vbf_${YEAR} \
             ../cards/card_vbf_${YEAR}.root | tee log_diag_${YEAR}.txt
             #--setParameters mask_vbf_${YEAR}_signal=1 \
             #--preFitValue 100 \
+            # --verbose 2 \
+            # -t -1 \
     python3 ${CMSSW_BASE}/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py \
            fitDiagnostics_vbf_${YEAR}.root\
-           -g diffnuisances_vbf_${YEAR}.root
+           -g diffnuisances_vbf_${YEAR}.root \
+           --all
 done
 
 

@@ -6,8 +6,8 @@ import re
 from math import sqrt
 from collections import defaultdict
 
-import ROOT
-from HiggsAnalysis.CombinedLimit.ModelTools import *
+import ROOT # type: ignore
+from HiggsAnalysis.CombinedLimit.ModelTools import * # type: ignore
 from utils.general import extract_year, extract_channel, is_MC_bkg
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
@@ -280,7 +280,6 @@ def get_signal_theory_variations(obj, category):
             print(varname, variation)
 
             varied_obj = obj.Clone(name)
-            # import pdb; pdb.set_trace()
             varied_obj.Multiply(variation)
             varied_obj.SetDirectory(0)
             varied_hists[name] = varied_obj
@@ -517,7 +516,7 @@ def create_workspace(fin, fout, category, args):
     f_jes = get_jes_file(category)
 
     wsin_combine = ROOT.RooWorkspace("wspace_" + category, "wspace_" + category)
-    wsin_combine._safe_import = SafeWorkspaceImporter(wsin_combine)
+    wsin_combine._safe_import = SafeWorkspaceImporter(wsin_combine) # type: ignore
 
     if args.standalone:
         variable_name = ("mjj_{0}" if ("vbf" in category) else "met_{0}").format(
