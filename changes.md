@@ -11,6 +11,7 @@ makeWorkspace/make_ws.py:
    -  `key_valid = lambda x: (tag in x) and (not "jesTotal" in x)  # , keynames`, syntax difference from `python2`?
      `filter(key_valid, keynames)` is called later anyway
    - Not attempting to get signal theory variations for vbf (not present for `makeWorkspace/sys/signal_theory_unc.root`)
+      - Applied in `Z_contraints_qcd_withphoton.py`
    - Not attempting to get photon id variations for vbf (not present for `makeWorkspace/sys/photon_id_unc.root`)
    - Not attempting to get mistag variations for vbf (not present for `makeWorkspace/sys/mistag_sf_variations.root`)
 
