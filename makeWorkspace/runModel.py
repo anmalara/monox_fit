@@ -49,13 +49,7 @@ def main():
     if any(re.match("mono(jet|v).*", x) for x in args.categories):
         controlregions_def = ["Z_constraints", "W_constraints"]
     elif any(["vbf" in x for x in args.categories]):
-        controlregions_def = [
-            # "Z_constraints_qcd_withphoton",
-            "vbf_qcd_z",
-            "W_constraints_qcd",
-            "Z_constraints_ewk_withphoton",
-            "W_constraints_ewk",
-        ]
+        controlregions_def = ["Z_constraints_qcd_withphoton", "W_constraints_qcd", "Z_constraints_ewk_withphoton", "W_constraints_ewk"]
 
     # Determine year from name
     bname = os.path.basename(args.file)
@@ -82,13 +76,6 @@ def main():
     cmb_categories = []
     for crd, crn in enumerate(controlregions_def):
         x = __import__(crn)
-        use_crn = {
-            "Z_constraints_qcd_withphoton": "Z_constraints_qcd_withphoton",
-            "vbf_qcd_z": "Z_constraints_qcd_withphoton",
-            "W_constraints_qcd": "W_constraints_qcd",
-            "Z_constraints_ewk_withphoton": "Z_constraints_ewk_withphoton",
-            "W_constraints_ewk": "W_constraints_ewk",
-        }[crn]
         for cid, cn in enumerate(args.categories):
             # Derive year name
             m = re.match(".*201(7|8).*", cn)
@@ -96,12 +83,12 @@ def main():
                 raise RuntimeError("Cannot derive year from category name: " + cn)
             year = int("201" + m.groups()[0])
 
-            _fDir = _fOut.mkdir("%s_category_%s" % (use_crn, cn))
+            _fDir = _fOut.mkdir("%s_category_%s" % (crn, cn))
 
             if "MTR" in args.rename:
-                cmb_categories.append(x.cmodel(cn, use_crn, _f, _fDir, out_ws, diag_combined, year, convention="IC"))
+                cmb_categories.append(x.cmodel(cn, crn, _f, _fDir, out_ws, diag_combined, year, convention="IC"))
             else:
-                cmb_categories.append(x.cmodel(cn, use_crn, _f, _fDir, out_ws, diag_combined, year))
+                cmb_categories.append(x.cmodel(cn, crn, _f, _fDir, out_ws, diag_combined, year))
 
     # model_mu_cat_vbf_2017_qcd_zjets_bin_0
     for cid, cn in enumerate(cmb_categories):
