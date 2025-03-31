@@ -106,9 +106,10 @@ def main() -> None:
     analysis = "vbf"
     year = "2017"
     variable = "mjj"
+    root_folder = f"category_{analysis}_{year}"
     tag = date.today().strftime("%Y_%m_%d")
     # tag = "year_month_day"
-    run_workspace_pipeline(input_dir=input_dir, analysis=analysis, year=year, tag=tag, variable=variable)
+    run_workspace_pipeline(input_dir=input_dir, analysis=analysis, year=year, tag=tag, variable=variable, root_folder=root_folder)
 
 
 if __name__ == "__main__":
