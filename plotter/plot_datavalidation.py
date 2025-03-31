@@ -43,10 +43,7 @@ def scale_uncertainty_histogram(histogram, scale):
     return histogram
 
 
-def dataValidation(
-    region1, region2, category, ws_file, fitdiag_file, outdir, lumi, year
-):
-
+def dataValidation(region1, region2, category, ws_file, fitdiag_file, outdir, lumi, year):
     if region1 == "combined" and region2 == "gjets":
         name = "Z(ll)+jets / #gamma+jets"
     if region1 == "combined" and region2 == "combinedW":
@@ -168,13 +165,8 @@ def dataValidation(
         else:
             h_prefit[region] = get_shape(channel[region], "total_background")
             if "vbf" in category:
-
-                h_qcd_prefit[region] = get_shape(
-                    channel[region], "qcd_" + leadbg[region]
-                )
-                h_ewk_prefit[region] = get_shape(
-                    channel[region], "ewk_" + leadbg[region]
-                )
+                h_qcd_prefit[region] = get_shape(channel[region], "qcd_" + leadbg[region])
+                h_ewk_prefit[region] = get_shape(channel[region], "ewk_" + leadbg[region])
         h_prefit[region].Sumw2()
 
         if "monojet" in category:
@@ -185,18 +177,10 @@ def dataValidation(
     uncertainties = []
     if "mono" in category:
         if region2 == "gjets":
-            uncFile = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/vjets_reco_theory_unc.root")
-            )
-            uncFile_pdf = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/tf_pdf_unc.root")
-            )
-            uncFile_photon = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/photon_id_unc.root")
-            )
-            uncFile_photon_scale = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/photon_scale_unc.root")
-            )
+            uncFile = TFile(os.path.join(DIR, "../makeWorkspace/sys/vjets_reco_theory_unc.root"))
+            uncFile_pdf = TFile(os.path.join(DIR, "../makeWorkspace/sys/tf_pdf_unc.root"))
+            uncFile_photon = TFile(os.path.join(DIR, "../makeWorkspace/sys/photon_id_unc.root"))
+            uncFile_photon_scale = TFile(os.path.join(DIR, "../makeWorkspace/sys/photon_scale_unc.root"))
             if "monojet" in category:
                 uncertainties = uncertainties + [
                     uncFile.monojet_z_over_g_d1k_up,
@@ -212,33 +196,13 @@ def dataValidation(
                 ]
 
                 if year == 2017:
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monojet_2017_photon_id_extrap_up, 2
-                        )
-                    )
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monojet_2017_photon_id_up, 2
-                        )
-                    )
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2017_photon_id_extrap_up, 2))
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2017_photon_id_up, 2))
                 elif year == 2018:
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monojet_2018_photon_id_extrap_up, 2
-                        )
-                    )
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monojet_2018_photon_id_up, 2
-                        )
-                    )
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2018_photon_id_extrap_up, 2))
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2018_photon_id_up, 2))
 
-                uncertainties.append(
-                    scale_uncertainty_histogram(
-                        uncFile_photon_scale.Get("photon_pt_scale_monojet_0.02_up"), 0.5
-                    )
-                )
+                uncertainties.append(scale_uncertainty_histogram(uncFile_photon_scale.Get("photon_pt_scale_monojet_0.02_up"), 0.5))
 
             elif "monov" in category:
                 uncertainties = uncertainties + [
@@ -254,39 +218,15 @@ def dataValidation(
                     uncFile_pdf.monov_z_over_g_pdf_2017_up,
                 ]
                 if year == 2017:
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monov_2017_photon_id_extrap_up, 2
-                        )
-                    )
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monov_2017_photon_id_up, 2
-                        )
-                    )
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2017_photon_id_extrap_up, 2))
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2017_photon_id_up, 2))
                 elif year == 2018:
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monov_2018_photon_id_extrap_up, 2
-                        )
-                    )
-                    uncertainties.append(
-                        scale_uncertainty_histogram(
-                            uncFile_photon.monov_2018_photon_id_up, 2
-                        )
-                    )
-                uncertainties.append(
-                    scale_uncertainty_histogram(
-                        uncFile_photon_scale.Get("photon_pt_scale_monov_0.02_up"), 0.5
-                    )
-                )
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2018_photon_id_extrap_up, 2))
+                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2018_photon_id_up, 2))
+                uncertainties.append(scale_uncertainty_histogram(uncFile_photon_scale.Get("photon_pt_scale_monov_0.02_up"), 0.5))
         if "wjets" in (region1, region2):
-            uncFile = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/vjets_reco_theory_unc.root")
-            )
-            uncFile_pdf = TFile(
-                os.path.join(DIR, "../makeWorkspace/sys/tf_pdf_unc.root")
-            )
+            uncFile = TFile(os.path.join(DIR, "../makeWorkspace/sys/vjets_reco_theory_unc.root"))
+            uncFile_pdf = TFile(os.path.join(DIR, "../makeWorkspace/sys/tf_pdf_unc.root"))
             if "monojet" in category:
                 uncertainties = [
                     uncFile.monov_z_over_w_d1k_up,
@@ -315,11 +255,7 @@ def dataValidation(
                 ]
         uncertainties += ["experiment"]
     else:
-        uncFile = TFile(
-            os.path.join(
-                DIR, "../makeWorkspace/sys/vbf_z_w_gjets_theory_unc_ratio_unc.root"
-            )
-        )
+        uncFile = TFile(os.path.join(DIR, "../makeWorkspace/sys/vbf_z_w_gjets_theory_unc_ratio_unc.root"))
         uncertainties = [
             "w_ewkcorr_overz_common",
             "zoverw_nlo_muf",
@@ -334,6 +270,7 @@ def dataValidation(
         if iBin == 0:
             continue
 
+        # TODO
         if h_prefit[region1].GetBinContent(iBin) <= 0.0:
             continue
 
@@ -341,7 +278,6 @@ def dataValidation(
         sumw2 = pow(h_prefit[region1].GetBinError(iBin), 2)
         # Systematic uncertainties
         for uncert in uncertainties:
-
             # print(iBin, uncert, sumw2)
             ### Experimental uncertainties are treated the same for all channes
             if uncert == "experiment":
@@ -365,22 +301,13 @@ def dataValidation(
                 # one additional lepton for combined regions
                 one_lepton_unc = 1 / sqrt(2) * quadsum(one_muon_unc, one_electron_unc)
 
-                if regions == ("combined", "combinedW") or regions == (
-                    "combinedW",
-                    "gjets",
-                ):
+                if regions == ("combined", "combinedW") or regions == ("combinedW", "gjets"):
                     value = one_lepton_unc
                 elif regions == ("combined", "gjets"):
                     value = one_lepton_unc * sqrt(2)
-                elif regions == ("dimuon", "singlemuon") or regions == (
-                    "singlemuon",
-                    "gjets",
-                ):
+                elif regions == ("dimuon", "singlemuon") or regions == ("singlemuon", "gjets"):
                     value = one_muon_unc
-                elif regions == ("dielectron", "singleelectron") or regions == (
-                    "singleelectron",
-                    "gjets",
-                ):
+                elif regions == ("dielectron", "singleelectron") or regions == ("singleelectron", "gjets"):
                     value = one_electron_unc
                 elif regions == ("dielectron", "gjets"):
                     value = one_electron_unc * sqrt(2)
@@ -407,9 +334,7 @@ def dataValidation(
                 for proc in ["qcd", "ewk"]:
                     for direction in "up", "down":
                         # Uncertainties are stored in histogram form
-                        hname = "uncertainty_ratio_z_{PROC}_mjj_unc_{UNC}_{DIR}_{YEAR}".format(
-                            PROC=proc, UNC=uncert, DIR=direction, YEAR=year
-                        )
+                        hname = "uncertainty_ratio_z_{PROC}_mjj_unc_{UNC}_{DIR}_{YEAR}".format(PROC=proc, UNC=uncert, DIR=direction, YEAR=year)
                         print(hname)
                         hist_unc = uncFile.Get(hname)
 
@@ -417,18 +342,14 @@ def dataValidation(
                         findbin = hist_unc.FindBin(h_prefit[region1].GetBinCenter(iBin))
 
                         # Nominal QCD / EWK V value
-                        nom = (h_qcd_prefit if proc == "qcd" else h_ewk_prefit)[
-                            region1
-                        ].GetBinContent(iBin)
+                        nom = (h_qcd_prefit if proc == "qcd" else h_ewk_prefit)[region1].GetBinContent(iBin)
 
                         # Total nominal value
                         nom_tot = h_prefit[region1].GetBinContent(iBin)
 
                         # Total unc = relative uncertainty * nominal
                         # factor of 0.5 accounts for symmetrizing up/down
-                        theory_sumw2 += pow(
-                            0.5 * (hist_unc.GetBinContent(findbin) - 1) * nom, 2
-                        )
+                        theory_sumw2 += pow(0.5 * (hist_unc.GetBinContent(findbin) - 1) * nom, 2)
 
                 # After QCD and EWK have been summed over, we divide by the denominator
                 theory_sumw2 /= pow(h_prefit[region2].GetBinContent(iBin), 2)
@@ -546,23 +467,13 @@ def dataValidation(
 
     ratiosys = dummy2.Clone("ratiosys")
     for hbin in range(0, ratiosys.GetNbinsX() + 1):
-        print(
-            "RATIOSYS",
-            ratiosys.GetBinError(hbin + 1),
-            h_clone.GetBinError(hbin + 1),
-            h_data_1.GetBinError(hbin + 1),
-        )
+        print("RATIOSYS", ratiosys.GetBinError(hbin + 1), h_clone.GetBinError(hbin + 1), h_data_1.GetBinError(hbin + 1))
         ratiosys.SetBinContent(hbin + 1, 1.0)
         if h_clone.GetBinContent(hbin + 1) > 0:
-            ratiosys.SetBinError(
-                hbin + 1,
-                h_clone.GetBinError(hbin + 1) / h_clone.GetBinContent(hbin + 1),
-            )
+            ratiosys.SetBinError(hbin + 1, h_clone.GetBinError(hbin + 1) / h_clone.GetBinContent(hbin + 1))
 
     dummy2.GetYaxis().SetTitle("Data / Pred.")
-    dummy2.GetXaxis().SetTitle(
-        "Hadronic recoil p_{T} [GeV]" if "mono" in category else "M_{jj} [GeV]"
-    )
+    dummy2.GetXaxis().SetTitle("Hadronic recoil p_{T} [GeV]" if "mono" in category else "M_{jj} [GeV]")
     dummy2.GetXaxis().SetTitleOffset(1.15)
     dummy2.GetXaxis().SetTitleSize(0.05)
     dummy2.GetXaxis().SetLabelSize(0.04)
@@ -610,39 +521,9 @@ def dataValidation(
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    c.SaveAs(
-        outdir
-        + region1
-        + "_"
-        + region2
-        + "_cat_"
-        + category
-        + "_"
-        + str(year)
-        + "ratio.pdf"
-    )
-    c.SaveAs(
-        outdir
-        + region1
-        + "_"
-        + region2
-        + "_cat_"
-        + category
-        + "_"
-        + str(year)
-        + "ratio.png"
-    )
-    c.SaveAs(
-        outdir
-        + region1
-        + "_"
-        + region2
-        + "_cat_"
-        + category
-        + "_"
-        + str(year)
-        + "ratio.C"
-    )
+    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.pdf")
+    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.png")
+    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.C")
 
     c.Close()
     f_mlfit.Close()

@@ -23,21 +23,9 @@ pjoin = os.path.join
 def cli_args():
     parser = argparse.ArgumentParser(prog="Construct fit model from RooWorkspace.")
     parser.add_argument("file", type=str, help="Input file to use.")
-    parser.add_argument(
-        "--out",
-        type=str,
-        help="Path to save output under.",
-        default="combined_model.root",
-    )
-    parser.add_argument(
-        "--categories", type=str, default=None, help="Analysis categories"
-    )
-    parser.add_argument(
-        "--rename",
-        type=str,
-        default="",
-        help="New name for analysis variable to pass to convertToCombineWorkspace",
-    )
+    parser.add_argument("--out", type=str, help="Path to save output under.", default="combined_model.root")
+    parser.add_argument("--categories", type=str, default=None, help="Analysis categories")
+    parser.add_argument("--rename", type=str, default="", help="New name for analysis variable to pass to convertToCombineWorkspace")
     args = parser.parse_args()
 
     args.file = os.path.abspath(args.file)
@@ -61,12 +49,7 @@ def main():
     if any(re.match("mono(jet|v).*", x) for x in args.categories):
         controlregions_def = ["Z_constraints", "W_constraints"]
     elif any(["vbf" in x for x in args.categories]):
-        controlregions_def = [
-            "Z_constraints_qcd_withphoton",
-            "W_constraints_qcd",
-            "Z_constraints_ewk_withphoton",
-            "W_constraints_ewk",
-        ]
+        controlregions_def = ["Z_constraints_qcd_withphoton", "W_constraints_qcd", "Z_constraints_ewk_withphoton", "W_constraints_ewk"]
 
     # Determine year from name
     bname = os.path.basename(args.file)
@@ -94,7 +77,6 @@ def main():
     for crd, crn in enumerate(controlregions_def):
         x = __import__(crn)
         for cid, cn in enumerate(args.categories):
-
             # Derive year name
             m = re.match(".*201(7|8).*", cn)
             if not m or (m and len(m.groups()) > 1):
@@ -104,18 +86,11 @@ def main():
             _fDir = _fOut.mkdir("%s_category_%s" % (crn, cn))
 
             if "MTR" in args.rename:
-                cmb_categories.append(
-                    x.cmodel(
-                        cn, crn, _f, _fDir, out_ws, diag_combined, year, convention="IC"
-                    )
-                )
+                cmb_categories.append(x.cmodel(cn, crn, _f, _fDir, out_ws, diag_combined, year, convention="IC"))
             else:
-                cmb_categories.append(
-                    x.cmodel(cn, crn, _f, _fDir, out_ws, diag_combined, year)
-                )
+                cmb_categories.append(x.cmodel(cn, crn, _f, _fDir, out_ws, diag_combined, year))
 
     # model_mu_cat_vbf_2017_qcd_zjets_bin_0
-
     for cid, cn in enumerate(cmb_categories):
         print("Run Model: cid, cn", cid, cn)
         cn.init_channels()
@@ -124,9 +99,7 @@ def main():
     # Save a Pre-fit snapshot
     out_ws.saveSnapshot("PRE_EXT_FIT_Clean", out_ws.allVars())
     # Now convert workspace to combine friendly workspace
-    convertToCombineWorkspace(
-        out_ws, _f, args.categories, cmb_categories, controlregions_def, args.rename
-    )
+    convertToCombineWorkspace(out_ws, _f, args.categories, cmb_categories, controlregions_def, args.rename)
     _fOut.WriteTObject(out_ws)
 
     print("Produced constraints model in --> ", _fOut.GetName())

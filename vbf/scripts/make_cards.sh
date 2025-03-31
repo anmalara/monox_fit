@@ -9,7 +9,7 @@ for YEAR in 2018; do
     CARD=cards/card_vbf_${YEAR}.txt
     # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
     # cp ../../templates/vbf_template_pyrat2.txt ${CARD}
-    cp ../../templates/vbf_template_debug.txt ${CARD}
+    cp ../../templates/vbf_template.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
 
     if [ $YEAR -eq 2017 ]; then
