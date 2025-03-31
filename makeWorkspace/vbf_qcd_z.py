@@ -34,14 +34,105 @@ def cmodel(cid, nam, _f, _fOut, out_ws, diag, year, convention="BU"):
 
     # Create the transfer factors and save them (not here you can also create systematic variations of these
     # transfer factors (named with extention _sysname_Up/Down
-    transfer_factors = {k: target.Clone() for k in control_samples.keys()}
+    transfer_factors = {region: target.Clone() for region in control_samples.keys()}
     for label, sample in transfer_factors.items():
         sample.SetName(f"{label}_weights_{cid}")
         sample.Divide(control_samples[label])
         # Write out a copy to the directory
         _fOut.WriteTObject(sample)
 
-    my_function(_wspace, _fin, _fOut, cid, diag, year)
+    # my_function(_wspace, _fin, _fOut, cid, diag, year)
+
+    # target = _fin.Get("signal_qcdzjets")  # define monimal (MC) of which process this config will model
+    # qcd_w controlmc_w = _fin.Get("signal_qcdwjets")
+    # qcd_photon controlmc_photon = _fin.Get("gjets_qcdgjets")
+
+    #################################################################################################################
+
+    #################################################################################################################
+    spectrums = {region: control_samples[region].Clone() for region in ["qcd_w", "qcd_photon"]} | {"qcd_zvv": target.Clone()}
+    # for region, sample in spectrums.items():
+    #    sample.SetName(f"{region}_spectrum_{cid}_")
+    spectrums["qcd_w"].SetName(f"qcd_w_spectrum_{cid}_")
+    spectrums["qcd_photon"].SetName(f"qcd_gjets_spectrum_{cid}_")
+
+    _fOut.WriteTObject(spectrums["qcd_w"])
+    _fOut.WriteTObject(spectrums["qcd_photon"])
+
+    #################################################################################################################
+
+    vbf_sys = r.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
+
+    ratio_label = {"qcd_w": "zoverw", "qcd_photon": "goverz"}
+    prefix_label = {"qcd_w": "z", "qcd_photon": "gjets"}
+
+    other_labels1 = {"qcd_w": "ZnunuWJets", "qcd_photon": "Photon"}
+    other_labels2 = {"qcd_w": "qcd_ewk", "qcd_photon": "qcd_photon_ewk"}
+
+    def add_var(num, denom, name, factor):
+        new = num.Clone(name)
+        new.Divide(denom)
+        new.Multiply(factor)
+        _fOut.WriteTObject(new)
+
+    for region in ["qcd_w", "qcd_photon"]:
+
+        denom = control_samples[region].Clone()
+        denom.SetName(f"{region}_weights_denom_{cid}")
+        num = target.Clone()
+        num.SetName(f"{region}_weights_nom_{cid}")
+
+        prefix = f"uncertainty_ratio_{prefix_label[region]}_qcd_mjj_unc"
+        variations = {
+            "ewk": "w_ewkcorr_overz_common",
+            "mur": f"{ratio_label[region]}_nlo_mur",
+            "muf": f"{ratio_label[region]}_nlo_muf",
+            "pdf": f"{ratio_label[region]}_nlo_pdf",
+        }
+        variation_dict = {f"{varname}_up": vbf_sys.Get(f"{prefix}_{varlabel}_up_{year}") for varname, varlabel in variations.items()} | {
+            f"{varname}_down": vbf_sys.Get(f"{prefix}_{varlabel}_down_{year}") for varname, varlabel in variations.items()
+        }
+
+        # QCD uncertainties
+        # qcd_w_weights_vbf_2018_ZnunuWJets_QCD_renscale_vbf_Up
+        # qcd_w_weights_Z_constraints_qcd_withphoton_ZnunuWJets_QCD_renscale_vbf_Up
+        # CRs[region].add_nuisance_shape(f"{other_label}_QCD_{var}_vbf", _fOut)
+        # add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_renscale_vbf_Up" % nam, factor=uncertainty_zoverw_mur_up)
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_renscale_vbf_Up", factor=variation_dict["mur_up"])
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_renscale_vbf_Down", factor=variation_dict["mur_down"])
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_facscale_vbf_Up", factor=variation_dict["muf_up"])
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_facscale_vbf_Down", factor=variation_dict["muf_down"])
+        # PDF Uncertainty
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_pdf_vbf_Up", factor=variation_dict["pdf_up"])
+        add_var(num=num, denom=denom, name=f"{region}_weights_{cid}_{other_labels1[region]}_QCD_pdf_vbf_Down", factor=variation_dict["pdf_down"])
+
+        # EWK uncertainty (decorrelated among bins)
+        ratio_ewk_up = target.Clone()
+        ratio_ewk_up.SetName(f"{region}_weights_{cid}_ewk_Up")
+        ratio_ewk_up.Divide(denom)
+        ratio_ewk_up.Multiply(variation_dict["ewk_up"])
+
+        ratio_ewk_down = target.Clone()
+        ratio_ewk_down.SetName(f"{region}_weights_{cid}_ewk_Down")
+        ratio_ewk_down.Divide(denom)
+        ratio_ewk_down.Multiply(variation_dict["ewk_down"])
+
+        num.Divide(denom)
+
+        for b in range(target.GetNbinsX()):
+            ewk_up_w = num.Clone()
+            ewk_up_w.SetName("%s_weights_%s_%s_%s_bin%d_Up" % (region, cid, other_labels2[region], re.sub("_201(\d)", "", cid), b))
+            ewk_down_w = num.Clone()
+            ewk_down_w.SetName("%s_weights_%s_%s_%s_bin%d_Down" % (region, cid, other_labels2[region], re.sub("_201(\d)", "", cid), b))
+
+            for i in range(target.GetNbinsX()):
+                if i == b:
+                    ewk_up_w.SetBinContent(i + 1, ratio_ewk_up.GetBinContent(i + 1))
+                    ewk_down_w.SetBinContent(i + 1, ratio_ewk_down.GetBinContent(i + 1))
+                    break
+
+            _fOut.WriteTObject(ewk_up_w)
+            _fOut.WriteTObject(ewk_down_w)
 
     #######################################################################################################
 
@@ -116,9 +207,6 @@ def cmodel(cid, nam, _f, _fOut, out_ws, diag, year, convention="BU"):
 
     #######################################################################################################
 
-    other_labels1 = {"qcd_w": "ZnunuWJets", "qcd_photon": "Photon"}
-    other_labels2 = {"qcd_w": "qcd_ewk", "qcd_photon": "qcd_photon_ewk"}
-
     nbins = target.GetNbinsX()
 
     for region, other_label in other_labels1.items():
@@ -135,139 +223,3 @@ def cmodel(cid, nam, _f, _fOut, out_ws, diag, year, convention="BU"):
 
     cat = Category(model, cid, nam, _fin, _fOut, _wspace, out_ws, _bins, varname, target.GetName(), list(CRs.values()), diag, convention=convention)
     return cat
-
-
-# My Function. Just to put all of the complicated part into one function
-def my_function(_wspace, _fin, _fOut, nam, diag, year):
-
-    target = _fin.Get("signal_qcdzjets")  # define monimal (MC) of which process this config will model
-    controlmc_w = _fin.Get("signal_qcdwjets")
-    controlmc_photon = _fin.Get("gjets_qcdgjets")
-
-    #################################################################################################################
-
-    #################################################################################################################
-    WSpectrum = controlmc_w.Clone()
-    WSpectrum.SetName("qcd_w_spectrum_%s_" % nam)
-    ZvvSpectrum = target.Clone()
-    ZvvSpectrum.SetName("qcd_zvv_spectrum_%s_" % nam)
-    PhotonSpectrum = controlmc_photon.Clone()
-    PhotonSpectrum.SetName("qcd_gjets_spectrum_%s_" % nam)
-
-    _fOut.WriteTObject(WSpectrum)
-    _fOut.WriteTObject(PhotonSpectrum)
-    # _fOut.WriteTObject( ZvvSpectrum ) No need to rewrite
-
-    #################################################################################################################
-
-    Wsig = controlmc_w.Clone()
-    Wsig.SetName("qcd_w_weights_denom_%s" % nam)
-    Zvv_w = target.Clone()
-    Zvv_w.SetName("qcd_w_weights_nom_%s" % nam)
-
-    vbf_sys = r.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
-
-    uncertainty_zoverw_ewk_up = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_w_ewkcorr_overz_common_up_" + str(year))
-    uncertainty_zoverw_ewk_down = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_w_ewkcorr_overz_common_down_" + str(year))
-    uncertainty_zoverw_mur_up = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_mur_up_" + str(year))
-    uncertainty_zoverw_mur_down = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_mur_down_" + str(year))
-    uncertainty_zoverw_muf_up = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_muf_up_" + str(year))
-    uncertainty_zoverw_muf_down = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_muf_down_" + str(year))
-    uncertainty_zoverw_pdf_up = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_pdf_up_" + str(year))
-    uncertainty_zoverw_pdf_down = vbf_sys.Get("uncertainty_ratio_z_qcd_mjj_unc_zoverw_nlo_pdf_down_" + str(year))
-
-    uncertainty_zoverg_ewk_up = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_w_ewkcorr_overz_common_up_" + str(year))
-    uncertainty_zoverg_ewk_down = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_w_ewkcorr_overz_common_down_" + str(year))
-    uncertainty_zoverg_mur_up = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_mur_up_" + str(year))
-    uncertainty_zoverg_mur_down = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_mur_down_" + str(year))
-    uncertainty_zoverg_muf_up = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_muf_up_" + str(year))
-    uncertainty_zoverg_muf_down = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_muf_down_" + str(year))
-    uncertainty_zoverg_pdf_up = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_pdf_up_" + str(year))
-    uncertainty_zoverg_pdf_down = vbf_sys.Get("uncertainty_ratio_gjets_qcd_mjj_unc_goverz_nlo_pdf_down_" + str(year))
-
-    def add_var(num, denom, name, factor):
-        new = num.Clone(name)
-        new.Divide(denom)
-        new.Multiply(factor)
-        _fOut.WriteTObject(new)
-
-    # QCD uncertainties
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_renscale_vbf_Up" % nam, factor=uncertainty_zoverw_mur_up)
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_renscale_vbf_Down" % nam, factor=uncertainty_zoverw_mur_down)
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_facscale_vbf_Up" % nam, factor=uncertainty_zoverw_muf_up)
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_facscale_vbf_Down" % nam, factor=uncertainty_zoverw_muf_down)
-    # PDF Uncertainty
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_pdf_vbf_Up" % nam, factor=uncertainty_zoverw_pdf_up)
-    add_var(num=Zvv_w, denom=Wsig, name="qcd_w_weights_%s_ZnunuWJets_QCD_pdf_vbf_Down" % nam, factor=uncertainty_zoverw_pdf_down)
-
-    # EWK uncertainty (decorrelated among bins)
-    wratio_ewk_up = Zvv_w.Clone()
-    wratio_ewk_up.SetName("qcd_w_weights_%s_ewk_Up" % nam)
-    wratio_ewk_up.Divide(Wsig)
-    wratio_ewk_up.Multiply(uncertainty_zoverw_ewk_up)
-
-    wratio_ewk_down = Zvv_w.Clone()
-    wratio_ewk_down.SetName("qcd_w_weights_%s_ewk_Down" % nam)
-    wratio_ewk_down.Divide(Wsig)
-    wratio_ewk_down.Multiply(uncertainty_zoverw_ewk_down)
-
-    Zvv_w.Divide(Wsig)
-
-    for b in range(target.GetNbinsX()):
-        ewk_up_w = Zvv_w.Clone()
-        ewk_up_w.SetName("qcd_w_weights_%s_qcd_ewk_%s_bin%d_Up" % (nam, re.sub("_201(\d)", "", nam), b))
-        ewk_down_w = Zvv_w.Clone()
-        ewk_down_w.SetName("qcd_w_weights_%s_qcd_ewk_%s_bin%d_Down" % (nam, re.sub("_201(\d)", "", nam), b))
-        for i in range(target.GetNbinsX()):
-            if i == b:
-                ewk_up_w.SetBinContent(i + 1, wratio_ewk_up.GetBinContent(i + 1))
-                ewk_down_w.SetBinContent(i + 1, wratio_ewk_down.GetBinContent(i + 1))
-                break
-
-        _fOut.WriteTObject(ewk_up_w)
-        _fOut.WriteTObject(ewk_down_w)
-
-    ### Photons  #################################################################################################################
-
-    Photon = controlmc_photon.Clone()
-    Photon.SetName("qcd_photon_weights_denom_%s" % nam)
-    Zvv_g = target.Clone()
-    Zvv_g.SetName("qcd_photon_weights_nom_%s" % nam)
-
-    # QCD Uncertainties
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_renscale_vbf_Up" % nam, factor=uncertainty_zoverg_mur_up)
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_renscale_vbf_Down" % nam, factor=uncertainty_zoverg_mur_down)
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_facscale_vbf_Up" % nam, factor=uncertainty_zoverg_muf_up)
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_facscale_vbf_Down" % nam, factor=uncertainty_zoverg_muf_down)
-
-    # PDF Uncertainty
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_pdf_vbf_Up" % nam, factor=uncertainty_zoverg_pdf_up)
-    add_var(num=target, denom=controlmc_photon, name="qcd_photon_weights_%s_Photon_QCD_pdf_vbf_Down" % nam, factor=uncertainty_zoverg_pdf_down)
-
-    # EWK uncertainty (decorrelated among bins)
-    gratio_ewk_up = Zvv_g.Clone()
-    gratio_ewk_up.SetName("qcd_photon_weights_%s_ewk_Up" % nam)
-    gratio_ewk_up.Divide(Photon)
-    gratio_ewk_up.Multiply(uncertainty_zoverg_ewk_up)
-
-    gratio_ewk_down = Zvv_g.Clone()
-    gratio_ewk_down.SetName("qcd_photon_weights_%s_ewk_Down" % nam)
-    gratio_ewk_down.Divide(Photon)
-    gratio_ewk_down.Multiply(uncertainty_zoverg_ewk_down)
-
-    Zvv_g.Divide(Photon)
-
-    # Now lets uncorrelate the bins:
-    for b in range(target.GetNbinsX()):
-        ewk_up_g = Zvv_g.Clone()
-        ewk_up_g.SetName("qcd_photon_weights_%s_qcd_photon_ewk_%s_bin%d_Up" % (nam, re.sub("_201(\d)", "", nam), b))
-        ewk_down_g = Zvv_g.Clone()
-        ewk_down_g.SetName("qcd_photon_weights_%s_qcd_photon_ewk_%s_bin%d_Down" % (nam, re.sub("_201(\d)", "", nam), b))
-        for i in range(target.GetNbinsX()):
-            if i == b:
-                ewk_up_g.SetBinContent(i + 1, gratio_ewk_up.GetBinContent(i + 1))
-                ewk_down_g.SetBinContent(i + 1, gratio_ewk_down.GetBinContent(i + 1))
-                break
-
-        _fOut.WriteTObject(ewk_up_g)
-        _fOut.WriteTObject(ewk_down_g)

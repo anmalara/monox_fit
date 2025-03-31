@@ -18,16 +18,18 @@ def compare_tdirectory(file1_path, file2_path, dir_name):
     file1 = ROOT.TFile.Open(file1_path)
     file2 = ROOT.TFile.Open(file2_path)
 
+    no_issues = True
+
     if not file1 or not file2:
         print("Error: One of the ROOT files could not be opened.")
-        return False
+        no_issues = False
 
     dir1 = file1.Get(dir_name)
     dir2 = file2.Get(dir_name)
 
     if not dir1 or not dir2:
         print(f"Error: TDirectoryFile '{dir_name}' not found in one of the files.")
-        return False
+        no_issues = False
 
     keys1 = set([key.GetName() for key in dir1.GetListOfKeys()])
     keys2 = set([key.GetName() for key in dir2.GetListOfKeys()])
@@ -36,7 +38,7 @@ def compare_tdirectory(file1_path, file2_path, dir_name):
         print("Mismatch in histogram names:")
         print("Only in file1:", keys1 - keys2)
         print("Only in file2:", keys2 - keys1)
-        return False
+        no_issues = False
 
     for hist_name in keys1:
         hist1 = dir1.Get(hist_name)
@@ -44,14 +46,15 @@ def compare_tdirectory(file1_path, file2_path, dir_name):
 
         if not hist1 or not hist2:
             print(f"Error: Could not retrieve histogram '{hist_name}' in one of the files.")
-            return False
+            no_issues = False
 
         if not compare_histograms(hist1, hist2):
             print(f"Mismatch found in histogram: {hist_name}")
-            return False
+            no_issues = False
 
-    print("The two TDirectoryFiles contain identical histograms.")
-    return True
+    if no_issues:
+        print("The two TDirectoryFiles contain identical histograms.")
+    return no_issues
 
 
 file1 = "../vbf/Run3_22_23/250331_oldcr/root/combined_model_vbf.root"
