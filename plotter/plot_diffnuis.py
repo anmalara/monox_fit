@@ -68,23 +68,13 @@ def plot_nuis(fname, outdir):
         c.Draw()
         c.SetCanvasSize(1200, 600)
         for extension in ["png", "pdf"]:
-            c.SaveAs(
-                os.path.join(
-                    outdir,
-                    "diffnuis_{name}_{i}.{ext}".format(name=name, i=i, ext=extension),
-                )
-            )
+            c.SaveAs(os.path.join(outdir, "diffnuis_{name}_{i}.{ext}".format(name=name, i=i, ext=extension)))
 
 
 def cli_args():
     parser = argparse.ArgumentParser(prog="Make nice nuisance plots.")
     parser.add_argument("file", type=str, help="Input file to use.")
-    parser.add_argument(
-        "--out",
-        type=str,
-        help="Path to save output under.",
-        default="combined_model.root",
-    )
+    parser.add_argument("--out", type=str, help="Path to save output under.", default="combined_model.root")
     args = parser.parse_args()
 
     args.file = os.path.abspath(args.file)

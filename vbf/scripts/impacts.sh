@@ -8,12 +8,10 @@ pushd impacts_nocondor
 for YEAR in 2018; do
     mkdir ${YEAR}
     pushd ${YEAR}
-    COMMON_OPTS="--parallel=4 --rMin=-5 --rMax=5 --autoRange 5 --squareDistPoiStep"
-
-    combineTool.py -M Impacts -t -1 -d ../../cards/card_vbf_${YEAR}.root -m 125 --doInitialFit --robustFit 1 --cminDefaultMinimizerStrategy 0 ${COMMON_OPTS} | tee log_impact1.txt
-    combineTool.py -M Impacts -t -1 -d ../../cards/card_vbf_${YEAR}.root -m 125 --robustFit 1 --doFits --cminDefaultMinimizerStrategy 0 ${COMMON_OPTS} | tee log_impact2.txt
-    combineTool.py -M Impacts -t -1 -d ../../cards/card_vbf_${YEAR}.root -m 125 -o impacts.json --robustFit 1 --cminDefaultMinimizerStrategy 0 ${COMMON_OPTS} | tee log_impact3.txt
-
+    COMMON_OPTS="-t -1 -m 125 --parallel=4 --rMin=-5 --rMax=5 --robustFit 1 --cminDefaultMinimizerStrategy 0 --autoRange 5 --squareDistPoiStep"
+    combineTool.py -M Impacts -d ../../cards/card_vbf_${YEAR}.root --doInitialFit ${COMMON_OPTS} | tee log_impact1.txt
+    combineTool.py -M Impacts -d ../../cards/card_vbf_${YEAR}.root --doFits ${COMMON_OPTS} | tee log_impact2.txt
+    combineTool.py -M Impacts -d ../../cards/card_vbf_${YEAR}.root -o impacts.json ${COMMON_OPTS} | tee log_impact3.txt
     popd
     plotImpacts.py -i ${YEAR}/impacts.json -o impacts_${YEAR} --blind
 done

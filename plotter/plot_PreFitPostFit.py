@@ -12,10 +12,7 @@ blind = False
 new_dic = defaultdict(dict)
 
 
-def plotPreFitPostFit(
-    region, category, ws_file, fitdiag_file, outdir, lumi, year, sb=False
-):
-
+def plotPreFitPostFit(region, category, ws_file, fitdiag_file, outdir, lumi, year, sb=False):
     datalab = {
         "singlemuon": "Wmn",
         "dimuon": "Zmm",
@@ -37,12 +34,8 @@ def plotPreFitPostFit(
     # else:
     h_data = gDirectory.Get(datalab[region] + "_data")
 
-    h_postfit_sig = f_mlfit.Get(
-        "shapes_fit_b/" + category + "_" + category + "_signal/total_background"
-    )
-    h_prefit_sig = f_mlfit.Get(
-        "shapes_prefit/" + category + "_" + category + "_signal/total_background"
-    )
+    h_postfit_sig = f_mlfit.Get("shapes_fit_b/" + category + "_" + category + "_signal/total_background")
+    h_prefit_sig = f_mlfit.Get("shapes_prefit/" + category + "_" + category + "_signal/total_background")
 
     channel = {
         "singlemuon": category + "_singlemu",
@@ -136,28 +129,20 @@ def plotPreFitPostFit(
     for i in range(1, h_prefit["total"].GetNbinsX() + 2):
         binLowE.append(h_prefit["total"].GetBinLowEdge(i))
 
-    h_all_prefit = TH1F(
-        "h_all_prefit", "h_all_prefit", len(binLowE) - 1, array("d", binLowE)
-    )
-    h_other_prefit = TH1F(
-        "h_other_prefit", "h_other_prefit", len(binLowE) - 1, array("d", binLowE)
-    )
+    h_all_prefit = TH1F("h_all_prefit", "h_all_prefit", len(binLowE) - 1, array("d", binLowE))
+    h_other_prefit = TH1F("h_other_prefit", "h_other_prefit", len(binLowE) - 1, array("d", binLowE))
     h_stack_prefit = THStack("h_stack_prefit", "h_stack_prefit")
 
     # h_all_prefit = f_mlfit.Get("shapes_prefit/"+channel[region]+"/"+"total_background")
     for process in processes:
-        h_prefit[process] = f_mlfit.Get(
-            "shapes_prefit/" + channel[region] + "/" + process
-        )
+        h_prefit[process] = f_mlfit.Get("shapes_prefit/" + channel[region] + "/" + process)
         if not h_prefit[process]:
             continue
         if str(h_prefit[process].Integral()) == "nan":
             continue
         for i in range(1, h_prefit[process].GetNbinsX() + 1):
             content = h_prefit[process].GetBinContent(i)
-            width = h_prefit[process].GetBinLowEdge(i + 1) - h_prefit[
-                process
-            ].GetBinLowEdge(i)
+            width = h_prefit[process].GetBinLowEdge(i + 1) - h_prefit[process].GetBinLowEdge(i)
             h_prefit[process].SetBinContent(i, content * width)
         h_prefit[process].SetLineColor(TColor.GetColor(colors[process]))
         h_prefit[process].SetFillColor(TColor.GetColor(colors[process]))
@@ -170,29 +155,19 @@ def plotPreFitPostFit(
     h_postfit = {}
     h_postfit["totalsig"] = f_mlfit.Get("shapes_fit_b/" + channel[region] + "/total")
     h_postfit["total"] = f_mlfit.Get("shapes_fit_b/" + channel[region] + "/total")
-    h_all_postfit = TH1F(
-        "h_all_postfit", "h_all_postfit", len(binLowE) - 1, array("d", binLowE)
-    )
-    h_other_postfit = TH1F(
-        "h_other_postfit", "h_other_postfit", len(binLowE) - 1, array("d", binLowE)
-    )
-    h_minor_postfit = TH1F(
-        "h_minor_postfit", "h_minor_postfit", len(binLowE) - 1, array("d", binLowE)
-    )
+    h_all_postfit = TH1F("h_all_postfit", "h_all_postfit", len(binLowE) - 1, array("d", binLowE))
+    h_other_postfit = TH1F("h_other_postfit", "h_other_postfit", len(binLowE) - 1, array("d", binLowE))
+    h_minor_postfit = TH1F("h_minor_postfit", "h_minor_postfit", len(binLowE) - 1, array("d", binLowE))
 
     h_stack_postfit = THStack("h_stack_postfit", "h_stack_postfit")
-    h_postfit["totalv2"] = f_mlfit.Get(
-        "shapes_fit_b/" + channel[region] + "/total_background"
-    )
+    h_postfit["totalv2"] = f_mlfit.Get("shapes_fit_b/" + channel[region] + "/total_background")
 
     for i in range(1, h_postfit["totalv2"].GetNbinsX() + 1):
         error = h_postfit["totalv2"].GetBinError(i)
         content = h_postfit["totalv2"].GetBinContent(i)
 
     for process in processes:
-        h_postfit[process] = f_mlfit.Get(
-            "shapes_fit_b/" + channel[region] + "/" + process
-        )
+        h_postfit[process] = f_mlfit.Get("shapes_fit_b/" + channel[region] + "/" + process)
         if not h_postfit[process]:
             continue
         if str(h_postfit[process].Integral()) == "nan":
@@ -200,9 +175,7 @@ def plotPreFitPostFit(
         for i in range(1, h_postfit[process].GetNbinsX() + 1):
             error = h_postfit[process].GetBinError(i)
             content = h_postfit[process].GetBinContent(i)
-            width = h_postfit[process].GetBinLowEdge(i + 1) - h_postfit[
-                process
-            ].GetBinLowEdge(i)
+            width = h_postfit[process].GetBinLowEdge(i + 1) - h_postfit[process].GetBinLowEdge(i)
             h_postfit[process].SetBinContent(i, content * width)
 
         h_postfit[process].SetLineColor(1)
@@ -274,7 +247,6 @@ def plotPreFitPostFit(
     h_all_postfit.SetLineWidth(2)
 
     if region in "signal":
-
         h_postfit["totalsig"].SetLineColor(1)
         h_postfit["totalsig"].SetFillColor(1)
         h_postfit["totalsig"].SetFillStyle(3144)
@@ -349,14 +321,7 @@ def plotPreFitPostFit(
     latex2.SetTextSize(0.6 * c.GetTopMargin())
     latex2.SetTextFont(42)
     latex2.SetTextAlign(31)  # align right
-    latex2.DrawLatex(
-        0.94,
-        0.95,
-        # "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(
-        #    LUMI=lumi if region != "signal" else lumi / 5
-        # ),
-        "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(LUMI=lumi),
-    )
+    latex2.DrawLatex(0.94, 0.95, "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(LUMI=lumi))
     latex2.SetTextSize(0.6 * c.GetTopMargin())
     latex2.SetTextFont(62)
     latex2.SetTextAlign(11)  # align right
@@ -409,7 +374,6 @@ def plotPreFitPostFit(
     # cutstring = "("
 
     for i in range(1, h_all_prefit.GetNbinsX() + 1):
-
         ndata = h_data.GetBinContent(i)
 
         if ndata > 0.0:
@@ -428,9 +392,7 @@ def plotPreFitPostFit(
         #   cutstring+="+"
 
         met.append(h_all_prefit.GetBinCenter(i))
-        dmet.append(
-            (h_all_prefit.GetBinLowEdge(i + 1) - h_all_prefit.GetBinLowEdge(i)) / 2
-        )
+        dmet.append((h_all_prefit.GetBinLowEdge(i + 1) - h_all_prefit.GetBinLowEdge(i)) / 2)
 
         if n_all_pre > 0.0:
             ratio_pre.append(ndata / n_all_pre)
@@ -475,16 +437,12 @@ def plotPreFitPostFit(
     v_ratio_post_hi = TVectorD(len(a_ratio_post_hi), a_ratio_post_hi)
     v_ratio_post_lo = TVectorD(len(a_ratio_post_lo), a_ratio_post_lo)
 
-    g_ratio_pre = TGraphAsymmErrors(
-        v_met, v_ratio_pre, v_dmet, v_dmet, v_ratio_pre_lo, v_ratio_pre_hi
-    )
+    g_ratio_pre = TGraphAsymmErrors(v_met, v_ratio_pre, v_dmet, v_dmet, v_ratio_pre_lo, v_ratio_pre_hi)
     g_ratio_pre.SetLineColor(2)
     g_ratio_pre.SetMarkerColor(2)
     g_ratio_pre.SetMarkerStyle(20)
 
-    g_ratio_post = TGraphAsymmErrors(
-        v_met, v_ratio_post, v_dmet, v_dmet, v_ratio_post_lo, v_ratio_post_hi
-    )
+    g_ratio_post = TGraphAsymmErrors(v_met, v_ratio_post, v_dmet, v_dmet, v_ratio_post_lo, v_ratio_post_hi)
     # g_ratio_post.SetLineColor(4)
     g_ratio_post.SetLineColor(kAzure - 4)
     # g_ratio_post.SetMarkerColor(4)
@@ -493,14 +451,9 @@ def plotPreFitPostFit(
 
     ratiosys = h_postfit["totalv2"].Clone()
     for hbin in range(0, ratiosys.GetNbinsX() + 1):
-
         ratiosys.SetBinContent(hbin + 1, 1.0)
         if h_postfit["totalv2"].GetBinContent(hbin + 1) > 0:
-            ratiosys.SetBinError(
-                hbin + 1,
-                h_postfit["totalv2"].GetBinError(hbin + 1)
-                / h_postfit["totalv2"].GetBinContent(hbin + 1),
-            )
+            ratiosys.SetBinError(hbin + 1, h_postfit["totalv2"].GetBinError(hbin + 1) / h_postfit["totalv2"].GetBinContent(hbin + 1))
 
             # print hbin+1, h_data.GetBinContent(hbin+1), h_postfit['totalv2'].GetBinContent(hbin+1),h_postfit['totalv2'].GetBinError(hbin+1)
 
@@ -592,20 +545,14 @@ def plotPreFitPostFit(
     dummy_pull = TH1F("dummy33", "dummy33", len(binLowE) - 1, array("d", binLowE))
 
     for hbin in range(0, data_pull.GetNbinsX() + 1):
-        # if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+        # if h_postfit["totalv2"].GetBinContent(hbin) > 0: TODO
         if h_postfit["totalv2"].GetBinError(hbin) > 0:
-
-            addedsqrt += (
-                data_pull.GetBinContent(hbin) * data_pull.GetBinContent(hbin)
-            ) / (
-                h_postfit["totalv2"].GetBinError(hbin)
-                * h_postfit["totalv2"].GetBinError(hbin)
+            addedsqrt += (data_pull.GetBinContent(hbin) * data_pull.GetBinContent(hbin)) / (
+                h_postfit["totalv2"].GetBinError(hbin) * h_postfit["totalv2"].GetBinError(hbin)
             )
 
             sigma = math.sqrt(
-                h_postfit["totalv2"].GetBinError(hbin)
-                * h_postfit["totalv2"].GetBinError(hbin)
-                + h_data.GetBinError(hbin) * h_data.GetBinError(hbin)
+                h_postfit["totalv2"].GetBinError(hbin) * h_postfit["totalv2"].GetBinError(hbin) + h_data.GetBinError(hbin) * h_data.GetBinError(hbin)
             )
 
             data_pull.SetBinContent(hbin, data_pull.GetBinContent(hbin) / sigma)
@@ -631,14 +578,10 @@ def plotPreFitPostFit(
     data_pull_sig = h_data.Clone("pull")
     data_pull_sig.Sumw2()
     for hbin in range(0, data_pull_sig.GetNbinsX() + 1):
-        # if (h_postfit['totalv2'].GetBinContent(hbin)>0):
+        # if h_postfit["totalv2"].GetBinContent(hbin) > 0: TODO
         if h_postfit["totalv2"].GetBinError(hbin) > 0:
             # print "bin",hbin,"data pull diff", data_pull_sig.GetBinContent(hbin), "sys", h_postfit['totalv2'].GetBinError(hbin)
-            data_pull_sig.SetBinContent(
-                hbin,
-                data_pull_sig.GetBinContent(hbin)
-                / h_postfit["totalv2"].GetBinError(hbin),
-            )
+            data_pull_sig.SetBinContent(hbin, data_pull_sig.GetBinContent(hbin) / h_postfit["totalv2"].GetBinError(hbin))
             data_pull_sig.SetBinError(hbin, 0)
 
     data_pull_sig.SetLineColor(2)
@@ -658,13 +601,9 @@ def plotPreFitPostFit(
         dummy3.SetBinContent(i, 1.0)
     dummy3.GetYaxis().SetTitle("#frac{(Data-Pred.)}{#sigma}")
     if region in "signal":
-        dummy3.GetXaxis().SetTitle(
-            "E_{T}^{miss} [GeV]" if "mono" in category else "M_{jj} [GeV]"
-        )
+        dummy3.GetXaxis().SetTitle("E_{T}^{miss} [GeV]" if "mono" in category else "M_{jj} [GeV]")
     else:
-        dummy3.GetXaxis().SetTitle(
-            "Recoil [GeV]" if "mono" in category else "M_{jj} [GeV]"
-        )
+        dummy3.GetXaxis().SetTitle("Recoil [GeV]" if "mono" in category else "M_{jj} [GeV]")
     dummy3.SetLineColor(0)
     dummy3.SetMarkerColor(0)
     dummy3.SetLineWidth(0)
@@ -699,46 +638,10 @@ def plotPreFitPostFit(
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    c.SaveAs(
-        outdir
-        + "/"
-        + category
-        + "_PULLS_MASKED_prefit_postfit_"
-        + region
-        + "_"
-        + str(year)
-        + ".pdf"
-    )
-    c.SaveAs(
-        outdir
-        + "/"
-        + category
-        + "_PULLS_MASKED_prefit_postfit_"
-        + region
-        + "_"
-        + str(year)
-        + ".png"
-    )
-    c.SaveAs(
-        outdir
-        + "/"
-        + category
-        + "_PULLS_MASKED_prefit_postfit_"
-        + region
-        + "_"
-        + str(year)
-        + ".C"
-    )
-    c.SaveAs(
-        outdir
-        + "/"
-        + category
-        + "_PULLS_MASKED_prefit_postfit_"
-        + region
-        + "_"
-        + str(year)
-        + ".root"
-    )
+    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".pdf")
+    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".png")
+    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".C")
+    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".root")
 
     c.Close()
     f_mlfit.Close()

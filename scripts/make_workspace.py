@@ -1,38 +1,39 @@
 #!/usr/bin/env python3
 
-import argparse
+
 import os
 import re
+import argparse
 from math import sqrt
+from typing import Optional
 from collections import defaultdict
-
 import ROOT  # type: ignore
 from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
-from utils.general import extract_year, extract_channel, is_MC_bkg
+from utils.generic.general import extract_year, extract_channel, is_MC_bkg
+from utils.generic.logger import initialize_colorized_logger
+
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
-pjoin = os.path.join
 
 
-def cli_args():
-    parser = argparse.ArgumentParser(prog="Convert input histograms into RooWorkspace.")
-    parser.add_argument("file", type=str, help="Input file to use.")
-    parser.add_argument("--out", type=str, help="Path to save output under.", default="mono-x.root")
-    parser.add_argument("--categories", type=str, default=None, help="Analysis category")
-    parser.add_argument("--standalone", default=False, action="store_true", help="Treat this as a standalone conversion.")
-    parser.add_argument("--indir", default=None, type=str, help="Input directory in the input file.")
+def parse_args():
+    """Parse and validate command-line arguments for RooWorkspace conversion."""
+    parser = argparse.ArgumentParser(prog="make_workspace.py", description="Convert input histograms from a ROOT file into a RooWorkspace.")
+
+    parser.add_argument("--input_filename", type=str, required=True, help="Path to the input ROOT file (must end with .root).")
+    parser.add_argument("--output_filename", type=str, required=True, help="Path to save the output RooWorkspace ROOT file.")
+    parser.add_argument("--category", type=str, required=True, help="Analysis category (e.g., 'vbf_2017').")
+    parser.add_argument("--variable", type=str, default=True, help="Variable name to extract (defaults to 'mjj' for VBF, otherwise 'met').")
+    parser.add_argument("--root_folder", type=str, default=None, help="Optional folder path inside the input ROOT file.")
+
     args = parser.parse_args()
 
-    args.file = os.path.abspath(args.file)
-    args.out = os.path.abspath(args.out)
-    if not os.path.exists(args.file):
-        raise IOError("Input file not found: " + args.file)
-    if not args.file.endswith(".root"):
-        raise IOError("Input file is not a ROOT file: " + args.file)
-    if not args.categories:
-        raise IOError("Please specify the --categories option.")
+    # Validation
+    if not os.path.isfile(args.input_filename):
+        logger.critical(f"Input file not found: {args.input_filename}", exception_cls=IOError)
 
-    args.categories = args.categories.split(",")
+    if not args.input_filename.endswith(".root"):
+        logger.critical(f"Input file must be a ROOT file: {args.input_filename}", exception_cls=IOError)
 
     return args
 
@@ -43,14 +44,14 @@ def get_jes_file(category):
     jer_suffix = "jer_smeared" if "vbf" in category else "not_jer_smeared"
     # JES shape files for each category
     f_jes_dict = {
-        "(monoj|monov).*": ROOT.TFile("sys/monoj_monov_shape_jes_uncs_smooth_{}.root".format(jer_suffix)),
-        "vbf.*": ROOT.TFile("sys/vbf_shape_jes_uncs_smooth_{}.root".format(jer_suffix)),
+        "(monoj|monov).*": "sys/monoj_monov_shape_jes_uncs_smooth_{}.root".format(jer_suffix),
+        "vbf*": "inputs/sys/vbf_shape_jes_uncs_smooth_{}.root".format(jer_suffix),
     }
     # Determine the relevant JES source file
     f_jes = None
     for regex, f in f_jes_dict.items():
         if re.match(regex, category):
-            f_jes = f
+            f_jes = ROOT.TFile(f)
     if not f_jes:
         raise RuntimeError("Could not find a JES source file for category: {}".format(category))
 
@@ -69,7 +70,7 @@ def get_jes_variations(obj, f_jes, category):
 
     if "vbf" in category:
         tag = "ZJetsToNuNu"
-        key_valid = lambda x: (tag in x) and (not "jesTotal" in x)
+        key_valid = lambda x: (tag in x) and (not "jesTotal" in x)  # , keynames
         regex_to_remove = "{TAG}20\d\d_".format(TAG=tag)
     else:
         channel = "monov" if "monov" in category else "monojet"
@@ -421,13 +422,21 @@ def treat_overflow(obj):
     obj.SetBinError(obj.GetNbinsX() + 1, 0)
 
 
-def create_workspace(fin, fout, category, args):
+def create_workspace(input_filename: str, output_filename: str, category: str, variable: str, root_folder: Optional[str] = None):
     """Create workspace and write the relevant histograms in it for the given category, returns the workspace."""
-    if args.indir:
-        if args.indir == ".":
+    # Create output path
+    outdir = os.path.dirname(output_filename)
+    if not os.path.exists(outdir):
+        os.makedirs(outdir, exist_ok=True)
+
+    fin = ROOT.TFile(input_filename, "READ")
+    fout = ROOT.TFile(output_filename, "RECREATE")
+
+    if root_folder:
+        if root_folder == ".":
             fdir = fin
         else:
-            fdir = fin.Get(args.indir)
+            fdir = fin.Get(root_folder)
     else:
         fdir = fin.Get("category_" + category)
     foutdir = fout.mkdir("category_" + category)
@@ -437,17 +446,13 @@ def create_workspace(fin, fout, category, args):
     wsin_combine = ROOT.RooWorkspace("wspace_" + category, "wspace_" + category)
     wsin_combine._safe_import = SafeWorkspaceImporter(wsin_combine)  # type: ignore
 
-    if args.standalone:
-        variable_name = ("mjj_{0}" if ("vbf" in category) else "met_{0}").format(category)
-    else:
-        variable_name = "mjj" if ("vbf" in category) else "met"
-    varl = ROOT.RooRealVar(variable_name, variable_name, 0, 100000)
+    varl = ROOT.RooRealVar(variable, variable, 0, 100000)
 
     # Helper function
     def write_obj(obj, name):
         """Converts histogram to RooDataHist and writes to workspace + ROOT file"""
         print("Creating Data Hist for ", name)
-        dhist = ROOT.RooDataHist(name, "DataSet - %s, %s" % (category, name), ROOT.RooArgList(varl), obj)
+        dhist = ROOT.RooDataHist(name, f"DataSet - {category}, {name}", ROOT.RooArgList(varl), obj)
         wsin_combine._import(dhist)
 
         # Write the individual histograms
@@ -530,27 +535,16 @@ def create_workspace(fin, fout, category, args):
 
 def main():
     # Commandline arguments
-    args = cli_args()
-
-    # Create output path
-    outdir = os.path.dirname(args.out)
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    fin = ROOT.TFile(args.file, "READ")
-    fout = ROOT.TFile(args.out, "RECREATE")
-    dummy = []
-    for category in args.categories:
-        wsin_combine = create_workspace(fin, fout, category, args)
-        dummy.append(wsin_combine)
-
-    # For reasons unknown, if we do not return
-    # the workspace from this function, it goes
-    # out of scope and segfaults.
-    # ????
-    # To be resolved.
-    return dummy
+    args = parse_args()
+    create_workspace(
+        input_filename=args.input_filename,
+        output_filename=args.output_filename,
+        category=args.category,
+        root_folder=args.root_folder,
+        variable=args.variable,
+    )
 
 
 if __name__ == "__main__":
-    a = main()
+    logger = initialize_colorized_logger(log_level="INFO")
+    main()
