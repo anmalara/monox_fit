@@ -77,7 +77,6 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
     add_veto_nuisances(
         CRs,
         channel_list=["qcd_w"],
-        year=year,
         veto_dict={
             f"CMS_veto{year}_t": -0.01,
             f"CMS_veto{year}_m": -0.015,
@@ -128,14 +127,14 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
     return cat
 
 
-def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], year: str, veto_dict: dict[str, float]) -> None:
+def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], veto_dict: dict[str, float]) -> None:
     """
     Adds veto systematic uncertainties to the specified control regions.
 
     Args:
         channel_objects (dict[str, Channel]): Dictionary mapping control region names to `Channel` objects.
         channel_list (list[str]): List of control regions to apply veto uncertainties.
-        year (str): Data-taking year.
+        veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
     """
 
     for channel in channel_list:
@@ -169,6 +168,8 @@ def add_jes_jer_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
+        model_label (str): Label indicating the process being modeled, either "znunu" or "wlnu".
+        process (str): Label indicating the if the process is strong or electroweak, either "qcd" or "ewk".
     """
 
     jes_region_labels = {
@@ -182,6 +183,8 @@ def add_jes_jer_uncertainties(
         "ewk_zmm": "zmumu",
         "ewk_zee": "zee",
         "ewk_photon": "gjets",
+        "ewk_wmn": "wmunu",
+        "ewk_wen": "wenu",
     }
     # Get the JES/JER uncertainty file for transfer factors
     # Read the split uncertainties from there
@@ -237,6 +240,7 @@ def add_theory_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
+        process (str): Label indicating the if the process is strong or electroweak, either "qcd" or "ewk".
     """
 
     # Save a (renamed) copy of samples used to derive theory variations

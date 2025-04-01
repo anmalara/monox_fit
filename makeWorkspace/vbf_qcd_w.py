@@ -7,12 +7,12 @@ model = "qcd_wjets"
 
 def cmodel(category_id, category_name, input_file, output_file, output_workspace, diagonalizer, year, convention="BU"):
     """
-    Constructs a category model for QCD Z+jets processes using control regions and transfer factors.
+    Constructs a category model for QCD W+jets processes using control regions and transfer factors.
 
     This function:
     - Reads histograms from the input ROOT file.
     - Computes transfer factors by dividing the target signal by control regions.
-    - Applies systematic uncertainties (JES/JER, theory, and veto nuisances).
+    - Applies systematic uncertainties (JES/JER, and veto nuisances).
     - Adds bin-by-bin statistical uncertainties.
     - Creates and returns a `Category` object.
 
@@ -66,7 +66,6 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
     add_veto_nuisances(
         CRs,
         channel_list=["qcd_wmn", "qcd_wen"],
-        year=year,
         veto_dict={
             f"CMS_veto{year}_t": 0.01,
             f"CMS_veto{year}_m": 0.015,

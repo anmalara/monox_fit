@@ -1,20 +1,18 @@
 from counting_experiment import *
 from W_constraints import do_stat_unc
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties
+from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties
 
-# Define how a control region(s) transfer is made by defining *cmodel*, the calling pattern must be unchanged!
-# First define simple string which will be used for the datacard
-model = "ewk_zjets"
+model = "ewk_wjets"
 
 
 def cmodel(category_id, category_name, input_file, output_file, output_workspace, diagonalizer, year, convention="BU"):
     """
-    Constructs a category model for EWK Z+jets processes using control regions and transfer factors.
+    Constructs a category model for EWK W+jets processes using control regions and transfer factors.
 
     This function:
     - Reads histograms from the input ROOT file.
     - Computes transfer factors by dividing the target signal by control regions.
-    - Applies systematic uncertainties (JES/JER, theory, and veto nuisances).
+    - Applies systematic uncertainties (JES/JER, and veto nuisances).
     - Adds bin-by-bin statistical uncertainties.
     - Creates and returns a `Category` object.
 
@@ -38,13 +36,11 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
 
     # Defining the nominal transfer factors
     # Nominal MC process to model
-    target = input_tdir.Get("signal_ewkzjets")
+    target = input_tdir.Get("signal_ewkwjets")
     # Control MC samples
     control_samples = {
-        "ewk_zmm": input_tdir.Get("Zmm_ewkzll"),
-        "ewk_zee": input_tdir.Get("Zee_ewkzll"),
-        "ewk_w": input_tdir.Get("signal_ewkwjets"),
-        "ewk_photon": input_tdir.Get("gjets_ewkgjets"),
+        "ewk_wmn": input_tdir.Get("Wmn_ewkwjets"),
+        "ewk_wen": input_tdir.Get("Wen_ewkwjets"),
     }
 
     # Compute and save a copy of the transfer factors (target divided by control)
@@ -57,10 +53,8 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
 
     # label used for channel of each transfer factor
     channel_names = {
-        "ewk_zmm": "ewk_dimuon",
-        "ewk_zee": "ewk_dielectron",
-        "ewk_w": "ewk_wjetssignal",
-        "ewk_photon": "ewk_photon",
+        "ewk_wmn": "ewk_singlemuon",
+        "ewk_wen": "ewk_singleelectron",
     }
 
     # Create a `Channel` object for each transfer factor
@@ -71,39 +65,34 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
 
     add_veto_nuisances(
         CRs,
-        channel_list=["ewk_w"],
+        channel_list=["ewk_wmn", "ewk_wen"],
         veto_dict={
-            f"CMS_veto{year}_t": -0.01,
-            f"CMS_veto{year}_m": -0.02,
-            f"CMS_veto{year}_e": -0.03,
+            f"CMS_veto{year}_t": 0.01,
+            f"CMS_veto{year}_m": 0.02,
+            f"CMS_veto{year}_e": 0.03,
         },
     )
-
     add_jes_jer_uncertainties(
-        transfer_factors, CRs, channel_list=list(CRs.keys()), year=year, category_id=category_id, output_file=output_file, model_label="znunu", process="ewk"
-    )
-    add_theory_uncertainties(
-        control_samples,
-        target_sample=target,
-        channel_objects=CRs,
-        channel_list=["ewk_w", "ewk_photon"],
+        transfer_factors,
+        CRs,
+        channel_list=["ewk_wmn", "ewk_wen"],
         year=year,
         category_id=category_id,
         output_file=output_file,
+        model_label="wlnu",
+        process="ewk",
     )
 
     # label used for region of each transfer factor
     region_names = {
-        "ewk_zmm": "ewk_dimuonCR",
-        "ewk_zee": "ewk_dielectronCR",
-        "ewk_w": "ewk_wzCR",
-        "ewk_photon": "ewk_photonCR",
+        "ewk_wmn": "ewk_singlemuon",
+        "ewk_wen": "ewk_singleelectron",
     }
     # Add Bin by bin nuisances to cover statistical uncertainties
     for sample, transfer_factor in transfer_factors.items():
         do_stat_unc(transfer_factor, proc=sample, region=region_names[sample], CR=CRs[sample], cid=category_id, outfile=output_file)
 
-    # Create and return `Category` object
+    # Create `Category` object
     cat = Category(
         corrname=model,
         catid=category_id,
@@ -119,6 +108,7 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         diag=diagonalizer,
         convention=convention,
     )
-    # Specify this is dependant on (QCD Z->nunu / EWK Z->nunu) in SR from corresponding channel in vbf_qcd_z
-    cat.setDependant("qcd_zjets", "ewkqcd_signal")
+
+    # Specify this is dependant on EWK (Z->nunu / W->lnu) in SR from corresponding channel in vbf_ewk_z
+    cat.setDependant("ewk_zjets", "ewk_wjetssignal")
     return cat
