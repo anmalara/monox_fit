@@ -64,8 +64,8 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         "qcd_zmm": "qcd_dimuon",
         "qcd_zee": "qcd_dielectron",
         "qcd_w": "qcd_wjetssignal",
-        "ewkqcd": "qcd_photon",
-        "qcd_photon": "ewkqcd_signal",
+        "ewkqcd": "ewkqcd_signal",
+        "qcd_photon": "qcd_photon",
     }
 
     # Create a `Channel` object for each transfer factor
