@@ -151,6 +151,7 @@ def add_jes_jer_uncertainties(
     category_id: str,
     output_file: ROOT.TFile,
     model_label: str = "znunu",
+    process: str = "qcd",
 ) -> None:
     """
     Adds JES and JER uncertainties to transfer factors.
@@ -170,11 +171,22 @@ def add_jes_jer_uncertainties(
         output_file (ROOT.TFile): Output ROOT file for storing variations.
     """
 
-    jes_region_labels = {"qcd_w": "wlnu", "qcd_zmm": "zmumu", "qcd_zee": "zee", "qcd_photon": "gjets", "qcd_wmn": "wmunu", "qcd_wen": "wenu"}
+    jes_region_labels = {
+        "qcd_w": "wlnu",
+        "qcd_zmm": "zmumu",
+        "qcd_zee": "zee",
+        "qcd_photon": "gjets",
+        "qcd_wmn": "wmunu",
+        "qcd_wen": "wenu",
+        "ewk_w": "wlnu",
+        "ewk_zmm": "zmumu",
+        "ewk_zee": "zee",
+        "ewk_photon": "gjets",
+    }
     # Get the JES/JER uncertainty file for transfer factors
     # Read the split uncertainties from there
     fjes = get_jes_jer_source_file_for_tf(category="vbf")
-    jet_variations = get_jes_variations(fjes, year, proc="qcd")
+    jet_variations = get_jes_variations(fjes, year, proc=process)
 
     for sample in channel_list:
         for var in jet_variations:
@@ -182,14 +194,14 @@ def add_jes_jer_uncertainties(
             add_variation(
                 transfer_factors[sample],
                 fjes,
-                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_qcd_{var}Up",
+                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{process}_{var}Up",
                 f"{sample}_weights_{category_id}_{var}_Up",
                 output_file,
             )
             add_variation(
                 transfer_factors[sample],
                 fjes,
-                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_qcd_{var}Down",
+                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{process}_{var}Down",
                 f"{sample}_weights_{category_id}_{var}_Down",
                 output_file,
             )
@@ -205,6 +217,7 @@ def add_theory_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
+    process: str = "qcd",
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -231,6 +244,8 @@ def add_theory_uncertainties(
     spectrum_label = {
         "qcd_w": "qcd_w",
         "qcd_photon": "qcd_gjets",
+        "ewk_w": "ewk_w",
+        "ewk_photon": "ewk_photon",
     }
     spectrums = {region: control_samples[region].Clone() for region in channel_list}
     for region, sample in spectrums.items():
@@ -253,6 +268,8 @@ def add_theory_uncertainties(
     label_dict = {
         "qcd_w": ("zoverw", "z", "ZnunuWJets", "qcd_ewk"),
         "qcd_photon": ("goverz", "gjets", "Photon", "qcd_photon_ewk"),
+        "ewk_w": ("zoverw", "z", "ZnunuWJets", "ewk_ewk"),
+        "ewk_photon": ("goverz", "gjets", "Photon", "ewkphoton_ewk"),
     }
 
     for region in channel_list:
@@ -269,15 +286,15 @@ def add_theory_uncertainties(
                 add_var(
                     num=num,
                     denom=denom,
-                    name=f"{region}_weights_{category_id}_{qcd_label}_QCD_{var[1]}_vbf_{dir[1]}",
-                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_qcd_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
+                    name=f"{region}_weights_{category_id}_{qcd_label}_{process.upper()}_{var[1]}_vbf_{dir[1]}",
+                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{process}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
                 )
 
             # EWK uncertainty (decorrelated among bins)
             ratio_ewk = target_sample.Clone()
             ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
             ratio_ewk.Divide(denom)
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_qcd_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
+            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{process}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
             ewk_num = num.Clone()
             ewk_num.Divide(denom)
@@ -291,7 +308,7 @@ def add_theory_uncertainties(
         # Add function (quadratic) to model the nuisance
         # QCD and PDF
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_QCD_{var[1]}_vbf", output_file)
+            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{process.upper()}_{var[1]}_vbf", output_file)
         # EWK (decorrelated among bins)
         for b in range(nbins):
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
