@@ -90,6 +90,7 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         year=year,
         category_id=category_id,
         output_file=output_file,
+        process="ewk",
     )
 
     # label used for region of each transfer factor
