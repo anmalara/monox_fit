@@ -1,12 +1,20 @@
+import ROOT  # type:ignore
 from counting_experiment import Channel, Category
 from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties, do_stat_unc
 
-# Define how a control region(s) transfer is made by defining *cmodel*, the calling pattern must be unchanged!
-# First define simple string which will be used for the datacard
 model = "ewk_zjets"
 
 
-def cmodel(category_id, category_name, input_file, output_file, output_workspace, diagonalizer, year, convention="BU"):
+def cmodel(
+    category_id: str,
+    category_name: str,
+    input_file: ROOT.TFile,
+    output_file: ROOT.TFile,
+    output_workspace: ROOT.RooWorkspace,
+    diagonalizer,
+    year: int,
+    convention: str = "BU",
+) -> Category:
     """
     Constructs a category model for EWK Z+jets processes using control regions and transfer factors.
 
@@ -23,7 +31,7 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         input_file (ROOT.TFile): Input ROOT file containing relevant histograms.
         output_file (ROOT.TFile): Output ROOT file for storing processed histograms.
         output_workspace (ROOT.RooWorkspace): Output workspace for RooFit objects.
-        diagonalizer (bool): Flag for diagnostics or debugging.
+        diagonalizer: Diagonalizer to pass to `Category`
         year (int): Data-taking year.
         convention (str, optional): Naming convention for transfer factors. Defaults to "BU".
 

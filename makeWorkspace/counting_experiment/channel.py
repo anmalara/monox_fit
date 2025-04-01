@@ -1,11 +1,56 @@
-import ROOT as r  # type: ignore
+import ROOT  # type: ignore
 import sys
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
 
 class Channel:
+    """
+    A class representing a physics analysis channel, encapsulating a dataset, scale factors, and systematic uncertainties.
+
+    This class manages a "channel" which is defined by a dataset and associated scale factors for a specific control region.
+    It provides methods for adding and handling systematic uncertainties (e.g., shape and yield variations) and nuisance parameters
+    used in the analysis. Additionally, it manages the interaction with a ROOT workspace (`wspace`) and the manipulation of
+    scale factors and nuisance parameters across different bins in the control region.
+
+    Args:
+        catid (str): The category ID for the channel.
+        chid (str): The channel ID, typically representing the physics process or analysis channel.
+        scalefactors (ROOT.TH1): A histogram representing scale factors, typically used to adjust event yields in the analysis.
+        chname (str): The name of the control region for the channel.
+        backgroundname (str): The name associated with the background processes (if applicable).
+        wspace_out (ROOT.RooWorkspace): The output ROOT workspace used for importing variables and functions.
+        wspace (ROOT.RooWorkspace): The input ROOT workspace containing the model parameters.
+        nuisances (list): A list of nuisance parameters associated with the channel.
+        bkg_nuisances (list): A list of background-related nuisance parameters.
+        systematics (dict): A dictionary of systematic uncertainties, with keys representing the names of the systematics and values
+            being the corresponding up and down variation histograms.
+        crname (str): The name of the control region (same as `chid`).
+        nbins (int): The number of bins in the scale factors histogram.
+        convention (str): A string defining the naming convention used for systematic uncertainties (default: "BU").
+
+    """
+
     # This class holds a "channel" which is as dumb as saying it holds a dataset and scale factors
-    def __init__(self, cname, wspace, wspace_out, catid, scalefactors, convention="BU"):
+    def __init__(
+        self,
+        cname: str,
+        wspace: ROOT.RooWorkspace,
+        wspace_out: ROOT.RooWorkspace,
+        catid: str,
+        scalefactors: ROOT.TH1,
+        convention: str = "BU",
+    ):
+        """
+        Initializes a new `Channel` object with a given channel name, workspace, scale factors, and category ID.
+
+        Args:
+            cname (str): The name of the channel (e.g., "muon", "electron", etc.).
+            wspace (ROOT.RooWorkspace): The input ROOT workspace containing the model parameters.
+            wspace_out (ROOT.RooWorkspace): The output ROOT workspace where results are stored.
+            catid (str): The category ID (used for distinguishing different control regions).
+            scalefactors (ROOT.TH1): A histogram of scale factors, representing the normalization for different bins.
+            convention (str, optional):  A string that defines the convention used for systematic uncertainty naming (either "BU" or "IC", default is "BU").
+        """
         self.catid = catid
         self.chid = cname
         self.scalefactors = scalefactors
@@ -13,7 +58,6 @@ class Channel:
         self.backgroundname = ""
         self.wspace_out = wspace_out
         self.wspace_out._safe_import = SafeWorkspaceImporter(self.wspace_out)
-        # self.wspace_out = getattr(self.wspace_out, "import")
         self.set_wspace(wspace)
         self.nuisances = []
         self.bkg_nuisances = []
@@ -22,82 +66,83 @@ class Channel:
         self.nbins = scalefactors.GetNbinsX()
         self.convention = convention
 
-    def ret_title(self):
-        return self.crname
+    def set_wspace(self, w: ROOT.RooWorkspace):
+        """
+        Sets the ROOT workspace used by the channel.
 
-    def add_systematic_shape(self, sys, file):
-        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
-        sfup = self.scalefactors.GetName() + "_%s_" % sys + "Up"
-        sfdn = self.scalefactors.GetName() + "_%s_" % sys + "Down"
-        print("Looking for systematic shapes ... %s, %s" % (sfup, sfdn))
-        try:
-            print(file.Get(sfup).GetName())
-            print(file.Get(sfdn).GetName())
-        except AttributeError:
-            print("Missing one of ", sfup, sfdn, " in ", file.GetName())
-            print("Following is in directory ")
-            file.Print()
-            sys.exit()
-        self.systematics[sys] = [file.Get(sfup), file.Get(sfdn)]
+        Args:
+            w (ROOT.RooWorkspace): The workspace to set as the channel's input workspace.
+        """
+        self.wspace = w
+        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)
 
-    def add_systematic_yield(self, syst, kappa):
-        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
-        sfup = self.scalefactors.GetName() + "_%s_" % sys + "Up"
-        sfdn = self.scalefactors.GetName() + "_%s_" % sys + "Down"
-        sfup = self.scalefactors.Clone()
-        sfup.SetName(self.scalefactors.GetName() + "_%s_" % syst + "Up")
-        sfdn = self.scalefactors.Clone()
-        sfdn.SetName(self.scalefactors.GetName() + "_%s_" % syst + "Down")
-        # log-normal scalefactors
-        sfup.Scale(1 + kappa)
-        sfdn.Scale(1.0 / (1 + kappa))
-        self.systematics[syst] = [sfup, sfdn]
+    def add_nuisance(self, name: str, size, bkg: bool = False):
+        """
+        Adds a nuisance parameter to the channel, defining a variation across all bins in the control region.
 
-    def add_nuisance(self, name, size, bkg=False):
-        # print "Error, Nuisance parameter model not supported fully for shape variations, dont use it!"
-        if not (self.wspace_out.var("%s" % name)):
-            # nuis = r.RooRealVar("nuis_%s"%name,"Nuisance - %s"%name,0,-3,3);
-            nuis = r.RooRealVar("%s" % name, "Nuisance - %s" % name, 0, -3, 3)
+        Args:
+            name (str): The name of the nuisance parameter.
+            size (float): The size of the variation (typically representing the uncertainty in scale).
+            bkg (bool, optional): Indicates whether this nuisance is associated with the background process (default is False).
+        """
+
+        if not (self.wspace_out.var(f"{name}")):
+            nuis = ROOT.RooRealVar(f"{name}", f"Nuisance - {name}", 0, -3, 3)
             nuis.setAttribute("NuisanceParameter_EXTERNAL", True)
             if bkg:
                 nuis.setAttribute("BACKGROUND_NUISANCE", True)
             self.wspace_out._import(nuis)
-            cont = r.RooGaussian("const_%s" % name, "Constraint - %s" % name, self.wspace_out.var(nuis.GetName()), r.RooFit.RooConst(0), r.RooFit.RooConst(1))
+            cont = ROOT.RooGaussian(
+                f"const_{name}", f"Constraint - {name}", self.wspace_out.var(nuis.GetName()), ROOT.RooFit.RooConst(0), ROOT.RooFit.RooConst(1)
+            )
             self.wspace_out._import(cont)
 
         # run through all of the bins in the control regions and create a function to interpolate
         for b in range(self.nbins):
             if self.convention == "BU":
-                fname = "sys_function_%s_cat_%s_ch_%s_bin_%d" % (name, self.catid, self.chid, b)
+                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin_{b}"
             else:
-                fname = "sys_function_%s_cat_%s_ch_%s_bin%d" % (name, self.catid, self.chid, b + 1)
-            func = r.RooFormulaVar(fname, "Systematic Varation", "@0*%f" % size, r.RooArgList(self.wspace_out.var("%s" % name)))
+                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin{b+1}"
+
+            func = ROOT.RooFormulaVar(fname, "Systematic Varation", "@0*%f" % size, ROOT.RooArgList(self.wspace_out.var(f"{name}")))
             if not self.wspace_out.function(func.GetName()):
                 self.wspace_out._import(func)
-        # else
-        #  nuis = self.wspace_out.var("nuis_%s"%name)
         if bkg:
             self.bkg_nuisances.append(name)
         else:
             self.nuisances.append(name)
 
-    def add_nuisance_shape(self, name, file, setv="", functype="quadratic"):
-        if not (self.wspace_out.var("%s" % name)):
-            nuis = r.RooRealVar("%s" % name, "Nuisance - %s" % name, 0, -3, 3)
+    def add_nuisance_shape(self, name: str, file: ROOT.TFile, setv: str = "", functype: str = "quadratic"):
+        """
+        Adds a shape-based nuisance parameter to the channel, constructing a systematic variation function
+        for each bin and importing it into the workspace.
+
+        Args:
+            name (str): The name of the nuisance parameter.
+            file (ROOT.TFile): The ROOT file containing the up and down variations of the systematic uncertainty.
+            setv (str, optional): A directive for setting the value of the nuisance parameter (e.g., "SetTo=0.5", default is "").
+            functype (str, optional): The type of function used to model the systematic variation ("quadratic" or "lognorm", default is "quadratic").
+        """
+        if not (self.wspace_out.var(f"{name}")):
+            nuis = ROOT.RooRealVar(f"{name}", f"Nuisance - {name}", 0, -3, 3)
             nuis.setAttribute("NuisanceParameter_EXTERNAL", True)
             self.wspace_out._import(nuis)
-            nuis_IN = r.RooRealVar("nuis_IN_%s" % name, "Constraint Mean - %s" % name, 0, -10, 10)
+            nuis_IN = ROOT.RooRealVar(f"nuis_IN_{name}", f"Constraint Mean - {name}", 0, -10, 10)
             nuis_IN.setConstant()
             self.wspace_out._import(nuis_IN)
 
-            cont = r.RooGaussian(
-                "const_%s" % name, "Constraint - %s" % name, self.wspace_out.var(nuis.GetName()), self.wspace_out.var(nuis_IN.GetName()), r.RooFit.RooConst(1)
+            cont = ROOT.RooGaussian(
+                f"const_{name}",
+                f"Constraint - {name}",
+                self.wspace_out.var(nuis.GetName()),
+                self.wspace_out.var(nuis_IN.GetName()),
+                ROOT.RooFit.RooConst(1),
             )
             self.wspace_out._import(cont)
 
-        sfup = self.scalefactors.GetName() + "_%s_" % name + "Up"
-        sfdn = self.scalefactors.GetName() + "_%s_" % name + "Down"
-        print("Looking for systematic shapes ... %s,%s" % (sfup, sfdn))
+        sfup = f"{self.scalefactors.GetName()}_{name}_Up"
+        sfdn = f"{self.scalefactors.GetName()}_{name}_Down"
+        print(f"Looking for systematic shapes ... {sfup},{sfdn}")
         sysup, sysdn = file.Get(sfup), file.Get(sfdn)
         try:
             sysup.GetName()
@@ -111,9 +156,9 @@ class Channel:
         for b in range(self.nbins):
             # Name of the function depends on naming scheme
             if self.convention == "BU":
-                fname = "sys_function_%s_cat_%s_ch_%s_bin_%d" % (name, self.catid, self.chid, b)
+                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin_{b}"
             else:
-                fname = "sys_function_%s_cat_%s_ch_%s_bin%d" % (name, self.catid, self.chid, b + 1)
+                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin{b+1}"
             if functype == "quadratic":
                 if self.scalefactors.GetBinContent(b + 1) == 0:
                     nsf = 0
@@ -132,8 +177,8 @@ class Channel:
                 coeff_b = 0.5 * (vu - vd)
 
                 # this is now relative deviation, SF-SF_0 = func => SF = SF_0*(1+func/SF_0)
-                func = r.RooFormulaVar(
-                    fname, "Systematic Varation", "(%f*@0*@0+%f*@0)/%f" % (coeff_a, coeff_b, nsf), r.RooArgList(self.wspace_out.var("%s" % name))
+                func = ROOT.RooFormulaVar(
+                    fname, "Systematic Varation", "(%f*@0*@0+%f*@0)/%f" % (coeff_a, coeff_b, nsf), ROOT.RooArgList(self.wspace_out.var("%s" % name))
                 )
 
                 if coeff_a == 0 and coeff_b == 0:
@@ -150,11 +195,11 @@ class Channel:
 
                     direction = 1 if sfmax > sfmin else -1
 
-                func = r.RooFormulaVar(
+                func = ROOT.RooFormulaVar(
                     fname,
                     "Systematic Variation",
                     "({N} * (1+{SIGMA}/{N})**({DIRECTION}*@0) - {N}) / {N}".format(N=n0, SIGMA=sigma, DIRECTION=direction),
-                    r.RooArgList(self.wspace_out.var("%s" % name)),
+                    ROOT.RooArgList(self.wspace_out.var("%s" % name)),
                 )
                 if sigma == 0:
                     func.setAttribute("temp", True)
@@ -171,24 +216,40 @@ class Channel:
                 sys.exit()
         self.nuisances.append(name)
 
-    def set_wspace(self, w):
-        self.wspace = w
-        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)
-        # self.wspace._import = getattr(self.wspace,"import") # workaround: import is a python keyword
+    # Getter methods
+
+    def ret_title(self):
+        """Returns the name of the control region."""
+        return self.crname
 
     def ret_bkg_nuisances(self):
+        """Returns the list of background-related nuisance parameters."""
         return self.bkg_nuisances
 
     def ret_nuisances(self):
+        """Returns the list of all nuisance parameters."""
         return self.nuisances
 
     def ret_name(self):
+        """Returns the name of the control region."""
         return self.chname
 
     def ret_chid(self):
+        """Returns the channel ID."""
         return self.chid
 
-    def ret_sfactor(self, i, syst="", direction=1):
+    def ret_sfactor(self, i: int, syst: str = "", direction: int = 1) -> float:
+        """
+        Returns the scale factor for a specific bin, including an optional systematic uncertainty.
+
+        Args:
+            i (int): The bin index (0-based).
+            syst (str, optional): The name of the systematic uncertainty (if any, default is "").
+            direction (int, optional): The direction of the systematic variation (1 for "up" and -1 for "down", default is 1).
+
+        Returns:
+            (float): The scale factor for the specified bin, possibly adjusted for systematic uncertainties.
+        """
         if self.scalefactors.GetBinContent(i + 1) == 0:
             return 0
         if syst and syst in self.systematics.keys():
@@ -201,7 +262,55 @@ class Channel:
             return 1.0 / (self.scalefactors.GetBinContent(i + 1))
 
     def ret_background(self):
+        """Returns the name of the background process."""
         return self.backgroundname
 
     def has_background(self):
+        """Checks if the channel has an associated background process."""
         return len(self.backgroundname)
+
+    # These are unused
+    def add_systematic_shape(self, syst: str, file: ROOT.TFile):
+        """
+        Adds a shape-based systematic uncertainty to the channel by loading up and down variations
+        from the specified ROOT file.
+
+        Args:
+            syst (str): The name of the systematic uncertainty.
+            file (ROOT.TFile): The ROOT file containing the up and down variations of the systematic uncertainty.
+        """
+        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
+        sfup = self.scalefactors.GetName() + "_%s_" % syst + "Up"
+        sfdn = self.scalefactors.GetName() + "_%s_" % syst + "Down"
+        print("Looking for systematic shapes ... %s, %s" % (sfup, sfdn))
+        try:
+            print(file.Get(sfup).GetName())
+            print(file.Get(sfdn).GetName())
+        except AttributeError:
+            print("Missing one of ", sfup, sfdn, " in ", file.GetName())
+            print("Following is in directory ")
+            file.Print()
+            sys.exit()
+        self.systematics[sys] = [file.Get(sfup), file.Get(sfdn)]
+
+    def add_systematic_yield(self, syst: str, kappa: float):
+        """
+        Adds a yield-based systematic uncertainty to the channel by adjusting the scale factors
+        for up and down variations.
+
+        Args:
+            syst (str): The name of the systematic uncertainty.
+            kappa (float): The scale factor variation (typically a small number representing the uncertainty size).
+        """
+
+        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
+        sfup = self.scalefactors.GetName() + "_%s_" % syst + "Up"
+        sfdn = self.scalefactors.GetName() + "_%s_" % syst + "Down"
+        sfup = self.scalefactors.Clone()
+        sfup.SetName(self.scalefactors.GetName() + "_%s_" % syst + "Up")
+        sfdn = self.scalefactors.Clone()
+        sfdn.SetName(self.scalefactors.GetName() + "_%s_" % syst + "Down")
+        # log-normal scalefactors
+        sfup.Scale(1 + kappa)
+        sfdn.Scale(1.0 / (1 + kappa))
+        self.systematics[syst] = [sfup, sfdn]

@@ -15,7 +15,16 @@ def naming_convention(id, catid, convention="BU"):
         raise RuntimeError("Unknown naming convention: " + convention)
 
 
-def getNormalizedHist(hist):
+def getNormalizedHist(hist: ROOT.TH1):
+    """
+    Normalize a ROOT.TH1 histogram by adjusting its bin contents and errors according to the bin width.
+
+    Args:
+        hist: The input ROOT histogram to be normalized.
+
+    Returns:
+        thret: The normalized ROOT histogram.
+    """
     thret = hist.Clone()
     nb = hist.GetNbinsX()
     for b in range(1, nb + 1):
