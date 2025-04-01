@@ -1,6 +1,5 @@
-from counting_experiment import *
-from W_constraints import do_stat_unc
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties
+from counting_experiment import Channel, Category
+from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, do_stat_unc
 
 model = "ewk_wjets"
 

@@ -2,8 +2,6 @@ import ROOT as r  # type: ignore
 import sys
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
-MAXBINS = 100
-
 
 class Channel:
     # This class holds a "channel" which is as dumb as saying it holds a dataset and scale factors

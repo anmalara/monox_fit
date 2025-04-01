@@ -5,8 +5,6 @@ from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type
 from .bin import Bin
 from .utils import naming_convention, getNormalizedHist
 
-MAXBINS = 100
-
 
 class Category:
     # This class holds a "category" which contains a bunch of channels

@@ -2,8 +2,6 @@ import ROOT as r  # type: ignore
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 from .utils import naming_convention
 
-MAXBINS = 100
-
 
 class Bin:
     def __init__(self, category, catid, chid, id, var, datasetname, wspace, wspace_out, xmin, xmax, convention):

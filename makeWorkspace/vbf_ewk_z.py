@@ -1,6 +1,5 @@
-from counting_experiment import *
-from W_constraints import do_stat_unc
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties
+from counting_experiment import Channel, Category
+from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties, do_stat_unc
 
 # Define how a control region(s) transfer is made by defining *cmodel*, the calling pattern must be unchanged!
 # First define simple string which will be used for the datacard

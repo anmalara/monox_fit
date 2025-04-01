@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Channel, Category
 from utils.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
-from W_constraints import do_stat_unc, add_variation
+from W_constraints import add_variation
 
 # Define how a control region(s) transfer is made by defining *cmodel*, the calling pattern must be unchanged!
 # First define simple string which will be used for the datacard
@@ -316,3 +316,32 @@ def add_theory_uncertainties(
         # EWK (decorrelated among bins)
         for b in range(nbins):
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
+
+
+def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
+    """Add stat. unc. variations to the workspace"""
+
+    # Store formatting inputs for repeated use
+    replacement = {"PROC": proc, "CONSTRAINT": cid, "REGION": region}
+
+    # Add one variation per bin
+    for b in range(1, histogram.GetNbinsX() + 1):
+        err = histogram.GetBinError(b)
+        content = histogram.GetBinContent(b)
+
+        # Safety
+        if (content <= 0) or (err / content < 0.001):
+            continue
+
+        # Careful: The bin count "b" in this loop starts at 1
+        # In the combine model, we want it to start from 0!
+        replacement["BIN"] = b - 1
+        up = histogram.Clone("{PROC}_weights_{CONSTRAINT}_{CONSTRAINT}_stat_error_{REGION}_bin{BIN}_Up".format(**replacement))
+        up.SetBinContent(b, content + err)
+        down = histogram.Clone("{PROC}_weights_{CONSTRAINT}_{CONSTRAINT}_stat_error_{REGION}_bin{BIN}_Down".format(**replacement))
+        down.SetBinContent(b, content - err)
+        outfile.WriteTObject(up)
+        outfile.WriteTObject(down)
+
+        print("Adding an error -- ", up.GetName(), err)
+        CR.add_nuisance_shape("{CONSTRAINT}_stat_error_{REGION}_bin{BIN}".format(**replacement), outfile, functype=functype)
