@@ -1,6 +1,6 @@
 import ROOT  # type:ignore
 from typing import Any
-from counting_experiment import *
+from counting_experiment import Channel, Category
 from utils.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
 from W_constraints import do_stat_unc, add_variation
 
@@ -257,7 +257,7 @@ def add_theory_uncertainties(
         output_file.WriteTObject(sample)
 
     # File containting the theory uncertainties
-    vbf_sys = r.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
+    vbf_sys = ROOT.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
 
     # method to add the ratios scaled by theory variation to the output file
     def add_var(num, denom, name, factor):

@@ -1,4 +1,4 @@
-import ROOT
+import ROOT  # type: ignore
 from counting_experiment import naming_convention
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
