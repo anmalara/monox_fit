@@ -19,8 +19,7 @@ def define_model(
     veto_channel_list: list[str],
     jes_jer_channel_list: list[str],
     theory_channel_list: list[str],
-    jes_jer_model: str,
-    jes_jer_production: str,
+    jes_jer_process: str,
     region_names: dict[str, str],
     category_name: str,
     diagonalizer: Any,
@@ -69,8 +68,8 @@ def define_model(
         year=year,
         category_id=category_id,
         output_file=output_file,
-        model_label=jes_jer_model,
-        production_mode=jes_jer_production,
+        process=jes_jer_process,
+        production_mode=model_name.split("_")[0],
     )
     add_theory_uncertainties(
         control_samples=control_samples,
@@ -203,7 +202,7 @@ def add_jes_jer_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    model_label: str,
+    process: str,
     production_mode: str,
 ) -> None:
     """
@@ -222,7 +221,7 @@ def add_jes_jer_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
-        model_label (str): Label indicating the process being modeled, either "znunu" or "wlnu".
+        process (str): Label indicating the process being modeled, either "znunu" or "wlnu".
         production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
     """
 
@@ -252,7 +251,7 @@ def add_jes_jer_uncertainties(
                 add_variation(
                     nominal=transfer_factors[sample],
                     unc_file=fjes,
-                    unc_name=f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{production_mode}_{var}{var_direction}",
+                    unc_name=f"{process}_over_{jes_region_labels[sample]}{year-2000}_{production_mode}_{var}{var_direction}",
                     new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
                     outfile=output_file,
                 )
