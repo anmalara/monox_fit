@@ -1,6 +1,7 @@
 *.pyc
 *.so
 *.d
+*.pcm
 *.*~
 .vscode/
 vbf/*
