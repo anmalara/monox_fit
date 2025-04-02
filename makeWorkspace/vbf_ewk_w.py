@@ -89,7 +89,7 @@ def cmodel(
         category_id=category_id,
         output_file=output_file,
         model_label="wlnu",
-        process="ewk",
+        production_mode="ewk",
     )
 
     # label used for region of each transfer factor

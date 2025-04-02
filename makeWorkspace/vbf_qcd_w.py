@@ -82,7 +82,14 @@ def cmodel(
         },
     )
     add_jes_jer_uncertainties(
-        transfer_factors, CRs, channel_list=["qcd_wmn", "qcd_wen"], year=year, category_id=category_id, output_file=output_file, model_label="wlnu"
+        transfer_factors,
+        CRs,
+        channel_list=["qcd_wmn", "qcd_wen"],
+        year=year,
+        category_id=category_id,
+        output_file=output_file,
+        model_label="wlnu",
+        production_mode="qcd",
     )
 
     # label used for region of each transfer factor

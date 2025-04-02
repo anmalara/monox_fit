@@ -42,8 +42,8 @@ def cmodel(
     """
 
     # Some setup
-    input_tdir = input_file.Get("category_%s" % category_id)
-    input_wspace = input_tdir.Get("wspace_%s" % category_id)
+    input_tdir = input_file.Get(f"category_{category_id}")
+    input_wspace = input_tdir.Get(f"wspace_{category_id}")
 
     # Defining the nominal transfer factors
     # Nominal MC process to model
@@ -58,12 +58,13 @@ def cmodel(
     }
 
     # Compute and save a copy of the transfer factors (target divided by control)
-    transfer_factors = {region: target.Clone() for region in control_samples.keys()}
-    for label, sample in transfer_factors.items():
-        sample.SetName(f"{label}_weights_{category_id}")
-        sample.Divide(control_samples[label])
-
-        output_file.WriteTObject(sample)
+    transfer_factors = {}
+    for label, sample in control_samples.items():
+        factor = target.Clone(f"{label}_weights_{category_id}")
+        factor.Divide(sample)
+        # transfer_factors[label] = factor
+        transfer_factors.update({label: factor})
+        output_file.WriteTObject(factor)
 
     # label used for channel of each transfer factor
     channel_names = {
@@ -76,12 +77,19 @@ def cmodel(
 
     # Create a `Channel` object for each transfer factor
     CRs = {
-        sample: Channel(channel_names[sample], input_wspace, output_workspace, category_id + "_" + model, transfer_factor, convention=convention)
+        sample: Channel(
+            cname=channel_names[sample],
+            wspace=input_wspace,
+            wspace_out=output_workspace,
+            catid=category_id + "_" + model,
+            scalefactors=transfer_factor,
+            convention=convention,
+        )
         for sample, transfer_factor in transfer_factors.items()
     }
 
     add_veto_nuisances(
-        CRs,
+        channel_objects=CRs,
         channel_list=["qcd_w"],
         veto_dict={
             f"CMS_veto{year}_t": -0.01,
@@ -90,10 +98,17 @@ def cmodel(
         },
     )
     add_jes_jer_uncertainties(
-        transfer_factors, CRs, channel_list=["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"], year=year, category_id=category_id, output_file=output_file
+        transfer_factors=transfer_factors,
+        channel_objects=CRs,
+        channel_list=["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
+        year=year,
+        category_id=category_id,
+        output_file=output_file,
+        model_label="znunu",
+        production_mode="qcd",
     )
     add_theory_uncertainties(
-        control_samples,
+        control_samples=control_samples,
         target_sample=target,
         channel_objects=CRs,
         channel_list=["qcd_w", "qcd_photon"],
@@ -114,6 +129,9 @@ def cmodel(
     for sample, transfer_factor in transfer_factors.items():
         do_stat_unc(transfer_factor, proc=sample, region=region_names[sample], CR=CRs[sample], cid=category_id, outfile=output_file)
 
+    # Extract the bin edges of the distribution
+    bin_edges = [target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)]
+
     # Create and return `Category` object
     cat = Category(
         corrname=model,
@@ -123,7 +141,7 @@ def cmodel(
         _fout=output_file,
         _wspace=input_wspace,
         _wspace_out=output_workspace,
-        _bins=[target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)],
+        _bins=bin_edges,
         _varname="mjj",
         _target_datasetname=target.GetName(),
         _control_regions=list(CRs.values()),
@@ -155,8 +173,8 @@ def add_jes_jer_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    model_label: str = "znunu",
-    process: str = "qcd",
+    model_label: str,
+    production_mode: str,
 ) -> None:
     """
     Adds JES and JER uncertainties to transfer factors.
@@ -175,7 +193,7 @@ def add_jes_jer_uncertainties(
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
         model_label (str): Label indicating the process being modeled, either "znunu" or "wlnu".
-        process (str): Label indicating the if the process is strong or electroweak, either "qcd" or "ewk".
+        production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
     """
 
     jes_region_labels = {
@@ -195,25 +213,19 @@ def add_jes_jer_uncertainties(
     # Get the JES/JER uncertainty file for transfer factors
     # Read the split uncertainties from there
     fjes = get_jes_jer_source_file_for_tf(category="vbf")
-    jet_variations = get_jes_variations(fjes, year, proc=process)
+    jet_variations = get_jes_variations(fjes, year, proc=production_mode)
 
     for sample in channel_list:
         for var in jet_variations:
-            # Scale transfer factor by relative variation and write to output file
-            add_variation(
-                transfer_factors[sample],
-                fjes,
-                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{process}_{var}Up",
-                f"{sample}_weights_{category_id}_{var}_Up",
-                output_file,
-            )
-            add_variation(
-                transfer_factors[sample],
-                fjes,
-                f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{process}_{var}Down",
-                f"{sample}_weights_{category_id}_{var}_Down",
-                output_file,
-            )
+            for var_direction in ["Up", "Down"]:
+                # Scale transfer factor by relative variation and write to output file
+                add_variation(
+                    nominal=transfer_factors[sample],
+                    unc_file=fjes,
+                    unc_name=f"{model_label}_over_{jes_region_labels[sample]}{year-2000}_{production_mode}_{var}{var_direction}",
+                    new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
+                    outfile=output_file,
+                )
             # Add function (quadratic) to model the nuisance
             channel_objects[sample].add_nuisance_shape(var, output_file)
 
@@ -226,7 +238,7 @@ def add_theory_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    process: str = "qcd",
+    production_mode: str = "qcd",
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -246,7 +258,7 @@ def add_theory_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
-        process (str): Label indicating the if the process is strong or electroweak, either "qcd" or "ewk".
+        production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
     """
 
     # Save a (renamed) copy of samples used to derive theory variations
@@ -296,15 +308,15 @@ def add_theory_uncertainties(
                 add_var(
                     num=num,
                     denom=denom,
-                    name=f"{region}_weights_{category_id}_{qcd_label}_{process.upper()}_{var[1]}_vbf_{dir[1]}",
-                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{process}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
+                    name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
+                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
                 )
 
             # EWK uncertainty (decorrelated among bins)
             ratio_ewk = target_sample.Clone()
             ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
             ratio_ewk.Divide(denom)
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{process}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
+            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
             ewk_num = num.Clone()
             ewk_num.Divide(denom)
@@ -318,7 +330,7 @@ def add_theory_uncertainties(
         # Add function (quadratic) to model the nuisance
         # QCD and PDF
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{process.upper()}_{var[1]}_vbf", output_file)
+            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{production_mode.upper()}_{var[1]}_vbf", output_file)
         # EWK (decorrelated among bins)
         for b in range(nbins):
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
@@ -326,9 +338,6 @@ def add_theory_uncertainties(
 
 def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
     """Add stat. unc. variations to the workspace"""
-
-    # Store formatting inputs for repeated use
-    replacement = {"PROC": proc, "CONSTRAINT": cid, "REGION": region}
 
     # Add one variation per bin
     for b in range(1, histogram.GetNbinsX() + 1):
@@ -341,13 +350,12 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
 
         # Careful: The bin count "b" in this loop starts at 1
         # In the combine model, we want it to start from 0!
-        replacement["BIN"] = b - 1
-        up = histogram.Clone("{PROC}_weights_{CONSTRAINT}_{CONSTRAINT}_stat_error_{REGION}_bin{BIN}_Up".format(**replacement))
+        up = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Up")
+        down = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Down")
         up.SetBinContent(b, content + err)
-        down = histogram.Clone("{PROC}_weights_{CONSTRAINT}_{CONSTRAINT}_stat_error_{REGION}_bin{BIN}_Down".format(**replacement))
         down.SetBinContent(b, content - err)
         outfile.WriteTObject(up)
         outfile.WriteTObject(down)
 
         print("Adding an error -- ", up.GetName(), err)
-        CR.add_nuisance_shape("{CONSTRAINT}_stat_error_{REGION}_bin{BIN}".format(**replacement), outfile, functype=functype)
+        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)

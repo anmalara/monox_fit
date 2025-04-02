@@ -87,7 +87,14 @@ def cmodel(
     )
 
     add_jes_jer_uncertainties(
-        transfer_factors, CRs, channel_list=list(CRs.keys()), year=year, category_id=category_id, output_file=output_file, model_label="znunu", process="ewk"
+        transfer_factors,
+        CRs,
+        channel_list=list(CRs.keys()),
+        year=year,
+        category_id=category_id,
+        output_file=output_file,
+        model_label="znunu",
+        production_mode="ewk",
     )
     add_theory_uncertainties(
         control_samples,
@@ -97,7 +104,7 @@ def cmodel(
         year=year,
         category_id=category_id,
         output_file=output_file,
-        process="ewk",
+        production_mode="ewk",
     )
 
     # label used for region of each transfer factor
