@@ -22,7 +22,7 @@ ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
 
 
 def parse_args():
-    """Parse and validate command-line arguments for RooWorkspace conversion."""
+    """Parse and validate command-line arguments."""
     parser = argparse.ArgumentParser(description="Convert input histograms from a ROOT file into a RooWorkspace.")
     parser.add_argument("--input_filename", type=str, required=True, help="Path to the input ROOT file (must end with .root).")
     parser.add_argument("--output_filename", type=str, required=True, help="Path to save the output RooWorkspace ROOT file.")
@@ -486,7 +486,7 @@ def create_workspace(
     output_file.Close()
 
 
-def main():
+def main() -> None:
     """Main entry point for the script."""
     args = parse_args()
     create_workspace(
