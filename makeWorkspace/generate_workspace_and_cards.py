@@ -10,6 +10,7 @@ from datetime import date
 from utils.generic.file_utils import execute_command
 from utils.generic.logger import initialize_colorized_logger
 from makeWorkspace.make_workspace import create_workspace
+from makeWorkspace.generate_combine_model import generate_combine_model
 
 
 def compute_md5(file_path: str) -> str:
@@ -34,11 +35,6 @@ def collect_git_info() -> list[str]:
         "Branch name: " + os.popen("git rev-parse --abbrev-ref HEAD").read().strip(),
         os.popen("git diff").read(),
     ]
-
-
-def run_model_generation(workspace_file: str, output_filename: str, category: str) -> None:
-    """Run the model generation script."""
-    execute_command(f"./runModel.py {workspace_file} --category {category} --out {output_filename}", description="Generate model")
 
 
 def copy_systematic_files(destination_dir: str, analysis: str) -> None:
@@ -85,7 +81,7 @@ def run_workspace_pipeline(input_dir: str, analysis: str, year: str, tag: str, v
     create_workspace(input_filename=input_filename, output_filename=workspace_file, category=category, variable=variable, root_folder=root_folder)
 
     logger.info("Running model generation...")
-    # run_model_generation(workspace_file, combined_model_file, category)
+    generate_combine_model(input_filename=workspace_file, output_filename=combined_model_file, category=category)
 
     logger.info("Finalizing...")
     # copy_systematic_files(output_dir, analysis)
