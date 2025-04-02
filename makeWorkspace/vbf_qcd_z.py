@@ -50,19 +50,20 @@ def cmodel(
     # Nominal MC process to model
     target = input_tdir.Get("signal_qcdzjets")
     # Control MC samples
-    control_samples = {
-        "qcd_zmm": input_tdir.Get("Zmm_qcdzll"),
-        "qcd_zee": input_tdir.Get("Zee_qcdzll"),
-        "qcd_w": input_tdir.Get("signal_qcdwjets"),
-        "ewkqcd": input_tdir.Get("signal_ewkzjets"),
-        "qcd_photon": input_tdir.Get("gjets_qcdgjets"),
+    samples_map = {
+        "qcd_zmm": "Zmm_qcdzll",
+        "qcd_zee": "Zee_qcdzll",
+        "qcd_w": "signal_qcdwjets",
+        "ewkqcd": "signal_ewkzjets",
+        "qcd_photon": "gjets_qcdgjets",
     }
+    control_samples = fetch_control_samples(input_tdir=input_tdir, samples_map=samples_map)
 
     # Compute and save a copy of the transfer factors (target divided by control)
     transfer_factors = define_transfer_factors(
         control_samples=control_samples,
         category_id=category_id,
-        target=target,
+        target_sample=target,
         output_file=output_file,
     )
 
@@ -76,18 +77,14 @@ def cmodel(
     }
 
     # Create a `Channel` object for each transfer factor
-    # define_channels(transfer_factors: dict[str, ROOT.TH1], category_id: str, input_wspace: ROOT.RooWorkspace, output_workspace: ROOT.RooWorkspace, convention: str, channel_names: dict[str, str]) -> dict[str, Channel]:
-    CRs = {
-        sample: Channel(
-            cname=channel_names[sample],
-            wspace=input_wspace,
-            wspace_out=output_workspace,
-            catid=category_id + "_" + model,
-            scalefactors=transfer_factor,
-            convention=convention,
-        )
-        for sample, transfer_factor in transfer_factors.items()
-    }
+    CRs = define_channels(
+        transfer_factors=transfer_factors,
+        category_id=category_id,
+        input_wspace=input_wspace,
+        output_workspace=output_workspace,
+        convention=convention,
+        channel_names=channel_names,
+    )
 
     add_veto_nuisances(
         channel_objects=CRs,
@@ -152,10 +149,39 @@ def cmodel(
     return cat
 
 
-def define_transfer_factors(control_samples: dict[str : ROOT.TH1], category_id: str, target: ROOT.TH1, output_file: ROOT.TFile) -> dict[str : ROOT.TH1]:
+def fetch_control_samples(
+    input_tdir: ROOT.TDirectoryFile,
+    samples_map: dict[str, str],
+) -> dict[str : ROOT.TH1]:
+    """
+    Fetch all needed control MC samples used by the model.
+
+    Args:
+        input_tdir (ROOT.TDirectoryFile): Directory where samples are stored
+        samples_map (dict[str, str]): Dictionnary mapping the name of the region / transfer factor to the name of the MC sample in the directory.
+    """
+
+    return {region_name: input_tdir.Get(sample_name) for region_name, sample_name in samples_map.items()}
+
+
+def define_transfer_factors(
+    control_samples: dict[str : ROOT.TH1],
+    category_id: str,
+    target_sample: ROOT.TH1,
+    output_file: ROOT.TFile,
+) -> dict[str : ROOT.TH1]:
+    """
+    Compute the transfer factors for each MC sample.
+
+    Args:
+        control_samples (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their control MC sample.
+        category_id (str): Unique identifier for the category.
+        target_sample (Any): Histogram of the target process.
+        output_file (ROOT.TFile): Output ROOT file for a copy of the transfer factors.
+    """
     transfer_factors = {}
     for label, sample in control_samples.items():
-        factor = target.Clone(f"{label}_weights_{category_id}")
+        factor = target_sample.Clone(f"{label}_weights_{category_id}")
         factor.Divide(sample)
         # transfer_factors[label] = factor
         transfer_factors.update({label: factor})

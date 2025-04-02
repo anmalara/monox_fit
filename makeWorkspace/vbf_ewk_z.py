@@ -58,7 +58,7 @@ def cmodel(
     transfer_factors = define_transfer_factors(
         control_samples=control_samples,
         category_id=category_id,
-        target=target,
+        target_sample=target,
         output_file=output_file,
     )
 
