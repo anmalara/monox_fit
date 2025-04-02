@@ -365,9 +365,9 @@ def add_theory_uncertainties(
         num = target_sample.Clone()
         num.SetName(f"{region}_weights_nom_{category_id}")
 
-        for dir in [("up", "Up"), ("down", "Down")]:
-            # Add QCD and PDF uncertainties
-            for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
+        # Add QCD and PDF uncertainties
+        for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
+            for dir in [("up", "Up"), ("down", "Down")]:
                 # TODO: try to use add_variation
                 add_var(
                     num=num,
@@ -376,7 +376,11 @@ def add_theory_uncertainties(
                     factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
                 )
 
-            # EWK uncertainty (decorrelated among bins)
+            # Add function (quadratic) to model the nuisance
+            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{production_mode.upper()}_{var[1]}_vbf", output_file)
+
+        # EWK uncertainty (decorrelated among bins)
+        for dir in [("up", "Up"), ("down", "Down")]:
             ratio_ewk = target_sample.Clone()
             ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
             # todo: try
@@ -393,13 +397,8 @@ def add_theory_uncertainties(
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
 
-        # TODO: merge with previous loop?
-        # Add function (quadratic) to model the nuisance
-        # QCD and PDF
-        for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{production_mode.upper()}_{var[1]}_vbf", output_file)
-        # EWK (decorrelated among bins)
         for b in range(nbins):
+            # Add function (quadratic) to model the nuisance
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
@@ -430,42 +429,47 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
         CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)
 
 
-def add_variation(nominal, unc_file, unc_name, new_name, outfile, invert=False, scale=1):
+def add_var(
+    num,
+    denom,
+    name,
+    factor,
+    outfile,
+):
+    new = num.Clone(name)
+    new.Divide(denom)
+    new.Multiply(factor)
+    outfile.WriteTObject(new)
+
+
+def add_variation(
+    nominal,
+    unc_file,
+    unc_name,
+    new_name,
+    outfile,
+):
     factor = unc_file.Get(unc_name)
-    add_variation_from_histogram(nominal=nominal, factor=factor, new_name=new_name, outfile=outfile, invert=invert, scale=scale)
+    add_variation_from_histogram(
+        nominal=nominal,
+        factor=factor,
+        new_name=new_name,
+        outfile=outfile,
+    )
 
 
-def add_variation_from_histogram(nominal, factor, new_name, outfile, invert=False, scale=1):
+def add_variation_from_histogram(
+    nominal,
+    factor,
+    new_name,
+    outfile,
+):
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:
 
         factor_value = factor.GetBinContent(1)
-        if factor_value > 1:
-            factor_value = 1 + (factor_value - 1) * scale
-        else:
-            factor_value = 1 - (1 - factor_value) * scale
-
-        if invert:
-            variation.Scale(1 / factor_value)
-        else:
-            variation.Scale(factor_value)
+        variation.Scale(factor_value)
 
     else:
-        scaled_factor = scale_variation_histogram(factor, scale)
-        if invert:
-            assert variation.Divide(scaled_factor)
-        else:
-            assert variation.Multiply(scaled_factor)
+        assert variation.Multiply(factor)
     outfile.WriteTObject(variation)
-
-
-def scale_variation_histogram(histogram, scale):
-    scaled = histogram.Clone(histogram.GetName())
-    for i in range(1, scaled.GetNbinsX() + 1):
-        content = scaled.GetBinContent(i)
-        if content > 1:
-            new_content = 1 + (content - 1) * scale
-        else:
-            new_content = 1 - (1 - content) * scale
-        scaled.SetBinContent(i, new_content)
-    return scaled
