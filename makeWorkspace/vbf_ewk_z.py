@@ -1,13 +1,20 @@
-from counting_experiment import *
-from W_constraints import do_stat_unc
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties
+import ROOT  # type:ignore
+from counting_experiment import Channel, Category
+from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, add_theory_uncertainties, do_stat_unc, define_transfer_factors
 
-# Define how a control region(s) transfer is made by defining *cmodel*, the calling pattern must be unchanged!
-# First define simple string which will be used for the datacard
 model = "ewk_zjets"
 
 
-def cmodel(category_id, category_name, input_file, output_file, output_workspace, diagonalizer, year, convention="BU"):
+def cmodel(
+    category_id: str,
+    category_name: str,
+    input_file: ROOT.TFile,
+    output_file: ROOT.TFile,
+    output_workspace: ROOT.RooWorkspace,
+    diagonalizer,
+    year: int,
+    convention: str = "BU",
+) -> Category:
     """
     Constructs a category model for EWK Z+jets processes using control regions and transfer factors.
 
@@ -24,7 +31,7 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         input_file (ROOT.TFile): Input ROOT file containing relevant histograms.
         output_file (ROOT.TFile): Output ROOT file for storing processed histograms.
         output_workspace (ROOT.RooWorkspace): Output workspace for RooFit objects.
-        diagonalizer (bool): Flag for diagnostics or debugging.
+        diagonalizer: Diagonalizer to pass to `Category`
         year (int): Data-taking year.
         convention (str, optional): Naming convention for transfer factors. Defaults to "BU".
 
@@ -48,12 +55,12 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
     }
 
     # Compute and save a copy of the transfer factors (target divided by control)
-    transfer_factors = {region: target.Clone() for region in control_samples.keys()}
-    for label, sample in transfer_factors.items():
-        sample.SetName(f"{label}_weights_{category_id}")
-        sample.Divide(control_samples[label])
-
-        output_file.WriteTObject(sample)
+    transfer_factors = define_transfer_factors(
+        control_samples=control_samples,
+        category_id=category_id,
+        target=target,
+        output_file=output_file,
+    )
 
     # label used for channel of each transfer factor
     channel_names = {
@@ -80,7 +87,14 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
     )
 
     add_jes_jer_uncertainties(
-        transfer_factors, CRs, channel_list=list(CRs.keys()), year=year, category_id=category_id, output_file=output_file, model_label="znunu", process="ewk"
+        transfer_factors,
+        CRs,
+        channel_list=list(CRs.keys()),
+        year=year,
+        category_id=category_id,
+        output_file=output_file,
+        model_label="znunu",
+        production_mode="ewk",
     )
     add_theory_uncertainties(
         control_samples,
@@ -90,7 +104,7 @@ def cmodel(category_id, category_name, input_file, output_file, output_workspace
         year=year,
         category_id=category_id,
         output_file=output_file,
-        process="ewk",
+        production_mode="ewk",
     )
 
     # label used for region of each transfer factor
