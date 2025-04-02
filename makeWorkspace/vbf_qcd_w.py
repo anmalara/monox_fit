@@ -88,7 +88,7 @@ def cmodel(
         year=year,
         category_id=category_id,
         output_file=output_file,
-        model_label="wlnu",
+        process="wlnu",
         production_mode="qcd",
     )
 

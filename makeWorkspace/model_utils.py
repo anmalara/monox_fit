@@ -6,24 +6,59 @@ from utils.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
 
 def define_model(
     category_id: str,
+    category_name: str,
     input_file: ROOT.TFile,
-    samples_map: dict[str, str],
     output_file: ROOT.TFile,
     output_workspace: ROOT.RooWorkspace,
-    convention: str,
-    channel_names: dict[str, str],
-    model_name: str,
-    veto_dict: dict[str, float],
-    year: int,
-    target_name: str,
-    veto_channel_list: list[str],
-    jes_jer_channel_list: list[str],
-    theory_channel_list: list[str],
-    jes_jer_process: str,
-    region_names: dict[str, str],
-    category_name: str,
     diagonalizer: Any,
+    year: int,
+    convention: str,
+    model_name: str,
+    target_name: str,
+    samples_map: dict[str, str],
+    channel_names: dict[str, str],
+    veto_channel_list: list[str],
+    veto_dict: dict[str, float],
+    jes_jer_channel_list: list[str],
+    jes_jer_process: str,
+    theory_channel_list: list[str],
+    region_names: dict[str, str],
 ):
+    """
+    Defines a statistical model for a given category using transfer factors.
+
+    This function constructs a model by:
+    - Fetching input histograms for the target and control samples.
+    - Computing transfer factors (ratios of target to control samples).
+    - Creating `Channel` objects for each transfer factor.
+    - Applying systematic uncertainties such as veto nuisances, JES/JER variations, and theory uncertainties.
+    - Adding bin-by-bin statistical uncertainties.
+    - Storing results in an output ROOT file and workspace.
+    - Returning a `Category` object encapsulating the model details.
+
+    Args:
+        category_id (str): Unique identifier for the category.
+        category_name (str): Name of the category.
+        input_file (ROOT.TFile): Input ROOT file containing histograms.
+        output_file (ROOT.TFile): Output ROOT file to store results.
+        output_workspace (ROOT.RooWorkspace): Output workspace for the statistical model.
+        diagonalizer (Any): Object for diagonalizing correlations.
+        year (int): Data-taking year.
+        convention (str): Naming convention for systematic uncertainties.
+        model_name (str): Name of the model.
+        target_name (str): Name of the target MC sample in the input ROOT file.
+        samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
+        channel_names (dict[str, str]): Mapping of transfer factor labels to channel names.
+        veto_channel_list (list[str]): Channels where veto uncertainties are applied.
+        veto_dict (dict[str, float]): Dictionary of veto nuisance values.
+        jes_jer_channel_list (list[str]): Channels where JES/JER uncertainties are applied.
+        jes_jer_process (str): Process label for JES/JER uncertainties.
+        theory_channel_list (list[str]): Channels where theory uncertainties are applied.
+        region_names (dict[str, str]): Mapping of transfer factor labels to region names.
+
+    Returns:
+        Category: A `Category` object encapsulating the defined model.
+    """
 
     # Some setup
     input_tdir = input_file.Get(f"category_{category_id}")
@@ -42,8 +77,6 @@ def define_model(
         target_sample=target,
         output_file=output_file,
     )
-
-    # label used for channel of each transfer factor
 
     # Create a `Channel` object for each transfer factor
     CRs = define_channels(
@@ -97,7 +130,7 @@ def define_model(
         _fout=output_file,
         _wspace=input_wspace,
         _wspace_out=output_workspace,
-        _bins=[target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)],
+        _bins=bin_edges,
         _varname="mjj",
         _target_datasetname=target.GetName(),
         _control_regions=list(CRs.values()),
@@ -370,6 +403,7 @@ def add_theory_uncertainties(
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
+# Ported from W_constraints, WIP
 def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
     """Add stat. unc. variations to the workspace"""
 
@@ -396,7 +430,6 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
         CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)
 
 
-# Ported from W_constraints, WIP
 def add_variation(nominal, unc_file, unc_name, new_name, outfile, invert=False, scale=1):
     factor = unc_file.Get(unc_name)
     add_variation_from_histogram(nominal=nominal, factor=factor, new_name=new_name, outfile=outfile, invert=invert, scale=scale)

@@ -2,7 +2,6 @@ import ROOT  # type:ignore
 from counting_experiment import Category
 from model_utils import *
 
-# TODO: utils to be used by all models
 model = "qcd_zjets"
 
 
@@ -42,7 +41,9 @@ def cmodel(
 
     model_args = {
         "model_name": model,
+        # Name of the target sample in the input ROOT file.
         "target_name": "signal_qcdzjets",
+        # Mapping of control sample names to their ROOT file entries.
         "samples_map": {
             "qcd_zmm": "Zmm_qcdzll",
             "qcd_zee": "Zee_qcdzll",
@@ -50,6 +51,7 @@ def cmodel(
             "ewkqcd": "signal_ewkzjets",
             "qcd_photon": "gjets_qcdgjets",
         },
+        # Mapping of transfer factor labels to channel names.
         "channel_names": {
             "qcd_zmm": "qcd_dimuon",
             "qcd_zee": "qcd_dielectron",
@@ -57,15 +59,19 @@ def cmodel(
             "ewkqcd": "ewkqcd_signal",
             "qcd_photon": "qcd_photon",
         },
+        # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_w"],
         "veto_dict": {
             f"CMS_veto{year}_t": -0.01,
             f"CMS_veto{year}_m": -0.015,
             f"CMS_veto{year}_e": -0.03,
         },
+        # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
-        "theory_channel_list": ["qcd_w", "qcd_photon"],
         "jes_jer_process": "znunu",
+        # Channels where theory uncertainties are applied.
+        "theory_channel_list": ["qcd_w", "qcd_photon"],
+        # Mapping of transfer factor labels to region names.
         "region_names": {
             "qcd_zmm": "qcd_dimuonCR",
             "qcd_zee": "qcd_dielectronCR",
@@ -76,6 +82,7 @@ def cmodel(
     }
 
     cat = define_model(
+        # arguments of `cmodel`
         category_id=category_id,
         category_name=category_name,
         input_file=input_file,
@@ -84,7 +91,7 @@ def cmodel(
         diagonalizer=diagonalizer,
         year=year,
         convention=convention,
-        #
+        # model-specific arguments
         **model_args,
     )
 
