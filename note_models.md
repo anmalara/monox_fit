@@ -1,3 +1,5 @@
+# Model construction scripts
+
 Taking some notes of what is being done in each model construction script for vbf:
    - Z_constraints_qcd_withphoton.py
    - W_constraints_qcd.py
@@ -131,3 +133,26 @@ Return everything as `Category` called `qcd_zjets`
          - Add variation from the statistical uncertainty
          - Add (quadratic) function to model the statistical uncertainty
    - Return everything as `Category` called `ewk_wjets` and specify it is dependant on `WZ` transfer factor of previous `ewk_zjets` category
+
+# What are `Category`, `Channel` and `Bin` doing?
+
+## `Category`
+
+## `Channel`
+
+A `Channel` object holds:
+   - A transfer factor (ratio of yields from two different processes)
+   - an input and an output `RooWorkspace` containting nuisances
+   - A name, and some IDs to link to `Category` and `Bin`
+
+And two methods are defined to add:
+   - a nuisances that applies on all bins (normalization?)
+   - a shape nuisance (quadratic or lognorm, I think we only use quadratic)
+
+The model construction script run create different channels and add relevent nuisances
+for veto, JES/JER, theory systematics as well as statistical uncertainties
+
+## `Bin`
+
+bin content of transfer factor, edges, id of category and control region
+Bin.cr holds the full `Channel` object

@@ -4,6 +4,7 @@ from counting_experiment import Channel, Category
 from utils.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
 from W_constraints import add_variation
 
+# TODO: utils to be used by all models
 model = "qcd_zjets"
 
 
@@ -58,13 +59,12 @@ def cmodel(
     }
 
     # Compute and save a copy of the transfer factors (target divided by control)
-    transfer_factors = {}
-    for label, sample in control_samples.items():
-        factor = target.Clone(f"{label}_weights_{category_id}")
-        factor.Divide(sample)
-        # transfer_factors[label] = factor
-        transfer_factors.update({label: factor})
-        output_file.WriteTObject(factor)
+    transfer_factors = define_transfer_factors(
+        control_samples=control_samples,
+        category_id=category_id,
+        target=target,
+        output_file=output_file,
+    )
 
     # label used for channel of each transfer factor
     channel_names = {
@@ -76,6 +76,7 @@ def cmodel(
     }
 
     # Create a `Channel` object for each transfer factor
+    # define_channels(transfer_factors: dict[str, ROOT.TH1], category_id: str, input_wspace: ROOT.RooWorkspace, output_workspace: ROOT.RooWorkspace, convention: str, channel_names: dict[str, str]) -> dict[str, Channel]:
     CRs = {
         sample: Channel(
             cname=channel_names[sample],
@@ -149,6 +150,38 @@ def cmodel(
         convention=convention,
     )
     return cat
+
+
+def define_transfer_factors(control_samples: dict[str : ROOT.TH1], category_id: str, target: ROOT.TH1, output_file: ROOT.TFile) -> dict[str : ROOT.TH1]:
+    transfer_factors = {}
+    for label, sample in control_samples.items():
+        factor = target.Clone(f"{label}_weights_{category_id}")
+        factor.Divide(sample)
+        # transfer_factors[label] = factor
+        transfer_factors.update({label: factor})
+        output_file.WriteTObject(factor)
+    return transfer_factors
+
+
+def define_channels(
+    transfer_factors: dict[str, ROOT.TH1],
+    category_id: str,
+    input_wspace: ROOT.RooWorkspace,
+    output_workspace: ROOT.RooWorkspace,
+    convention: str,
+    channel_names: dict[str, str],
+) -> dict[str, Channel]:
+    return {
+        sample: Channel(
+            cname=channel_names[sample],
+            wspace=input_wspace,
+            wspace_out=output_workspace,
+            catid=category_id + "_" + model,
+            scalefactors=transfer_factor,
+            convention=convention,
+        )
+        for sample, transfer_factor in transfer_factors.items()
+    }
 
 
 def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], veto_dict: dict[str, float]) -> None:
@@ -269,6 +302,7 @@ def add_theory_uncertainties(
         "ewk_w": "ewk_w",
         "ewk_photon": "ewk_photon",
     }
+    # TODO: also write Z->nunu spectrum
     spectrums = {region: control_samples[region].Clone() for region in channel_list}
     for region, sample in spectrums.items():
         sample.SetName(f"{spectrum_label[region]}_spectrum_{category_id}_")
@@ -305,6 +339,7 @@ def add_theory_uncertainties(
         for dir in [("up", "Up"), ("down", "Down")]:
             # Add QCD and PDF uncertainties
             for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
+                # TODO: try to use add_variation
                 add_var(
                     num=num,
                     denom=denom,
@@ -315,6 +350,8 @@ def add_theory_uncertainties(
             # EWK uncertainty (decorrelated among bins)
             ratio_ewk = target_sample.Clone()
             ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
+            # todo: try
+            # ratio_ewk = target_sample.Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
             ratio_ewk.Divide(denom)
             ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
@@ -327,6 +364,7 @@ def add_theory_uncertainties(
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
 
+        # TODO: merge with previous loop?
         # Add function (quadratic) to model the nuisance
         # QCD and PDF
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
@@ -346,6 +384,7 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
 
         # Safety
         if (content <= 0) or (err / content < 0.001):
+            # TODO: raise error and exit
             continue
 
         # Careful: The bin count "b" in this loop starts at 1

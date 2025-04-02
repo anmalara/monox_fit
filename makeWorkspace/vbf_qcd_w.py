@@ -1,6 +1,6 @@
 import ROOT  # type:ignore
 from counting_experiment import Channel, Category
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, do_stat_unc
+from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, do_stat_unc, define_transfer_factors
 
 model = "qcd_wjets"
 
@@ -53,12 +53,12 @@ def cmodel(
     }
 
     # Compute and save a copy of the transfer factors (target divided by control)
-    transfer_factors = {region: target.Clone() for region in control_samples.keys()}
-    for label, sample in transfer_factors.items():
-        sample.SetName(f"{label}_weights_{category_id}")
-        sample.Divide(control_samples[label])
-
-        output_file.WriteTObject(sample)
+    transfer_factors = define_transfer_factors(
+        control_samples=control_samples,
+        category_id=category_id,
+        target=target,
+        output_file=output_file,
+    )
 
     # label used for channel of each transfer factor
     channel_names = {
