@@ -1,6 +1,6 @@
 import ROOT  # type:ignore
-from counting_experiment import Channel, Category
-from vbf_qcd_z import add_veto_nuisances, add_jes_jer_uncertainties, do_stat_unc, define_transfer_factors
+from counting_experiment import Category
+from model_utils import *
 
 model = "qcd_wjets"
 
@@ -39,83 +39,51 @@ def cmodel(
         Category: A `Category` object encapsulating the modeled process.
     """
 
-    # Some setup
-    input_tdir = input_file.Get("category_%s" % category_id)
-    input_wspace = input_tdir.Get("wspace_%s" % category_id)
-
-    # Defining the nominal transfer factors
-    # Nominal MC process to model
-    target = input_tdir.Get("signal_qcdwjets")
-    # Control MC samples
-    control_samples = {
-        "qcd_wmn": input_tdir.Get("Wmn_qcdwjets"),
-        "qcd_wen": input_tdir.Get("Wen_qcdwjets"),
-    }
-
-    # Compute and save a copy of the transfer factors (target divided by control)
-    transfer_factors = define_transfer_factors(
-        control_samples=control_samples,
-        category_id=category_id,
-        target=target,
-        output_file=output_file,
-    )
-
-    # label used for channel of each transfer factor
-    channel_names = {
-        "qcd_wmn": "qcd_singlemuon",
-        "qcd_wen": "qcd_singleelectron",
-    }
-
-    # Create a `Channel` object for each transfer factor
-    CRs = {
-        sample: Channel(channel_names[sample], input_wspace, output_workspace, category_id + "_" + model, transfer_factor, convention=convention)
-        for sample, transfer_factor in transfer_factors.items()
-    }
-
-    add_veto_nuisances(
-        CRs,
-        channel_list=["qcd_wmn", "qcd_wen"],
-        veto_dict={
+    model_args = {
+        "model_name": model,
+        # Name of the target sample in the input ROOT file.
+        "target_name": "signal_qcdwjets",
+        # Mapping of control sample names to their ROOT file entries.
+        "samples_map": {
+            "qcd_wmn": "Wmn_qcdwjets",
+            "qcd_wen": "Wen_qcdwjets",
+        },
+        # Mapping of transfer factor labels to channel names.
+        "channel_names": {
+            "qcd_wmn": "qcd_singlemuon",
+            "qcd_wen": "qcd_singleelectron",
+        },
+        # Channels where veto uncertainties are applied.
+        "veto_channel_list": ["qcd_wmn", "qcd_wen"],
+        "veto_dict": {
             f"CMS_veto{year}_t": 0.01,
             f"CMS_veto{year}_m": 0.015,
             f"CMS_veto{year}_e": 0.03,
         },
-    )
-    add_jes_jer_uncertainties(
-        transfer_factors,
-        CRs,
-        channel_list=["qcd_wmn", "qcd_wen"],
-        year=year,
-        category_id=category_id,
-        output_file=output_file,
-        model_label="wlnu",
-        production_mode="qcd",
-    )
-
-    # label used for region of each transfer factor
-    region_names = {
-        "qcd_wmn": "qcd_singlemuon",
-        "qcd_wen": "qcd_singleelectron",
+        # Channels where JES/JER uncertainties are applied.
+        "jes_jer_channel_list": ["qcd_wmn", "qcd_wen"],
+        "jes_jer_process": "wlnu",
+        # Channels where theory uncertainties are applied.
+        "theory_channel_list": [],
+        # Mapping of transfer factor labels to region names.
+        "region_names": {
+            "qcd_wmn": "qcd_singlemuon",
+            "qcd_wen": "qcd_singleelectron",
+        },
     }
-    # Add Bin by bin nuisances to cover statistical uncertainties
-    for sample, transfer_factor in transfer_factors.items():
-        do_stat_unc(transfer_factor, proc=sample, region=region_names[sample], CR=CRs[sample], cid=category_id, outfile=output_file)
 
-    # Create `Category` object
-    cat = Category(
-        corrname=model,
-        catid=category_id,
-        cname=category_name,
-        _fin=input_tdir,
-        _fout=output_file,
-        _wspace=input_wspace,
-        _wspace_out=output_workspace,
-        _bins=[target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)],
-        _varname="mjj",
-        _target_datasetname=target.GetName(),
-        _control_regions=list(CRs.values()),
-        diag=diagonalizer,
+    cat = define_model(
+        # arguments of `cmodel`
+        category_id=category_id,
+        category_name=category_name,
+        input_file=input_file,
+        output_file=output_file,
+        output_workspace=output_workspace,
+        diagonalizer=diagonalizer,
+        year=year,
         convention=convention,
+        # model-specific arguments
+        **model_args,
     )
 
     # Specify this is dependant on QCD (Z->nunu / W->lnu) in SR from corresponding channel in vbf_qcd_z
