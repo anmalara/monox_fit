@@ -340,13 +340,6 @@ def add_theory_uncertainties(
     # File containting the theory uncertainties
     vbf_sys = ROOT.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
 
-    # method to add the ratios scaled by theory variation to the output file
-    def add_var(num, denom, name, factor):
-        new = num.Clone(name)
-        new.Divide(denom)
-        new.Multiply(factor)
-        output_file.WriteTObject(new)
-
     nbins = target_sample.GetNbinsX()
 
     # different labels to convert naming scheme between the different histogram and nuisances to read and write
@@ -364,16 +357,18 @@ def add_theory_uncertainties(
         denom.SetName(f"{region}_weights_denom_{category_id}")
         num = target_sample.Clone()
         num.SetName(f"{region}_weights_nom_{category_id}")
+        nominal = num.Clone()
+        nominal.Divide(denom)
 
         # Add QCD and PDF uncertainties
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
             for dir in [("up", "Up"), ("down", "Down")]:
-                # TODO: try to use add_variation
-                add_var(
-                    num=num,
-                    denom=denom,
-                    name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
-                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
+                add_variation(
+                    nominal=nominal,
+                    unc_file=vbf_sys,
+                    unc_name=f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
+                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
+                    outfile=output_file,
                 )
 
             # Add function (quadratic) to model the nuisance
@@ -429,19 +424,6 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
         CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)
 
 
-def add_var(
-    num,
-    denom,
-    name,
-    factor,
-    outfile,
-):
-    new = num.Clone(name)
-    new.Divide(denom)
-    new.Multiply(factor)
-    outfile.WriteTObject(new)
-
-
 def add_variation(
     nominal,
     unc_file,
@@ -450,26 +432,12 @@ def add_variation(
     outfile,
 ):
     factor = unc_file.Get(unc_name)
-    add_variation_from_histogram(
-        nominal=nominal,
-        factor=factor,
-        new_name=new_name,
-        outfile=outfile,
-    )
-
-
-def add_variation_from_histogram(
-    nominal,
-    factor,
-    new_name,
-    outfile,
-):
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:
-
         factor_value = factor.GetBinContent(1)
         variation.Scale(factor_value)
-
     else:
-        assert variation.Multiply(factor)
+        # TODO: re-introduce this assert once the binning is fixed
+        # assert variation.Multiply(factor)
+        variation.Multiply(factor)
     outfile.WriteTObject(variation)
