@@ -106,6 +106,7 @@ def define_model(
     )
     add_theory_uncertainties(
         control_samples=control_samples,
+        transfer_factors=transfer_factors,
         target_sample=target,
         channel_objects=CRs,
         channel_list=theory_channel_list,
@@ -294,6 +295,7 @@ def add_jes_jer_uncertainties(
 
 def add_theory_uncertainties(
     control_samples: dict[str, Any],
+    transfer_factors: dict[str, ROOT.TH1],
     target_sample: Any,
     channel_objects: dict[str, Channel],
     channel_list: list[str],
@@ -353,18 +355,11 @@ def add_theory_uncertainties(
     for region in channel_list:
         ratio, denom_label, qcd_label, ewk_label = label_dict[region]
 
-        denom = control_samples[region].Clone()
-        denom.SetName(f"{region}_weights_denom_{category_id}")
-        num = target_sample.Clone()
-        num.SetName(f"{region}_weights_nom_{category_id}")
-        nominal = num.Clone()
-        nominal.Divide(denom)
-
         # Add QCD and PDF uncertainties
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
             for dir in [("up", "Up"), ("down", "Down")]:
                 add_variation(
-                    nominal=nominal,
+                    nominal=transfer_factors[region],
                     unc_file=vbf_sys,
                     unc_name=f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
                     new_name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
@@ -376,19 +371,11 @@ def add_theory_uncertainties(
 
         # EWK uncertainty (decorrelated among bins)
         for dir in [("up", "Up"), ("down", "Down")]:
-            ratio_ewk = target_sample.Clone()
-            ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            # todo: try
-            # ratio_ewk = target_sample.Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            ratio_ewk.Divide(denom)
+            ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
             ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
-            ewk_num = num.Clone()
-            ewk_num.Divide(denom)
-
             for b in range(nbins):
-                ewk_w = ewk_num.Clone()
-                ewk_w.SetName(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
+                ewk_w = transfer_factors[region].Clone(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
 
@@ -398,7 +385,14 @@ def add_theory_uncertainties(
 
 
 # Ported from W_constraints, WIP
-def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
+def do_stat_unc(
+    histogram,
+    proc,
+    cid,
+    region,
+    CR,
+    outfile,
+):
     """Add stat. unc. variations to the workspace"""
 
     # Add one variation per bin
@@ -408,8 +402,7 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
 
         # Safety
         if (content <= 0) or (err / content < 0.001):
-            # TODO: raise error and exit
-            continue
+            raise ValueError(f"Cannot properly derive statistical uncertainty variations for histogram {histogram.GetName()}, issue in bin {b}")
 
         # Careful: The bin count "b" in this loop starts at 1
         # In the combine model, we want it to start from 0!
@@ -421,7 +414,7 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
         outfile.WriteTObject(down)
 
         print("Adding an error -- ", up.GetName(), err)
-        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)
+        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
 
 
 def add_variation(
