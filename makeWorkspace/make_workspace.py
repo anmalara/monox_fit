@@ -2,7 +2,7 @@
 
 import os
 import re
-import pdb
+import pdb  # TODO
 import argparse
 from math import sqrt
 from typing import Optional
@@ -13,6 +13,7 @@ from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
 
 from utils.generic.general import is_MC_bkg
 from utils.generic.logger import initialize_colorized_logger
+from utils.generic.colors import green
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -454,9 +455,11 @@ def create_workspace(
 
     workspace = ROOT.RooWorkspace(f"wspace_{category}", f"wspace_{category}")
     workspace._safe_import = SafeWorkspaceImporter(workspace)  # type: ignore
+    logger.info(green(f"Creating main observable: {variable}"))
     observable = ROOT.RooRealVar(variable, variable, 0, 10000)
 
     # Loop through all histograms in the input file and add them to the work space.
+    logger.info(green("Adding histograms to workspace..."))
     to_merge_mc_bkgs: dict[str, list[ROOT.TH1]] = defaultdict(list)
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
