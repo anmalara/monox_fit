@@ -85,5 +85,7 @@ def cmodel(
         # model-specific arguments
         **model_args,
     )
+
+    # Specify this is dependant on EWK (Z->nunu / W->lnu) in SR from corresponding channel in vbf_ewk_z
     cat.setDependant("ewk_zjets", "ewk_wjetssignal")
     return cat
