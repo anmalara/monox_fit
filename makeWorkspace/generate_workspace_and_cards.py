@@ -4,11 +4,12 @@ import os
 import glob
 import shutil
 import hashlib
+import argparse
 from typing import Optional
 from datetime import date
 from utils.generic.file_utils import execute_command
 from utils.generic.logger import initialize_colorized_logger
-from scripts.make_workspace import create_workspace
+from makeWorkspace.make_workspace import create_workspace
 
 
 def compute_md5(file_path: str) -> str:
@@ -101,15 +102,22 @@ def run_workspace_pipeline(input_dir: str, analysis: str, year: str, tag: str, v
 
 
 def main() -> None:
-    """Main function to generate workspace and datacards."""
-    input_dir = "/ada_mnt/ada/user/anmalara/WorkingArea/pyRAT/hinvisible/plots/for_fit/Run3/"
-    analysis = "vbf"
-    year = "2017"
-    variable = "mjj"
-    root_folder = f"category_{analysis}_{year}"
-    tag = date.today().strftime("%Y_%m_%d")
-    # tag = "year_month_day"
-    run_workspace_pipeline(input_dir=input_dir, analysis=analysis, year=year, tag=tag, variable=variable, root_folder=root_folder)
+    """Main function to generate RooWorkspace and datacards for analysis."""
+    parser = argparse.ArgumentParser(description="Arguments for workspace creation.")
+    parser.add_argument("-d", "--dir", type=str, default=None, help="Path to the directory containing the input ROOT files")
+    parser.add_argument("-a", "--analysis", type=str, default="vbf", help="Analysis name (e.g., 'vbf', 'monojet', 'monov').")
+    parser.add_argument("-y", "--year", type=str, default="2017", help="Data-taking year (e.g., '2017', '2018', 'Run3').")
+    parser.add_argument("-v", "--variable", type=str, default="mjj", help="Observable variable name (e.g., 'mjj', 'met').")
+    parser.add_argument("-f", "--folder", type=str, default=None, help="Optional folder name inside the ROOT file to read histograms from.")
+    parser.add_argument("-t", "--tag", type=str, default=None, help="Custom tag for the output directory (default: today's date in YYYY_MM_DD format).")
+
+    args = parser.parse_args()
+
+    input_dir = args.dir or "/ada_mnt/ada/user/anmalara/WorkingArea/pyRAT/hinvisible/plots/for_fit/Run3/"
+    root_folder = args.folder or f"category_{args.analysis}_{args.year}"
+    tag = args.tag or date.today().strftime("%Y_%m_%d")
+
+    run_workspace_pipeline(input_dir=input_dir, analysis=args.analysis, year=args.year, tag=tag, variable=args.variable, root_folder=root_folder)
 
 
 if __name__ == "__main__":
