@@ -37,12 +37,6 @@ def collect_git_info() -> list[str]:
     ]
 
 
-def copy_systematic_files(destination_dir: str, analysis: str) -> None:
-    """Copy systematic .root files to the output directory."""
-    for file_path in glob.glob(f"sys/{analysis}_qcd_nckw_ws_201*.root"):
-        shutil.copy(file_path, destination_dir)
-
-
 def create_makefile_symlink(output_dir: str, analysis: str) -> None:
     """Create or update symlink to the Makefile in the parent of the output directory."""
     makefile_source = os.path.realpath(f"../{analysis}/templates/Makefile")
@@ -84,7 +78,6 @@ def run_workspace_pipeline(input_dir: str, analysis: str, year: str, tag: str, v
     generate_combine_model(input_filename=workspace_file, output_filename=combined_model_file, category=category)
 
     logger.info("Finalizing...")
-    # copy_systematic_files(output_dir, analysis)
 
     with open(info_file, "w") as f:
         info_lines = generate_info_lines(input_dir, input_filename, output_dir)
