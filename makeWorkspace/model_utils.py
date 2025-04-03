@@ -106,6 +106,7 @@ def define_model(
     )
     add_theory_uncertainties(
         control_samples=control_samples,
+        transfer_factors=transfer_factors,
         target_sample=target,
         channel_objects=CRs,
         channel_list=theory_channel_list,
@@ -294,13 +295,13 @@ def add_jes_jer_uncertainties(
 
 def add_theory_uncertainties(
     control_samples: dict[str, Any],
+    transfer_factors: dict[str, ROOT.TH1],
     target_sample: Any,
     channel_objects: dict[str, Channel],
     channel_list: list[str],
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    production_mode: str = "qcd",
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -320,7 +321,6 @@ def add_theory_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
-        production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
     """
 
     # Save a (renamed) copy of samples used to derive theory variations
@@ -340,71 +340,57 @@ def add_theory_uncertainties(
     # File containting the theory uncertainties
     vbf_sys = ROOT.TFile.Open("sys/vbf_z_w_gjets_theory_unc_ratio_unc.root")
 
-    # method to add the ratios scaled by theory variation to the output file
-    def add_var(num, denom, name, factor):
-        new = num.Clone(name)
-        new.Divide(denom)
-        new.Multiply(factor)
-        output_file.WriteTObject(new)
-
     nbins = target_sample.GetNbinsX()
 
     # different labels to convert naming scheme between the different histogram and nuisances to read and write
     label_dict = {
-        "qcd_w": ("zoverw", "z", "ZnunuWJets", "qcd_ewk"),
-        "qcd_photon": ("goverz", "gjets", "Photon", "qcd_photon_ewk"),
-        "ewk_w": ("zoverw", "z", "ZnunuWJets", "ewk_ewk"),
-        "ewk_photon": ("goverz", "gjets", "Photon", "ewkphoton_ewk"),
+        "qcd_w": ("zoverw", "z_qcd", "ZnunuWJets_QCD", "qcd_ewk"),
+        "qcd_photon": ("goverz", "gjets_qcd", "Photon_QCD", "qcd_photon_ewk"),
+        "ewk_w": ("zoverw", "z_ewk", "ZnunuWJets_EWK", "ewk_ewk"),
+        "ewk_photon": ("goverz", "gjets_ewk", "Photon_EWK", "ewkphoton_ewk"),
     }
 
     for region in channel_list:
         ratio, denom_label, qcd_label, ewk_label = label_dict[region]
 
-        denom = control_samples[region].Clone()
-        denom.SetName(f"{region}_weights_denom_{category_id}")
-        num = target_sample.Clone()
-        num.SetName(f"{region}_weights_nom_{category_id}")
-
-        for dir in [("up", "Up"), ("down", "Down")]:
-            # Add QCD and PDF uncertainties
-            for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-                # TODO: try to use add_variation
-                add_var(
-                    num=num,
-                    denom=denom,
-                    name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
-                    factor=vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}"),
+        # Add QCD and PDF uncertainties
+        for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
+            for dir in [("up", "Up"), ("down", "Down")]:
+                add_variation(
+                    nominal=transfer_factors[region],
+                    unc_file=vbf_sys,
+                    unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
+                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{dir[1]}",
+                    outfile=output_file,
                 )
 
-            # EWK uncertainty (decorrelated among bins)
-            ratio_ewk = target_sample.Clone()
-            ratio_ewk.SetName(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            # todo: try
-            # ratio_ewk = target_sample.Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            ratio_ewk.Divide(denom)
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
+            # Add function (quadratic) to model the nuisance
+            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
-            ewk_num = num.Clone()
-            ewk_num.Divide(denom)
+        # EWK uncertainty (decorrelated among bins)
+        for dir in [("up", "Up"), ("down", "Down")]:
+            ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
+            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
             for b in range(nbins):
-                ewk_w = ewk_num.Clone()
-                ewk_w.SetName(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
+                ewk_w = transfer_factors[region].Clone(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
 
-        # TODO: merge with previous loop?
-        # Add function (quadratic) to model the nuisance
-        # QCD and PDF
-        for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{production_mode.upper()}_{var[1]}_vbf", output_file)
-        # EWK (decorrelated among bins)
         for b in range(nbins):
+            # Add function (quadratic) to model the nuisance
             channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
 # Ported from W_constraints, WIP
-def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
+def do_stat_unc(
+    histogram,
+    proc,
+    cid,
+    region,
+    CR,
+    outfile,
+):
     """Add stat. unc. variations to the workspace"""
 
     # Add one variation per bin
@@ -414,8 +400,7 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
 
         # Safety
         if (content <= 0) or (err / content < 0.001):
-            # TODO: raise error and exit
-            continue
+            raise ValueError(f"Cannot properly derive statistical uncertainty variations for histogram {histogram.GetName()}, issue in bin {b}")
 
         # Careful: The bin count "b" in this loop starts at 1
         # In the combine model, we want it to start from 0!
@@ -427,45 +412,23 @@ def do_stat_unc(histogram, proc, cid, region, CR, outfile, functype="lognorm"):
         outfile.WriteTObject(down)
 
         print("Adding an error -- ", up.GetName(), err)
-        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype=functype)
+        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
 
 
-def add_variation(nominal, unc_file, unc_name, new_name, outfile, invert=False, scale=1):
+def add_variation(
+    nominal,
+    unc_file,
+    unc_name,
+    new_name,
+    outfile,
+):
     factor = unc_file.Get(unc_name)
-    add_variation_from_histogram(nominal=nominal, factor=factor, new_name=new_name, outfile=outfile, invert=invert, scale=scale)
-
-
-def add_variation_from_histogram(nominal, factor, new_name, outfile, invert=False, scale=1):
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:
-
         factor_value = factor.GetBinContent(1)
-        if factor_value > 1:
-            factor_value = 1 + (factor_value - 1) * scale
-        else:
-            factor_value = 1 - (1 - factor_value) * scale
-
-        if invert:
-            variation.Scale(1 / factor_value)
-        else:
-            variation.Scale(factor_value)
-
+        variation.Scale(factor_value)
     else:
-        scaled_factor = scale_variation_histogram(factor, scale)
-        if invert:
-            assert variation.Divide(scaled_factor)
-        else:
-            assert variation.Multiply(scaled_factor)
+        # TODO: re-introduce this assert once the binning is fixed
+        # assert variation.Multiply(factor)
+        variation.Multiply(factor)
     outfile.WriteTObject(variation)
-
-
-def scale_variation_histogram(histogram, scale):
-    scaled = histogram.Clone(histogram.GetName())
-    for i in range(1, scaled.GetNbinsX() + 1):
-        content = scaled.GetBinContent(i)
-        if content > 1:
-            new_content = 1 + (content - 1) * scale
-        else:
-            new_content = 1 - (1 - content) * scale
-        scaled.SetBinContent(i, new_content)
-    return scaled

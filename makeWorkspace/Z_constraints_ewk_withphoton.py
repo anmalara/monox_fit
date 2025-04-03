@@ -170,7 +170,7 @@ def my_function(_wspace,_fin,_fOut,nam,diag, year):
 
   WSpectrum = controlmc_w.Clone(); WSpectrum.SetName("ewk_w_spectrum_%s_"%nam)
   ZvvSpectrum    = target.Clone(); ZvvSpectrum.SetName("ewk_zvv_spectrum_%s_"%nam)
-  PhotonSpectrum = controlmc_photon.Clone(); WSpectrum.SetName("ewk_photon_spectrum_%s_"%nam)
+  PhotonSpectrum = controlmc_photon.Clone(); PhotonSpectrum.SetName("ewk_photon_spectrum_%s_"%nam)
 
   _fOut.WriteTObject( WSpectrum )
   _fOut.WriteTObject( PhotonSpectrum )

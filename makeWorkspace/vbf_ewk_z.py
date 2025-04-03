@@ -61,7 +61,7 @@ def cmodel(
         "veto_channel_list": ["ewk_w"],
         "veto_dict": {
             f"CMS_veto{year}_t": -0.01,
-            f"CMS_veto{year}_m": -0.015,
+            f"CMS_veto{year}_m": -0.02,
             f"CMS_veto{year}_e": -0.03,
         },
         # Channels where JES/JER uncertainties are applied.

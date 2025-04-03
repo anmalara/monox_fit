@@ -47,18 +47,25 @@ def compare_tdirectory(file1_path, file2_path, dir_name):
         if not hist1 or not hist2:
             print(f"Error: Could not retrieve histogram '{hist_name}' in one of the files.")
             no_issues = False
+            continue
 
         if not compare_histograms(hist1, hist2):
             print(f"Mismatch found in histogram: {hist_name}")
             no_issues = False
 
     if no_issues:
-        print("The two TDirectoryFiles contain identical histograms.")
+        print(f"The two TDirectoryFiles {dir_name} contain identical histograms.")
     return no_issues
 
 
-file1 = "../vbf/Run3_22_23/250331_oldcr/root/combined_model_vbf.root"
-file2 = "../vbf/Run3_22_23/250331_newcr/root/combined_model_vbf.root"
-directory_name = "Z_constraints_qcd_withphoton_category_vbf_2018"
+file1 = "../vbf/Run3_22_23/250403_old/root/combined_model_vbf.root"
+file2 = "../vbf/Run3_22_23/250403_new/root/combined_model_vbf.root"
+# directory_name = "Z_constraints_qcd_withphoton_category_vbf_2018"
 
-compare_tdirectory(file1, file2, directory_name)
+for directory_name in [
+    "Z_constraints_qcd_withphoton_category_vbf_2018",
+    "Z_constraints_ewk_withphoton_category_vbf_2018",
+    "W_constraints_qcd_category_vbf_2018",
+    "W_constraints_ewk_category_vbf_2018",
+]:
+    compare_tdirectory(file1, file2, directory_name)
