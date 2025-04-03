@@ -302,7 +302,6 @@ def add_theory_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    production_mode: str = "qcd",
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -322,7 +321,6 @@ def add_theory_uncertainties(
         year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
-        production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
     """
 
     # Save a (renamed) copy of samples used to derive theory variations
@@ -346,10 +344,10 @@ def add_theory_uncertainties(
 
     # different labels to convert naming scheme between the different histogram and nuisances to read and write
     label_dict = {
-        "qcd_w": ("zoverw", "z", "ZnunuWJets", "qcd_ewk"),
-        "qcd_photon": ("goverz", "gjets", "Photon", "qcd_photon_ewk"),
-        "ewk_w": ("zoverw", "z", "ZnunuWJets", "ewk_ewk"),
-        "ewk_photon": ("goverz", "gjets", "Photon", "ewkphoton_ewk"),
+        "qcd_w": ("zoverw", "z_qcd", "ZnunuWJets_QCD", "qcd_ewk"),
+        "qcd_photon": ("goverz", "gjets_qcd", "Photon_QCD", "qcd_photon_ewk"),
+        "ewk_w": ("zoverw", "z_ewk", "ZnunuWJets_EWK", "ewk_ewk"),
+        "ewk_photon": ("goverz", "gjets_ewk", "Photon_EWK", "ewkphoton_ewk"),
     }
 
     for region in channel_list:
@@ -361,18 +359,18 @@ def add_theory_uncertainties(
                 add_variation(
                     nominal=transfer_factors[region],
                     unc_file=vbf_sys,
-                    unc_name=f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
-                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{production_mode.upper()}_{var[1]}_vbf_{dir[1]}",
+                    unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
+                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{dir[1]}",
                     outfile=output_file,
                 )
 
             # Add function (quadratic) to model the nuisance
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{production_mode.upper()}_{var[1]}_vbf", output_file)
+            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
         # EWK uncertainty (decorrelated among bins)
         for dir in [("up", "Up"), ("down", "Down")]:
             ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_{production_mode}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
+            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
 
             for b in range(nbins):
                 ewk_w = transfer_factors[region].Clone(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
