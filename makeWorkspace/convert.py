@@ -16,6 +16,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
         wlocal = fdir.Get("wspace_%s" % cat)
 
         # pick up the number of bins FROM one of the usual guys
+        # initialize samplehist with the first histogram we find in the directory, then break out of the loop
         samplehistos = fdir.GetListOfKeys()
         for s in samplehistos:
             obj = s.ReadObj()
@@ -40,6 +41,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
             varl.SetName(varnameext)
 
         # Keys in the fdir
+        # Same thing as samplehistos actually
         keys_local = fdir.GetListOfKeys()
         for key in keys_local:
             obj = key.ReadObj()
@@ -53,6 +55,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                 # otherwise Combine will complain!
                 obj.SetBinContent(1, 0.0001)
             print("Creating Data Hist for ", name)
+            # RooDataHist containing distribution of obj along dimension varl
             dhist = ROOT.RooDataHist(cat + "_" + name, "DataSet - %s, %s" % (cat, name), ROOT.RooArgList(varl), obj)
             # dhist.Print("v")
             wsin_combine._import(dhist)
@@ -63,6 +66,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
             x = __import__(crn)
 
             # Possible to save histograms in the CR def so loop over those that are booked
+            # This will not execute for vbf
             try:
                 len(x.convertHistograms)
                 for obj in x.convertHistograms:
@@ -91,6 +95,9 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
             # now loop through the "control regions" for this guy
             for cid, cn in enumerate(cmb_categories):
                 print("CHECK", cn.catid, cn.cname)
+                # TODO: we are already looping through every model,
+                # is this loop really needed? We are continuing
+                # if we don't match the imported model anyway
                 if cn.catid != cat + "_" + x.model:
                     continue
                 if cn.cname != crn:
