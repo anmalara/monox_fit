@@ -39,7 +39,7 @@ def collect_git_info() -> list[str]:
 
 def create_makefile_symlink(output_dir: str, analysis: str) -> None:
     """Create or update symlink to the Makefile in the parent of the output directory."""
-    makefile_source = os.path.realpath(f"../{analysis}/templates/Makefile")
+    makefile_source = os.path.realpath(f"{analysis}/templates/Makefile")
     makefile_link = os.path.join(os.path.dirname(output_dir), "Makefile")
     if os.path.exists(makefile_link) or os.path.islink(makefile_link):
         os.remove(makefile_link)
@@ -83,9 +83,7 @@ def run_workspace_pipeline(input_dir: str, analysis: str, year: str, tag: str, v
         info_lines = generate_info_lines(input_dir, input_filename, output_dir)
         f.write("\n".join(info_lines) + "\n")
 
-    logger.info("Creating Makefile symlink and running make...")
-    # create_makefile_symlink(output_dir,analysis)
-    # execute_command("make cards", description="Build datacards")
+    create_makefile_symlink(output_dir, analysis)
 
     logger.info(f"Done! Output path: {os.path.dirname(output_dir)}")
 
