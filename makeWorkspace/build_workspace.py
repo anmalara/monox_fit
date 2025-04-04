@@ -59,7 +59,7 @@ def generate_info_lines(input_dir: str, input_filename: str, output_dir: str) ->
     return lines
 
 
-def run_workspace_pipeline(input_dir: str, analysis: str, year: str, tag: str, variable: str, root_folder: Optional[str] = None) -> None:
+def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable: str, root_folder: Optional[str] = None) -> None:
     """Run the full pipeline for a given category and date tag."""
     input_dir = os.path.realpath(input_dir)
     category = f"{analysis}_{year}"
@@ -104,7 +104,7 @@ def main() -> None:
     root_folder = args.folder or f"category_{args.analysis}_{args.year}"
     tag = args.tag or date.today().strftime("%Y_%m_%d")
 
-    run_workspace_pipeline(input_dir=input_dir, analysis=args.analysis, year=args.year, tag=tag, variable=args.variable, root_folder=root_folder)
+    build_workspace(input_dir=input_dir, analysis=args.analysis, year=args.year, tag=tag, variable=args.variable, root_folder=root_folder)
 
 
 if __name__ == "__main__":
