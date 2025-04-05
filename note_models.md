@@ -519,3 +519,55 @@ If morphing is on:
 ---
 
 Let me know if you'd like a **Python translation** of this logic or a **visual diagram**!
+
+# Recap of everything:
+
+   - When we create each model and add the different nuisances `nuis` (also shape nuisances):
+      - We check if a parameter for this nuisance already exist in the workspace.
+         - If not, we add it in the workspace:
+         - nuisance parameter `nuis` (value at 0 , range +- 3)
+         - constraints `f"const_{nuis}"` (gaussian centered at 0, sigma of 1)
+      - Each bin of the distribution affected by the nuisance is assigned a function
+         - `f"sys_function_{nuis}_cat_vbf_2018_{model}_ch_{channel}_bin_{b}"`
+         - each distribution (i.e. different channels) can have a different size, the effect of the function is `nuis * size` in each bin
+      - Shape nuisances are similar, but need the up and down variations computed beforehand:
+         - variations: - `f"{channel}_weights_vbf_2018_{nuis}_(Up|Down)"`
+         - effect of function is $\left(1 + \frac{\Delta(\text{variation up}, \text{variation down})}{2 \times \text{nominal}}\right)^{\pm \text{nuisance}} - 1$
+         - in the exponant, + nuisance if variation up > variation down, - nuisance otherwise
+
+   - When we create the different model, we add the following nuisances:
+      - veto:
+         - `"CMS_veto2018_e "`
+         - `"CMS_veto2018_m "`
+         - `"CMS_veto2018_t"`
+      - JES/JER (shape):
+         - `"jer_2018"`
+         - `"jesAbsolute"`
+         - `"jesAbsolute_2018"`
+         - `"jesBBEC1"`
+         - `"jesBBEC1_2018"`
+         - `"jesEC2"`
+         - `"jesEC2_2018"`
+         - `"jesFlavorQCD"`
+         - `"jesHF"`
+         - `"jesHF_2018"`
+         - `"jesRelativeBal"`
+         - `"jesRelativeSample_2018"`
+      - Theory (shape): 
+         - QCD, PDF: `f"{qcd_label}_{var[1]}_vbf"` 
+            - `qcd_label` is `"(Photon|ZnunuWJets)_{QCD|EWK}"`
+            - `var[1]` is in `["facscale", "pdf", "renscale"]`
+            - e.g. `"Photon_EWK_facscale_vbf"`
+         - EWK: `f"{ewk_label}_vbf_bin{b}"`
+            - `ewk_label` is in `["qcd_ewk", "qcd_photon_ewk", "ewk_ewk", "ewkphoton_ewk"]`
+      - Stastistical (shape): `"vbf_2018_stat_error_{region}_bin{b}"`
+      - In the monojet script, things are a little different
+         - vetos uncertainties are a shape nuisance (read from some systematics file templats)
+         - there are trigger shape nuisances
+         - there are electron/photon id shape nuisances
+         - there are photon scale shape nuisances
+         - there are prefiring shape nuisances
+         - 
+   - Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each of them
+   - 
+      
