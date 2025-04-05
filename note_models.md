@@ -568,6 +568,43 @@ Let me know if you'd like a **Python translation** of this logic or a **visual d
          - there are photon scale shape nuisances
          - there are prefiring shape nuisances
          - 
-   - Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each of them
-   - 
-      
+   - Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each model:
+      - We extract one (any) histogram, whose shape will be used as a reference 
+         (the mjj bin edges, should be the same for all distributions)
+      - We go through every `Channel` in the model
+         - For each bin, we create a `Bin` object. This contains:
+            - The bin edges
+            - some ID to link it to other channels in other models
+            - The initial yield for that mjj bin for this category (so either QCD Znunu, EWK Znunu, QCD Wjets or EWK Wjets in SR ) 
+            - The transfer factor (control MC / target sample) for that channel in that bin 
+               (so yield * transfer factor gives the yield of the control MC sample). This is stored as a constant `RooRealVar`
+               `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"`
+            - Model the expected number of events.
+               - At initialization, two cases:
+                  - For `qcd_zjets` model, RooRealVar `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` whose value is set to the QCD Znunu (SR) yield, in a range from 0 to 3 times the yield.
+                  - For other models, it fetches `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`,  (see below)
+               - Make the product of all nuisances:
+                  - Fetch each nuisance `nuis` , and create a `delta` function that has the formula `1+nuis`
+                  `f"delta_cat_vbf_2018_{model}_ch_{channel}_bin_{b}_{nuis}"`
+                  - Only nuisances affecting the bin are added (so theory EWK and statistical uncertainties, decorrelated by bin, each contribute one nuisance, nuisances corresponding to other bins are skipped)
+               - make `pure_mu`: two cases:
+                  - For `qcd_zjets`, product of `f"model_mu_cat_vbf_2018_{model}_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
+                  - For all other categories, product of `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
+
+               - In other words, we have, for each bin, 
+               $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+               for each CR in the `qcd_zjets` model:
+                  - $Z^{\text{QCD}}_{\text{diMuon CR}} \to ll$
+                  - $Z^{\text{QCD}}_{\text{diElectron CR}} \to ll$
+                  - $W^{\text{QCD}}_{\text{SR}} \to l\nu$
+                  - $(\gamma + \text{jets})^{\text{QCD}}_{\text{SR}}$
+                  - $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$
+               - For the other models, we fetch the previous expression from the channel the are linked to, and multiply to
+               $\frac{CR}{target} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+               - For instance, in the `ewk_zjets` model, the target is $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$, we are linked to the corresponding CR in `qcd_zjets`. If we look for instance at the $Z^{\text{EWK}}_{\text{diMuon CR}} \to ll$ CR, this ends up with
+               $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
+               - This is save as `f"pmu_cat_vbf_2018_{model}_bin_{b}"`, and also wrapped in the `RooFormulaVar` `f"mu_cat_vbf_2018_{model}_bin_{b}"`
+               - The `"observed"` is fetched, and a Poisson PDF is constructed for `observed` using `f"mu_cat_vbf_2018_{model}_bin_{b}"`.
+                  It is uncleared where `observed` comes from
+            - Once this modelling is done for all bins, save all prefit distributions
+            - The last step is unclear, maybe a check that all expected distribution exist.
