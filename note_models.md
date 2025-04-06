@@ -627,3 +627,16 @@ Let me know if you'd like a **Python translation** of this logic or a **visual d
             - import these in the workspace
       - Get all parameters in the workspace
       - for all background nuisances: print the line to add in the datacard template, `f"{param.GetName()} param {param.getVal()} 1"`
+
+# Short summary:
+   - the model construction scripts
+      - compute transfer factors
+      - apply nuisances
+   - `init_channel`:
+      - makes the modeled yield of events in each bin as a function of $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu)$:
+         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+         for channels in `qcd_zjets` model
+         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
+         for channels in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models
+   - `convertToCombineWorkspace`:
+      - stores the distribution of modeled yields above in `RooParametricHist`s and saves them to the workspace
