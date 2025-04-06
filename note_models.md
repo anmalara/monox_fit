@@ -266,9 +266,8 @@ Loop over each bin:
             - import these in the workspace
          - loop again for every `Category` (TODO: is this really needed)
             - check that model name matches the one imported previously, else continue
-            - for every `Channel` in the model:
-               - **This is for all backgrounds**
-               - Initialize list of expectations `cr_expectations` for that channel
+            - for every `Channel` in the model, create the background distributions:
+               - Fetch every `f"pmu_cat_vbf_2018_{model}_ch_{channel}_bin_{b}"`
                - for every bin in the channel:
                   - add expectation of bin to list of expectation of the channel, using the "`pure_mu`" (from `Bin.setup_expect_var`)
                - We obtain list of `pure_mu` expectation for every bin in that channel
@@ -608,3 +607,23 @@ Let me know if you'd like a **Python translation** of this logic or a **visual d
                   It is uncleared where `observed` comes from
             - Once this modelling is done for all bins, save all prefit distributions
             - The last step is unclear, maybe a check that all expected distribution exist.
+   - Then the combine workspace is created in `convertToCombineWorkspace`
+      - (We loop over every year, here just `vbf_2018`)
+      - We extract one (any) histogram, whose shape will be used as a reference (`samplehist`)
+         (the mjj bin edges, should be the same for all distributions)
+      - We extract `mjj`, rename to `mjj_vbf_2018`
+      - Convert every histogram `hist` from the input file (`limit_vbf.root`) to a `RooDataHist` called `vbf_2018_{hist}`, as a function of `mjj_vbf_2018` and add it to the workspace
+      - Loop over every `Category` (as in "model", qcd zjets, qcd wjets, ewk zjets, ewk wjets):
+         - fetch `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin
+         - Only for `qcd_zjets`  model, create the signal distribution:
+            - Create a `RooParametricHist` with name `f"vbf_2018_signal_qcd_zjets_model"`, holding the distribution of all
+               `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
+            - Create addition of expectations `vbf_2018_signal_qcd_zjets_model_norm` (integral of previous `RooParametricHist` over the whole `mjj` range)
+            - import these in the workspace
+         - Loop for every `Channel` in the model to get all backgrounds:
+            - Create a `RooParametricHist` with name `f"vbf_2018_{channel}_{model}_model"`, holding the distribution of all
+               `f"pmu_cat_vbf_2018_ch_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
+            - Create addition of expectations `f"vbf_2018_{channel}_{model}_model_norm"` (integral of previous `RooParametricHist` over the whole `mjj` range)
+            - import these in the workspace
+      - Get all parameters in the workspace
+      - for all background nuisances: print the line to add in the datacard template, `f"{param.GetName()} param {param.getVal()} 1"`
