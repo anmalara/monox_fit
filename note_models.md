@@ -1,3 +1,148 @@
+# Overview of what is done when running `runModel.py`:
+
+This script is where all processes are expressed as a product of transfer factors, nuisances, and parametrized by the same process,
+$Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$.
+
+There are three main function calls:
+   1. `cmodel`, The model construction scripts
+      - This is run for each "model", containing a "target process" 
+         (e.g. $Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$ or $W^{\text{EWK}}_{\text{SR}}\to l\nu$) and a list of "control processes".
+      - For each control process, it computes a transfer factors, ratio of the yield of the target process and control process.
+      - It creates the parameters for the relevant nuisances for each transfer factor 
+         (veto, JES/JER, theory, and statistical uncertainties) in the workspace.
+   2. `init_channel`:
+      - makes the modeled yield of events in each bin as a function of $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu)$:
+         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+         for channels in `qcd_zjets` model
+         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
+         for channels in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models
+   3. `convertToCombineWorkspace`:
+      - stores the distribution of modeled yields above in `RooParametricHist`s and saves them to the workspace
+
+## Addition of nuisances in `cmodel`
+
+These are the steps performed when adding a nuisances `nuis` for a given transfer factor:
+   - We check if a parameter for this nuisance already exist in the workspace. If not, we create and import the following:
+      - The nuisance parameter `nuis`, with its value at 0, and a range of +- 3
+      - A constraints named `const_{nuis}`, a gaussian centered at 0 with a sigma of 1
+   - A nuisance can either affect all bins uniformely or each bin with a different shape.
+   - Each bin of the distribution affected by the nuisance is assigned a function:
+      - `sys_function_{nuis}_cat_vbf_2018_{model}_ch_{channel}_bin_{b}`
+      - The effect of the function is `nuis * size` is the same for each bin of the process.
+         So for a given process, the effect of the nuisance is uniform across all bins. 
+      - Different processes can be affect by the same nuisance `nuis`, and with different strenght `size`.
+   - Shape nuisances are similar, but need the up and down variations computed beforehand:
+      - When adding the shape nuisance, we first fetch the variations called `{channel}_weights_vbf_2018_{nuis}_(Up|Down)`
+      - For each bin, the effect of function is 
+         $\left(1 + \frac{\Delta(\text{variation up}, \text{variation down})}{2 \times \text{nominal}}\right)^{\pm \text{nuisance}} - 1$
+      - The exponant is $+nuisance$ if $\Delta(\text{variation up}, \text{variation down}) > 0$,
+         $-nuisance$ if $\Delta(\text{variation up}, \text{variation down}) < 0$,
+
+### List of nuisances 
+
+The following nuisances are created for each model (for the vbf case):
+   - veto:
+      - `"CMS_veto2018_e "`
+      - `"CMS_veto2018_m "`
+      - `"CMS_veto2018_t"`
+   - JES/JER (shape):
+      - `"jer_2018"`
+      - `"jesAbsolute"`
+      - `"jesAbsolute_2018"`
+      - `"jesBBEC1"`
+      - `"jesBBEC1_2018"`
+      - `"jesEC2"`
+      - `"jesEC2_2018"`
+      - `"jesFlavorQCD"`
+      - `"jesHF"`
+      - `"jesHF_2018"`
+      - `"jesRelativeBal"`
+      - `"jesRelativeSample_2018"`
+   - Theory (shape): 
+      - QCD, PDF: `f"{qcd_label}_{var[1]}_vbf"` 
+         - `qcd_label` is `"(Photon|ZnunuWJets)_{QCD|EWK}"`
+         - `var[1]` is in `["facscale", "pdf", "renscale"]`
+         - e.g. `"Photon_EWK_facscale_vbf"`
+      - EWK: `f"{ewk_label}_vbf_bin{b}"`
+         - `ewk_label` is in `["qcd_ewk", "qcd_photon_ewk", "ewk_ewk", "ewkphoton_ewk"]`
+   - Stastistical (shape): `"vbf_2018_stat_error_{region}_bin{b}"`
+
+### Difference with monojet models
+
+In the monojet script, things are a little different
+   - vetos uncertainties are a shape nuisance (read from some systematics file templats)
+   - there are trigger shape nuisances
+   - there are electron/photon id shape nuisances
+   - there are photon scale shape nuisances
+   - there are prefiring shape nuisances
+
+## Overview of `init_channels`
+
+Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each model:
+
+   - We extract one (any) histogram, whose shape will be used as a reference 
+      (the mjj bin edges, should be the same for all distributions)
+   - We go through every `Channel` in the model
+      - For each bin, we create a `Bin` object. This contains:
+         - The bin edges
+         - some ID to link it to other channels in other models
+         - The initial yield for that mjj bin for the target process of that model
+         ( so either $Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$, $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$,
+            $W^{\text{QCD}}_{\text{SR}}\to l\nu$ or $W^{\text{EWK}}_{\text{SR}}\to l\nu$)
+         - The transfer factor $\frac{\text{control process}}{\text{target process}}$ for that process in that bin.
+            - This way, the control process can be expressed as target process $\times$ transfer factor, and parametrized by the target process
+            - This is stored as a constant `RooRealVar` `sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}`
+         - Model the expected number of events.
+            - At initialization, two cases:
+               - For `qcd_zjets` model, RooRealVar `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` whose value is set to the QCD Znunu (SR) yield, in a range from 0 to 3 times the yield.
+               - For other models, it fetches `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`,  (see below)
+            - Make the product of all nuisances:
+               - Fetch each nuisance `nuis` , and create a `delta` function that has the formula `1+nuis`
+               `f"delta_cat_vbf_2018_{model}_ch_{channel}_bin_{b}_{nuis}"`
+               - Only nuisances affecting the bin are added (so theory EWK and statistical uncertainties, decorrelated by bin, each contribute one nuisance, nuisances corresponding to other bins are skipped)
+            - make `pure_mu`: two cases:
+               - For `qcd_zjets`, product of `f"model_mu_cat_vbf_2018_{model}_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
+               - For all other categories, product of `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
+
+            - In other words, we have, for each bin, 
+            $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+            for each CR in the `qcd_zjets` model:
+               - $Z^{\text{QCD}}_{\text{diMuon CR}} \to ll$
+               - $Z^{\text{QCD}}_{\text{diElectron CR}} \to ll$
+               - $W^{\text{QCD}}_{\text{SR}} \to l\nu$
+               - $(\gamma + \text{jets})^{\text{QCD}}_{\text{SR}}$
+               - $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$
+            - For the other models, we fetch the previous expression from the channel the are linked to, and multiply to
+            $\frac{CR}{target} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+            - For instance, in the `ewk_zjets` model, the target is $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$, we are linked to the corresponding CR in `qcd_zjets`. If we look for instance at the $Z^{\text{EWK}}_{\text{diMuon CR}} \to ll$ CR, this ends up with
+            $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
+            - This is save as `f"pmu_cat_vbf_2018_{model}_bin_{b}"`, and also wrapped in the `RooFormulaVar` `f"mu_cat_vbf_2018_{model}_bin_{b}"`
+            - The `"observed"` is fetched, and a Poisson PDF is constructed for `observed` using `f"mu_cat_vbf_2018_{model}_bin_{b}"`.
+               It is uncleared where `observed` comes from
+         - Once this modelling is done for all bins, save all prefit distributions
+         - The last step is unclear, maybe a check that all expected distribution exist.
+### Overview of `convertToCombineWorkspace`
+   - Then the combine workspace is created in `convertToCombineWorkspace`
+      - (We loop over every year, here just `vbf_2018`)
+      - We extract one (any) histogram, whose shape will be used as a reference (`samplehist`)
+         (the mjj bin edges, should be the same for all distributions)
+      - We extract `mjj`, rename to `mjj_vbf_2018`
+      - Convert every histogram `hist` from the input file (`limit_vbf.root`) to a `RooDataHist` called `vbf_2018_{hist}`, as a function of `mjj_vbf_2018` and add it to the workspace
+      - Loop over every `Category` (as in "model", qcd zjets, qcd wjets, ewk zjets, ewk wjets):
+         - fetch `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin
+         - Only for `qcd_zjets`  model, create the signal distribution:
+            - Create a `RooParametricHist` with name `f"vbf_2018_signal_qcd_zjets_model"`, holding the distribution of all
+               `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
+            - Create addition of expectations `vbf_2018_signal_qcd_zjets_model_norm` (integral of previous `RooParametricHist` over the whole `mjj` range)
+            - import these in the workspace
+         - Loop for every `Channel` in the model to get all backgrounds:
+            - Create a `RooParametricHist` with name `f"vbf_2018_{channel}_{model}_model"`, holding the distribution of all
+               `f"pmu_cat_vbf_2018_ch_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
+            - Create addition of expectations `f"vbf_2018_{channel}_{model}_model_norm"` (integral of previous `RooParametricHist` over the whole `mjj` range)
+            - import these in the workspace
+      - Get all parameters in the workspace
+      - for all background nuisances: print the line to add in the datacard template, `f"{param.GetName()} param {param.getVal()} 1"`
+
 # Model construction scripts
 
 Taking some notes of what is being done in each model construction script for vbf:
@@ -518,125 +663,3 @@ If morphing is on:
 ---
 
 Let me know if you'd like a **Python translation** of this logic or a **visual diagram**!
-
-# Recap of everything:
-
-   - When we create each model and add the different nuisances `nuis` (also shape nuisances):
-      - We check if a parameter for this nuisance already exist in the workspace.
-         - If not, we add it in the workspace:
-         - nuisance parameter `nuis` (value at 0 , range +- 3)
-         - constraints `f"const_{nuis}"` (gaussian centered at 0, sigma of 1)
-      - Each bin of the distribution affected by the nuisance is assigned a function
-         - `f"sys_function_{nuis}_cat_vbf_2018_{model}_ch_{channel}_bin_{b}"`
-         - each distribution (i.e. different channels) can have a different size, the effect of the function is `nuis * size` in each bin
-      - Shape nuisances are similar, but need the up and down variations computed beforehand:
-         - variations: - `f"{channel}_weights_vbf_2018_{nuis}_(Up|Down)"`
-         - effect of function is $\left(1 + \frac{\Delta(\text{variation up}, \text{variation down})}{2 \times \text{nominal}}\right)^{\pm \text{nuisance}} - 1$
-         - in the exponant, + nuisance if variation up > variation down, - nuisance otherwise
-
-   - When we create the different model, we add the following nuisances:
-      - veto:
-         - `"CMS_veto2018_e "`
-         - `"CMS_veto2018_m "`
-         - `"CMS_veto2018_t"`
-      - JES/JER (shape):
-         - `"jer_2018"`
-         - `"jesAbsolute"`
-         - `"jesAbsolute_2018"`
-         - `"jesBBEC1"`
-         - `"jesBBEC1_2018"`
-         - `"jesEC2"`
-         - `"jesEC2_2018"`
-         - `"jesFlavorQCD"`
-         - `"jesHF"`
-         - `"jesHF_2018"`
-         - `"jesRelativeBal"`
-         - `"jesRelativeSample_2018"`
-      - Theory (shape): 
-         - QCD, PDF: `f"{qcd_label}_{var[1]}_vbf"` 
-            - `qcd_label` is `"(Photon|ZnunuWJets)_{QCD|EWK}"`
-            - `var[1]` is in `["facscale", "pdf", "renscale"]`
-            - e.g. `"Photon_EWK_facscale_vbf"`
-         - EWK: `f"{ewk_label}_vbf_bin{b}"`
-            - `ewk_label` is in `["qcd_ewk", "qcd_photon_ewk", "ewk_ewk", "ewkphoton_ewk"]`
-      - Stastistical (shape): `"vbf_2018_stat_error_{region}_bin{b}"`
-      - In the monojet script, things are a little different
-         - vetos uncertainties are a shape nuisance (read from some systematics file templats)
-         - there are trigger shape nuisances
-         - there are electron/photon id shape nuisances
-         - there are photon scale shape nuisances
-         - there are prefiring shape nuisances
-         - 
-   - Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each model:
-      - We extract one (any) histogram, whose shape will be used as a reference 
-         (the mjj bin edges, should be the same for all distributions)
-      - We go through every `Channel` in the model
-         - For each bin, we create a `Bin` object. This contains:
-            - The bin edges
-            - some ID to link it to other channels in other models
-            - The initial yield for that mjj bin for this category (so either QCD Znunu, EWK Znunu, QCD Wjets or EWK Wjets in SR ) 
-            - The transfer factor (control MC / target sample) for that channel in that bin 
-               (so yield * transfer factor gives the yield of the control MC sample). This is stored as a constant `RooRealVar`
-               `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"`
-            - Model the expected number of events.
-               - At initialization, two cases:
-                  - For `qcd_zjets` model, RooRealVar `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` whose value is set to the QCD Znunu (SR) yield, in a range from 0 to 3 times the yield.
-                  - For other models, it fetches `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`,  (see below)
-               - Make the product of all nuisances:
-                  - Fetch each nuisance `nuis` , and create a `delta` function that has the formula `1+nuis`
-                  `f"delta_cat_vbf_2018_{model}_ch_{channel}_bin_{b}_{nuis}"`
-                  - Only nuisances affecting the bin are added (so theory EWK and statistical uncertainties, decorrelated by bin, each contribute one nuisance, nuisances corresponding to other bins are skipped)
-               - make `pure_mu`: two cases:
-                  - For `qcd_zjets`, product of `f"model_mu_cat_vbf_2018_{model}_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
-                  - For all other categories, product of `f"pmu_cat_vbf_2018_qcd_zjets_bin_{b}"`, `f"sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}"` and all nuisances
-
-               - In other words, we have, for each bin, 
-               $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
-               for each CR in the `qcd_zjets` model:
-                  - $Z^{\text{QCD}}_{\text{diMuon CR}} \to ll$
-                  - $Z^{\text{QCD}}_{\text{diElectron CR}} \to ll$
-                  - $W^{\text{QCD}}_{\text{SR}} \to l\nu$
-                  - $(\gamma + \text{jets})^{\text{QCD}}_{\text{SR}}$
-                  - $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$
-               - For the other models, we fetch the previous expression from the channel the are linked to, and multiply to
-               $\frac{CR}{target} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
-               - For instance, in the `ewk_zjets` model, the target is $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$, we are linked to the corresponding CR in `qcd_zjets`. If we look for instance at the $Z^{\text{EWK}}_{\text{diMuon CR}} \to ll$ CR, this ends up with
-               $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
-               - This is save as `f"pmu_cat_vbf_2018_{model}_bin_{b}"`, and also wrapped in the `RooFormulaVar` `f"mu_cat_vbf_2018_{model}_bin_{b}"`
-               - The `"observed"` is fetched, and a Poisson PDF is constructed for `observed` using `f"mu_cat_vbf_2018_{model}_bin_{b}"`.
-                  It is uncleared where `observed` comes from
-            - Once this modelling is done for all bins, save all prefit distributions
-            - The last step is unclear, maybe a check that all expected distribution exist.
-   - Then the combine workspace is created in `convertToCombineWorkspace`
-      - (We loop over every year, here just `vbf_2018`)
-      - We extract one (any) histogram, whose shape will be used as a reference (`samplehist`)
-         (the mjj bin edges, should be the same for all distributions)
-      - We extract `mjj`, rename to `mjj_vbf_2018`
-      - Convert every histogram `hist` from the input file (`limit_vbf.root`) to a `RooDataHist` called `vbf_2018_{hist}`, as a function of `mjj_vbf_2018` and add it to the workspace
-      - Loop over every `Category` (as in "model", qcd zjets, qcd wjets, ewk zjets, ewk wjets):
-         - fetch `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin
-         - Only for `qcd_zjets`  model, create the signal distribution:
-            - Create a `RooParametricHist` with name `f"vbf_2018_signal_qcd_zjets_model"`, holding the distribution of all
-               `f"model_mu_cat_vbf_2018_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
-            - Create addition of expectations `vbf_2018_signal_qcd_zjets_model_norm` (integral of previous `RooParametricHist` over the whole `mjj` range)
-            - import these in the workspace
-         - Loop for every `Channel` in the model to get all backgrounds:
-            - Create a `RooParametricHist` with name `f"vbf_2018_{channel}_{model}_model"`, holding the distribution of all
-               `f"pmu_cat_vbf_2018_ch_{model}_bin_{b}"` for every bin as a function of `mjj_vbf_2018` (with shape given by `samplehist`)
-            - Create addition of expectations `f"vbf_2018_{channel}_{model}_model_norm"` (integral of previous `RooParametricHist` over the whole `mjj` range)
-            - import these in the workspace
-      - Get all parameters in the workspace
-      - for all background nuisances: print the line to add in the datacard template, `f"{param.GetName()} param {param.getVal()} 1"`
-
-# Short summary:
-   - the model construction scripts
-      - compute transfer factors
-      - apply nuisances
-   - `init_channel`:
-      - makes the modeled yield of events in each bin as a function of $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu)$:
-         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
-         for channels in `qcd_zjets` model
-         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
-         for channels in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models
-   - `convertToCombineWorkspace`:
-      - stores the distribution of modeled yields above in `RooParametricHist`s and saves them to the workspace
