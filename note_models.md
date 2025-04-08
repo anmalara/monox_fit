@@ -4,15 +4,16 @@
     - [1.1.2. Difference with monojet models](#112-difference-with-monojet-models)
   - [1.2. Overview of `init_channels`](#12-overview-of-init_channels)
   - [1.3. Overview of `convert_to_combine_workspace`](#13-overview-of-convert_to_combine_workspace)
-- [2. In depth look into the old model construction scripts](#2-in-depth-look-into-the-old-model-construction-scripts)
-  - [2.1. Looking inside `Z_constraints_qcd_withphoton.py`](#21-looking-inside-z_constraints_qcd_withphotonpy)
-    - [2.1.1. inside `my_function`:](#211-inside-my_function)
-    - [2.1.2. back to `cmodel`](#212-back-to-cmodel)
+- [2. Overview of the old model construction scripts](#2-overview-of-the-old-model-construction-scripts)
+  - [2.1. General overview](#21-general-overview)
+    - [2.1.1. Beginning of script](#211-beginning-of-script)
+    - [2.1.2. inside `my_function` (applying theory variations):](#212-inside-my_function-applying-theory-variations)
+    - [2.1.3. back to `cmodel`](#213-back-to-cmodel)
   - [2.2. Recap of `Z_constraints_qcd_withphoton.py`:](#22-recap-of-z_constraints_qcd_withphotonpy)
   - [2.3. Recap of `W_constraints.py`:](#23-recap-of-w_constraintspy)
   - [2.4. Recap of `Z_constraints_ewk_withphoton.py`:](#24-recap-of-z_constraints_ewk_withphotonpy)
   - [2.5. Recap of `W_constraints.py`:](#25-recap-of-w_constraintspy)
-- [3. What are `Category`, `Channel` and `Bin` doing?](#3-what-are-category-channel-and-bin-doing)
+- [3. Overview of `Category`, `Channel` and `Bin` classes](#3-overview-of-category-channel-and-bin-classes)
   - [3.1. `Category`](#31-category)
   - [3.2. `Channel`](#32-channel)
   - [3.3. `Bin`](#33-bin)
@@ -191,7 +192,7 @@ This is where the all distribution used for combine are saved to the workspace.
    - Get all parameters in the workspace
    - for all background nuisances: print the line to add in the datacard template, `{param.GetName()} param {param.getVal()} 1`
 
-# 2. In depth look into the old model construction scripts
+# 2. Overview of the old model construction scripts
 
  some notes of what is being done in each model construction script for vbf:
    - Z_constraints_qcd_withphoton.py
@@ -199,136 +200,110 @@ This is where the all distribution used for combine are saved to the workspace.
    - Z_constraints_ewk_withphoton.py
    - W_constraints_ewk.py
 
-## 2.1. Looking inside `Z_constraints_qcd_withphoton.py`
+## 2.1. General overview
 
-Inputs:
+### 2.1.1. Beginning of script
+
+Initializing the inputs:
    - Target process, the one that is used to parametrize the control samples
-     - QCD $Z \to \nu\nu$ in SR
-   - Control MC samples: 
-      - $Z \to \mu\mu$ in diMuon
-      - $Z \to ee$ in diElectron
-      - QCD $W \to l\nu$ in SR
-      - EWK $Z \to \nu\nu$ in SR
-      - QCD $\gamma$ + jets samples in SR
-
+   - Control MC samples, samples to derive the transfer factor and apply nuisances on.
 
 Compute all transfer factors: for each control sample, compute target divided by control
 
-### 2.1.1. inside `my_function`:
-Getting theory uncertainties
+### 2.1.2. inside `my_function` (applying theory variations):
+This is only done for the Z models (EWK and QCD).
 
-compute ( (QCD Z->nunu) / (QCD W->lnu) ) * theory uncertainty (for each uncertainty) (yields from SR)
-   (qcd, pdf)
+   - Getting theory uncertainties from file `sys/vbf_z_w_gjets_theory_unc_ratio_unc.root`
 
-compute ewk decorrelated among bins:
-    - Create one clone of (QCD Z->nunu / QCD W->lnu) for each bin
-    - each clone i get only bin i replace with bin i of (QCD Z->nunu / QCD W->lnu) * ewk uncertainty
+   - Compute $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu} \times$ theory uncertainty for QCD and PDF uncertainties
 
-Same computations for (QCD Z->nunu / QCD gamma+jets):
-   - qcd
-   - pdf
-   - ewk, decorrelated among bins
+   - For EWK uncertainties, decorrelated among bins:
+      - Create one clone of $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu}$ for each bin
+      - Each clone i get only bin i replace with bin i of $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu} \times $ EWK uncertainty
 
-### 2.1.2. back to `cmodel`
+   - Same computations for $\frac{Z_\text{SR}\to \nu\nu}{{\gamma + \text{jets}}_\text{SR}}$:
+      - QCD
+      - PDF
+      - EWK, decorrelated among bins
 
-extract binning of mjj
+### 2.1.3. back to `cmodel`
 
-Create one "Channel" by transfer factor
+   - extract binning of mjj
 
-For Znunu/Wlnu channel: add nuisances for vetos,
-`RooFormulaVar` corresponding to vetoname * value:
-   - `CMS_veto{YEAR}_t * -0.01`
-   - `CMS_veto{YEAR}_m * -0.015`
-   - `CMS_veto{YEAR}_e * -0.03`
+   - Create one `Channel` by transfer factor
 
-Extract JER and JES uncertainties for transfer factors from `sys/vbf_jes_jer_tf_uncs.root`:
-   - for each variation 
-   - for transfer factor (except Znunu QCD / EWK):
-   - Add histogram for Transfer factor  * variation uncertainty in output
-      (variation uncertainty for transfer factor is a histogram with one bin,
-      and the whole transfer factor distribution get Scaled according to the value in this one bin)
-   - Add function (quadratic) to model systematic uncertainty on transfer factor
+   - For relevant channels,  add nuisances for vetos: `RooFormulaVar` corresponding to vetoname * value
+      - `CMS_veto{YEAR}_t * {value veto t}`
+      - `CMS_veto{YEAR}_m * {value veto m}`
+      - `CMS_veto{YEAR}_e * {value veto e}`
 
-add variation from statistic uncertainty + quadratic model
+   - Extract JER and JES uncertainties for transfer factors from `sys/vbf_jes_jer_tf_uncs.root`:
+      - for each variation 
+      - for all transfer factor (except Znunu QCD / EWK):
+      - Add histogram for Transfer factor  * variation uncertainty in output
+         (variation uncertainty for transfer factor is a histogram with one bin,
+         and the whole transfer factor distribution get Scaled according to the value in this one bin)
+      - Add function (quadratic) to model systematic uncertainty on transfer factor
 
-add variation from theory uncertainties + quadratic model (qcd, pdf, ewk decorellated, both for Z/W and Z/gamma+jet)
+   - Add variation from statistic uncertainty + quadratic model
+
+   - Add variation from theory uncertainties + quadratic model (QCD, PDF, EWK decorellated, both for Z/W and Z/gamma+jet)
+
+   - Return everything as `Category` 
+
+## 2.2. Recap of `Z_constraints_qcd_withphoton.py`:
+
+| Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
+| ----------- | ----------------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
+| `Zmm`       | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{QCD}_{2\mu}\to ll}$          |      | X       |        | X    |
+| `Zee`       | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{QCD}_{2e}\to ll}$            |      | X       |        | X    |
+| `WZ`        | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{W^\text{QCD}_{SR}\to l\nu}$          | X    | X       | X      | X    |
+| `EQ`        | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$        |      | X       |        | X    |
+| `Photon`    | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{{\gamma+jets}^\text{QCD}_{1\gamma}}$ |      | X       | X      | X    |
 
 Return everything as `Category` called `qcd_zjets`
 
-## 2.2. Recap of `Z_constraints_qcd_withphoton.py`:
-   - Compute transfer factors:
-      - `Zmm`: QCD $Z \to \nu\nu$ (SR) / $Z \to \mu\mu$ (diMuon)
-      - `Zee`: QCD $Z \to \nu\nu$ (SR) / $Z \to ee$ (diElectron)
-      - `WZ`: QCD $Z \to \nu\nu$ / QCD $W \to l\nu$ (both in SR)
-      - `EQ`: QCD $Z \to \nu\nu$ / EWK $Z \to \nu\nu$ (both in SR)
-      - `Photon`: QCD $Z \to \nu\nu$ / QCD $\gamma$ + jets (both in SR)
-   - For `WZ` and `Photon`:
-      - Extract Transfer factor  * theory uncertainties for QCD, PDF and EWK
-      - Decorrelate EWK uncertainties bin by bin
-      - Add (quadratic) function to model the theory uncertainties
-   - For `WZ`: add nuisances for vetos (veto * value)
-   - For `Zmm`, `Zee`, `WZ`, `Photon`:
-      - Extract extract JER/JES (relative) uncertainties for each source
-      - Add variation corresponding to Transfer factor scaled by relative uncertainty
-      - Add (quadratic) function to model the systematic uncertainty
-   - For all transfer factors:
-      - Add variation from the statistical uncertainty
-      - Add (quadratic) function to model the statistical uncertainty
-   - Return everything as `Category` called `qcd_zjets`
-
 ## 2.3. Recap of `W_constraints.py`:
-   - Compute transfer factors:
-      - `Wmu`: QCD $W \to l\nu$ (SR) / $W \to \mu\nu$ (singleMuon)
-      - `We`: QCD $W \to l\nu$ (SR) / $W \to e\nu$ (singleElectron)
-   - For both `Wmu` and `We`:
-      - JER/JES uncertainties:
-         - Extract extract JER/JES (relative) uncertainties for each source
-         - Add variation corresponding to Transfer factor scaled by relative uncertainty
-         - Add (quadratic) function to model the systematic uncertainty
-      - Add nuisances for vetos (veto * value)
-      - Statistical uncertainties:
-         - Add variation from the statistical uncertainty
-         - Add (quadratic) function to model the statistical uncertainty
-   - Return everything as `Category` called `qcd_wjets` and specify it is dependant on `WZ` transfer factor of previous `qcd_zjets` category
+
+| Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
+| ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
+| `Wmu`       | $\frac{W^\text{QCD}_\text{SR}\to l\nu}{W^\text{QCD}_{1\mu}\to l\nu}$ | X    | X       |        | X    |
+| `We`        | $\frac{W^\text{QCD}_\text{SR}\to l\nu}{W^\text{QCD}_{1e}\to l\nu}$   | X    | X       |        | X    |
+
+Return everything as `Category` called `qcd_wjets`,  specifying it is dependant on `WZ` transfer factor of previous `qcd_zjets` category.
+
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{W^\text{QCD}_{SR}\to l\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
 
 ## 2.4. Recap of `Z_constraints_ewk_withphoton.py`:
-   - Compute transfer factors:
-      - `Zmm`: EWK $Z \to \nu\nu$ (SR) / $Z \to \mu\mu$ (diMuon)
-      - `Zee`: EWK $Z \to \nu\nu$ (SR) / $Z \to ee$ (diElectron)
-      - `WZ`: EWK $Z \to \nu\nu$ / EWK $W \to l\nu$ (both in SR)
-      - `Photon`: EWK $Z \to \nu\nu$ / EWK $\gamma$ + jets (both in SR)
-   
-   - For `WZ` and `Photon`:
-      - Extract Transfer factor  * theory uncertainties for QCD, PDF and EWK
-      - Decorrelate EWK uncertainties bin by bin
-      - Add (quadratic) function to model the theory uncertainties
-   - For `WZ`: add nuisances for vetos (veto * value)
-   - For all transfer factors:
-      - JER/JES uncertainties:
-         - Extract extract JER/JES (relative) uncertainties for each source
-         - Add variation corresponding to Transfer factor scaled by relative uncertainty
-         - Add (quadratic) function to model the systematic uncertainty
-      - Statistical uncertainties:
-         - Add variation from the statistical uncertainty
-         - Add (quadratic) function to model the statistical uncertainty
-   - Return everything as `Category` called `ewk_zjets` and specify it is dependant on `EQ` transfer factor of previous `qcd_zjets` category
+
+
+| Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
+| ----------- | ----------------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
+| `Zmm`       | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{2\mu}\to ll}$          |      | X       |        | X    |
+| `Zee`       | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{2e}\to ll}$            |      | X       |        | X    |
+| `WZ`        | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{W^\text{EWK}_{SR}\to l\nu}$          | X    | X       | X      | X    |
+| `Photon`    | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{{\gamma+jets}^\text{EWK}_{1\gamma}}$ |      | X       | X      | X    |
+
+Return everything as `Category` called `ewk_zjets`, specifying it is dependant on `EQ` transfer factor of previous `qcd_zjets` category.
+
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
 
 ## 2.5. Recap of `W_constraints.py`:
-   - Compute transfer factors:
-      - `Wmu`: EWK $W \to l\nu$ (SR) / $W \to \mu\nu$ (singleMuon)
-      - `We`: EWK $W \to l\nu$ (SR) / $W \to e\nu$ (singleElectron)
-   - For both `Wmu` and `We`:
-      - JER/JES uncertainties:
-         - Extract extract JER/JES (relative) uncertainties for each source
-         - Add variation corresponding to Transfer factor scaled by relative uncertainty
-         - Add (quadratic) function to model the systematic uncertainty
-      - Add nuisances for vetos (veto * value)
-      - Statistical uncertainties:
-         - Add variation from the statistical uncertainty
-         - Add (quadratic) function to model the statistical uncertainty
-   - Return everything as `Category` called `ewk_wjets` and specify it is dependant on `WZ` transfer factor of previous `ewk_zjets` category
 
-# 3. What are `Category`, `Channel` and `Bin` doing?
+| Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
+| ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
+| `Wmu`       | $\frac{W^\text{EWK}_\text{SR}\to l\nu}{W^\text{EWK}_{1\mu}\to l\nu}$ | X    | X       |        | X    |
+| `We`        | $\frac{W^\text{EWK}_\text{SR}\to l\nu}{W^\text{EWK}_{1e}\to l\nu}$   | X    | X       |        | X    |
+
+Return everything as `Category` called `ewk_wjets`, specifying it is dependant on `WZ` transfer factor of previous `ewk_zjets` category.
+
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{W^\text{EWK}_{SR}\to l\nu}$
+which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
+
+# 3. Overview of `Category`, `Channel` and `Bin` classes
 
 ## 3.1. `Category`
 
