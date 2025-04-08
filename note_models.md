@@ -14,8 +14,8 @@
   - [2.4. Recap of `Z_constraints_ewk_withphoton.py`:](#24-recap-of-z_constraints_ewk_withphotonpy)
   - [2.5. Recap of `W_constraints.py`:](#25-recap-of-w_constraintspy)
 - [3. Overview of `Category`, `Channel` and `Bin` classes](#3-overview-of-category-channel-and-bin-classes)
-  - [3.1. `Category`](#31-category)
   - [3.2. `Channel`](#32-channel)
+  - [3.1. `Category`](#31-category)
   - [3.3. `Bin`](#33-bin)
 - [4. Stepping through `init_channels` in more details](#4-stepping-through-init_channels-in-more-details)
 - [5. Stepping through `convert_to_combine_workspace` in more details](#5-stepping-through-convert_to_combine_workspace-in-more-details)
@@ -291,8 +291,10 @@ which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{E
 to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
 
 # 3. Overview of `Category`, `Channel` and `Bin` classes
-TODO
-## 3.1. `Category`
+
+These classes are used at the different stages of `generate_combine_model.py`
+to store transfer factors, nuisances, and build the distributions
+of the different process parametrized by the $Z^\text{QCD}_\text{SR}\to \nu\nu$ yield.
 
 ## 3.2. `Channel`
 
@@ -302,16 +304,35 @@ A `Channel` object holds:
    - A name, and some IDs to link to `Category` and `Bin`
 
 And two methods are defined to add:
-   - a nuisances that applies on all bins (normalization?)
-   - a shape nuisance (quadratic or lognorm, I think we only use quadratic)
+   - a nuisances that applies on all bins (normalization)
+   - a shape nuisance, where the effect 
+      of the nuisance in each bin is modeled with a function (lognormal) that depends 
+      on the up and down variations the nuisance is derived from.
 
-The model construction script run create different channels and add relevent nuisances
-for veto, JES/JER, theory systematics as well as statistical uncertainties
+All channels are created in the different model construction scripts,
+which also add the relevent nuisances to them 
+(for veto, JES/JER, theory systematics as well as statistical uncertainties).
+
+## 3.1. `Category`
+
+A `Category` object holds:
+   - A collection of `Channel`s
+   - A name, and some IDs to link to `Category` and `Bin`
+   - Optionally, a dependance on `Channel` from another `Category`
+
+It's main method is `init_channels`, 
+which is used to build the distributions of all the different process,
+parametrized by the $Z^\text{QCD}_\text{SR}\to \nu\nu$ yield and all nuisances affecting each process.
+This is done by first creating a collection of `Bin` objects that handle parametrizing the number of events for each bin separately.
+
 
 ## 3.3. `Bin`
 
-bin content of transfer factor, edges, id of category and control region
-Bin.cr holds the full `Channel` object
+A `Bin` object holds:
+   - A name, and some IDs to link to `Category` and `Bin`
+
+This is the class that handles, inside the `setup_expect_var` method, fetching the transfer factor, yield of $Z^\text{QCD}_\text{SR}\to \nu\nu$,
+and nuisances for a given process and make their product to make a parametrized distribution.
 
 # 4. Stepping through `init_channels` in more details
 
