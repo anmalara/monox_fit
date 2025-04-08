@@ -17,35 +17,22 @@
   - [3.1. `Category`](#31-category)
   - [3.2. `Channel`](#32-channel)
   - [3.3. `Bin`](#33-bin)
-  - [3.4. What is happening in `runModel.py` when doing `cn.init_channels()`?](#34-what-is-happening-in-runmodelpy-when-doing-cninit_channels)
-  - [3.5. What is happening in `convert_to_combine_workspace`?](#35-what-is-happening-in-convert_to_combine_workspace)
-- [4. What is a `RooParametricHist` ?](#4-what-is-a-rooparametrichist-)
-  - [4.1. 🧠 **Core Idea**](#41--core-idea)
-  - [4.2. 📦 **Key Components**](#42--key-components)
-    - [4.2.1. Member Variables:](#421-member-variables)
-  - [4.3. 🔨 **Constructor Behavior**](#43--constructor-behavior)
-  - [4.4. ⚙️ **Main Methods**](#44-️-main-methods)
-    - [4.4.1. `evaluate()`:](#441-evaluate)
-    - [4.4.2. `evaluatePartial()`:](#442-evaluatepartial)
-    - [4.4.3. `evaluateFull()`:](#443-evaluatefull)
-    - [4.4.4. `evaluateMorphFunction(int bin)`:](#444-evaluatemorphfunctionint-bin)
-  - [4.5. 📈 **Morphing Support**](#45--morphing-support)
-  - [4.6. 🧮 **Integral Support**](#46--integral-support)
-  - [4.7. 🧩 **Utility Methods**](#47--utility-methods)
-  - [4.8. 🔍 Summary](#48--summary)
-  - [4.9. ✅ `evaluatePartial()`](#49--evaluatepartial)
-    - [4.9.1. 📌 What it does:](#491--what-it-does)
-    - [4.9.2. 🔍 Code:](#492--code)
-    - [4.9.3. 🔎 Step-by-step:](#493--step-by-step)
-  - [4.10. ✅ `evaluateFull()`](#410--evaluatefull)
-    - [4.10.1. 📌 What it does:](#4101--what-it-does)
-    - [4.10.2. 🔍 Code:](#4102--code)
-    - [4.10.3. 🔎 Step-by-step:](#4103--step-by-step)
-  - [4.11. ✅ `evaluateMorphFunction(int bin_index)`](#411--evaluatemorphfunctionint-bin_index)
-    - [4.11.1. 📌 What it does:](#4111--what-it-does)
-    - [4.11.2. 🔍 Code:](#4112--code)
-    - [4.11.3. 🔎 Step-by-step:](#4113--step-by-step)
-  - [4.12. 🧠 Example Summary](#412--example-summary)
+- [4. Stepping through `init_channels` in more details](#4-stepping-through-init_channels-in-more-details)
+- [5. Stepping through `convert_to_combine_workspace` in more details](#5-stepping-through-convert_to_combine_workspace-in-more-details)
+- [6. What is a `RooParametricHist` ?](#6-what-is-a-rooparametrichist-)
+  - [6.1. Member Variables:](#61-member-variables)
+  - [6.2. Constructor Behavior](#62-constructor-behavior)
+  - [6.3. Main Methods](#63-main-methods)
+    - [6.3.1. `evaluate()`:](#631-evaluate)
+    - [6.3.2. `evaluatePartial()`:](#632-evaluatepartial)
+      - [6.3.2.1. Code:](#6321-code)
+      - [6.3.2.2. Step-by-step:](#6322-step-by-step)
+    - [6.3.3. `evaluateFull()`:](#633-evaluatefull)
+      - [6.3.3.1. Code:](#6331-code)
+      - [6.3.3.2. Step-by-step:](#6332-step-by-step)
+    - [6.3.4. `evaluateMorphFunction(int bin)`:](#634-evaluatemorphfunctionint-bin)
+      - [6.3.4.1. Code:](#6341-code)
+      - [6.3.4.2. Step-by-step:](#6342-step-by-step)
 
 # 1. Overview of what is done when running `generate_combine_model.py`:
 
@@ -304,7 +291,7 @@ which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{E
 to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
 
 # 3. Overview of `Category`, `Channel` and `Bin` classes
-
+TODO
 ## 3.1. `Category`
 
 ## 3.2. `Channel`
@@ -326,7 +313,8 @@ for veto, JES/JER, theory systematics as well as statistical uncertainties
 bin content of transfer factor, edges, id of category and control region
 Bin.cr holds the full `Channel` object
 
-## 3.4. What is happening in `runModel.py` when doing `cn.init_channels()`?
+# 4. Stepping through `init_channels` in more details
+
 Loop over categories, do `Category.init_channels()`
 
 Loop over control regions (`Channel`s)
@@ -408,7 +396,7 @@ Loop over each bin:
 - Save prefit distributions
 - TODO: Last step is unclear, is it a check that all expected distribution exist?
 
-## 3.5. What is happening in `convert_to_combine_workspace`?
+# 5. Stepping through `convert_to_combine_workspace` in more details
 
    - open the workspace, 
    - For every "category" (as in the year, here `vbf_2018`)
@@ -447,19 +435,13 @@ Loop over each bin:
    - Get all parameters in the workspace
    - for all background nuisances: print the line to add in the datacard template, `{param.GetName()} param {param.getVal()} 1`
 
-
-
-
       
-# 4. What is a `RooParametricHist` ?
+# 6. What is a `RooParametricHist` ?
 
-ChatGPT's explaination of the code:
-
-This `RooParametricHist` class is a **custom RooFit probability density function (PDF)** implemented in C++. It models a **binned histogram-like PDF**, where the bin contents are **free parameters**, and optionally supports **"morphing"** to smoothly interpolate between systematic variations. Here's a detailed breakdown of what it does and how it works:
+The `RooParametricHist` class is a **custom RooFit probability density function (PDF)**. It models a **binned histogram-like PDF**, where the bin contents are **free parameters**.
 
 ---
 
-## 4.1. 🧠 **Core Idea**
 The class defines a PDF where:
 - The shape is determined by a histogram (`TH1`) with a number of bins.
 - Each bin has an associated **parameter** that represents its content (normalized).
@@ -468,10 +450,8 @@ The class defines a PDF where:
 
 ---
 
-## 4.2. 📦 **Key Components**
-
-### 4.2.1. Member Variables:
-- `x`: The observable (like `mass`, `pt`, etc.).
+## 6.1. Member Variables:
+- `x`: The observable (in our case, $m_{jj}$).
 - `pars`: A list of parameters, each representing the bin content (as a `RooAbsReal`).
 - `bins`, `widths`: Vectors holding the bin edges and widths from the input histogram.
 - `_coeffList`: Morphing coefficients (nuisance parameters).
@@ -481,7 +461,7 @@ The class defines a PDF where:
 
 ---
 
-## 4.3. 🔨 **Constructor Behavior**
+## 6.2. Constructor Behavior
 ```cpp
 RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbsReal& _x, RooArgList& _pars, const TH1 &_shape)
 ```
@@ -491,9 +471,9 @@ RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbs
 
 ---
 
-## 4.4. ⚙️ **Main Methods**
+## 6.3. Main Methods
 
-### 4.4.1. `evaluate()`:
+### 6.3.1. `evaluate()`:
 - Main function called by RooFit to evaluate the PDF.
 - Calls either:
   - `evaluateFull()` if morphing is enabled.
@@ -501,70 +481,14 @@ RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbs
 - Normalizes by bin width.
 - Returns the PDF value at current `x`.
 
-### 4.4.2. `evaluatePartial()`:
-- Determines the bin `x` falls into.
-- Returns the corresponding parameter value, normalized by bin width.
-
-### 4.4.3. `evaluateFull()`:
-- Same as `evaluatePartial`, but also applies **morphing factors** to the bin value.
-
-### 4.4.4. `evaluateMorphFunction(int bin)`:
-- Computes a scale factor to apply to a bin’s parameter based on current values of morph parameters (`_coeffList`).
-- Uses `_diffs` and `_sums` to smoothly morph the bin content.
-
 ---
 
-## 4.5. 📈 **Morphing Support**
-```cpp
-void RooParametricHist::addMorphs(RooDataHist &hpdfU, RooDataHist &hpdfD, RooRealVar &cVar, double smoothRegion)
-```
-- Adds one morphing parameter.
-- Computes the "up" and "down" variations of each bin, relative to the nominal.
-- Stores difference and sum terms for smooth interpolation.
+### 6.3.2. `evaluatePartial()`:
+This function is used when **morphing is not enabled**.
+It finds the bin where the current observable value `x` lies, retrieves the corresponding bin parameter (from `pars`),
+and returns the normalized value for that bin.
 
----
-
-## 4.6. 🧮 **Integral Support**
-Implements:
-```cpp
-Double_t analyticalIntegral(Int_t code, const char* rangeName) const
-```
-- Computes analytical integrals over a range (needed for RooFit normalization).
-- Sums only the relevant part of bins that fall within the specified range.
-
----
-
-## 4.7. 🧩 **Utility Methods**
-- `getBinVar(i)`: Returns the i-th parameter (for bin i).
-- `getAllBinVars()`: Returns all bin parameters.
-- `getFullSum()`: Sums up all bin values (with morphing if active).
-
----
-
-## 4.8. 🔍 Summary
-
-**RooParametricHist** is:
-- A **parametric PDF** whose shape is defined by a histogram template.
-- Each bin content is a **free parameter** (`pars[i]`).
-- Optionally **morphable** using systematic variations (e.g., nuisance parameters).
-- Useful for **template morphing**, **histogram fitting**, and **statistical interpretations** like limits or likelihood scans in High Energy Physics analyses.
-
----
-
-If you'd like, I can draw a diagram of how it works or help you use it in a RooFit workspace. Let me know what you’re working on!
-
-Further explation of the evaluation methods:
-
-Absolutely! Let's walk through each of those functions—`evaluatePartial`, `evaluateFull`, and `evaluateMorphFunction`—in **clear, beginner-friendly C++ explanations**. These are central to how the `RooParametricHist` class computes the value of the PDF.
-
----
-
-## 4.9. ✅ `evaluatePartial()`
-
-### 4.9.1. 📌 What it does:
-This function is used when **morphing is not enabled**. It finds the bin where the current observable value `x` lies, retrieves the corresponding bin parameter (from `pars`), and returns the normalized value for that bin.
-
-### 4.9.2. 🔍 Code:
+#### 6.3.2.1. Code:
 ```cpp
 double RooParametricHist::evaluatePartial() const
 {
@@ -586,7 +510,7 @@ double RooParametricHist::evaluatePartial() const
 }
 ```
 
-### 4.9.3. 🔎 Step-by-step:
+#### 6.3.2.2. Step-by-step:
 1. **Find bin:** Uses `std::upper_bound` to find the first bin edge that is *greater than* the current value of `x`. This tells us which bin `x` falls into.
 2. **Check edge cases:**
    - If `x` is less than the first bin edge → return 0 (underflow).
@@ -598,12 +522,10 @@ double RooParametricHist::evaluatePartial() const
 
 ---
 
-## 4.10. ✅ `evaluateFull()`
-
-### 4.10.1. 📌 What it does:
+### 6.3.3. `evaluateFull()`:
 Used when **morphing is enabled**. This is similar to `evaluatePartial`, but it applies a **morphing correction factor** to the bin content.
 
-### 4.10.2. 🔍 Code:
+#### 6.3.3.1. Code:
 ```cpp
 double RooParametricHist::evaluateFull() const
 {
@@ -625,7 +547,7 @@ double RooParametricHist::evaluateFull() const
 }
 ```
 
-### 4.10.3. 🔎 Step-by-step:
+#### 6.3.3.2. Step-by-step:
 1. **Check range:**
    - If `x` is before the first bin → return 0.
    - If `x` is past the last bin → return 0.
@@ -637,12 +559,11 @@ double RooParametricHist::evaluateFull() const
 
 ---
 
-## 4.11. ✅ `evaluateMorphFunction(int bin_index)`
+### 6.3.4. `evaluateMorphFunction(int bin)`:
+- Computes a scale factor to apply to a bin’s parameter based on current values of morph parameters (`_coeffList`).
+- Uses `_diffs` and `_sums` to smoothly morph the bin content.
 
-### 4.11.1. 📌 What it does:
-Computes a **morphing scale factor** for a given bin. This lets the bin content be adjusted (scaled) based on **nuisance parameters** like shape uncertainties.
-
-### 4.11.2. 🔍 Code:
+#### 6.3.4.1. Code:
 ```cpp
 double RooParametricHist::evaluateMorphFunction(int j) const
 {
@@ -663,27 +584,10 @@ double RooParametricHist::evaluateMorphFunction(int j) const
 }
 ```
 
-### 4.11.3. 🔎 Step-by-step:
+#### 6.3.4.2. Step-by-step:
 1. **Skip if no morphing:** If morphing isn’t enabled, return scale = 1 (no effect).
 2. **Loop over morphing parameters (`_coeffList`):**
    - Get the current value of each nuisance parameter `x`.
    - Compute a morphing term using `_diffs` and `_sums`, which represent up/down variations in the shape.
    - Multiply `scale` by a factor that adjusts the bin value.
 3. **Return scale factor** that can be applied to the bin.
-
----
-
-## 4.12. 🧠 Example Summary
-
-Let’s say:
-- You have 3 bins: `[0, 10), [10, 20), [20, 30)`
-- Parameters `p0`, `p1`, `p2` correspond to those bins.
-- `x = 12` → falls in bin 1
-- PDF value = `p1 / bin_width`
-
-If morphing is on:
-- PDF value = `p1 * morph_scale / bin_width`
-
----
-
-Let me know if you'd like a **Python translation** of this logic or a **visual diagram**!
