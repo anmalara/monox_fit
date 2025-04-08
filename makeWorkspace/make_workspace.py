@@ -354,6 +354,7 @@ def write_histogram_to_workspace(
 
     # Write the individual histograms for easy transfer factor calculation later on
     hist.SetDirectory(0)
+    hist.Sumw2()
     output_dir.cd()
     output_dir.WriteTObject(hist)
 

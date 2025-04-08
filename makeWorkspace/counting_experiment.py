@@ -178,9 +178,13 @@ class Bin:
             self.wspace_out._import(self.sfactor, r.RooFit.RecycleConflictNodes())
 
     def setup_expect_var(self, functionalForm=""):
+
+        # Either fetch the QCD Znunu in SR yield,
+        # or the transfer factor and nuisances from the category this process depends on
         print(functionalForm)
         if not len(functionalForm):
             if not self.wspace_out.var(naming_convention(self.id, self.catid, self.convention)):
+                # RooRealVar containing `initY` (for `qcd_zjets`, this is the QCD Znunu in SR yield)
                 self.model_mu = r.RooRealVar(
                     naming_convention(self.id, self.catid, self.convention), "Model of N expected events in %d" % self.id, self.initY, 0, 3 * self.initY
                 )
@@ -194,6 +198,7 @@ class Bin:
             else:
                 DEPENDANT = "%s_bin%d" % (functionalForm, self.id + 1)
 
+            # Fetch the expected yield from the category this one depends on (pmu_cat_{category}_{BASE}_ch_{CONTROL})
             self.model_mu = self.wspace_out.function("pmu_%s" % (DEPENDANT))
 
         arglist = r.RooArgList((self.model_mu), self.wspace_out.var(self.sfactor.GetName()))
@@ -204,7 +209,12 @@ class Bin:
             prod = 0
             if len(nuisances) > 1:
                 nuis_args = r.RooArgList()
+                # Fetch each nuisance, and create a "delta" formula (1 + nuisance effect), store it for the product
                 for nuis in nuisances:
+                    # Skip nuisances that have the "temp" Attribute.
+                    # This attribute is given to nuisances in bins where the difference between up and down variation is 0
+                    # Effectively, this skips the EWK theory variations and statistical variations, which are decorelated by bin,
+                    # for the bins they don't affect.
                     if self.wspace_out.function("sys_function_%s_%s" % (nuis, self.binid)).getAttribute("temp"):
                         continue
 
@@ -226,6 +236,7 @@ class Bin:
                     r.RooArgList(self.wspace_out.function("sys_function_%s_%s" % (nuisances[0], self.binid))),
                 )
             arglist.add(prod)
+            # Now create the formula for the expected number of events, which is the product of the QCD Znunu yield, transfer factor and nuisances
             self.pure_mu = r.RooFormulaVar("pmu_%s" % self.binid, "Number of expected (signal) events in %s" % self.binid, "(@0*@1)*@2", arglist)
         else:
             self.pure_mu = r.RooFormulaVar("pmu_%s" % self.binid, "Number of expected (signal) events in %s" % self.binid, "(@0*@1)", arglist)
@@ -672,36 +683,62 @@ class Category:
         sample = self._wspace_out.cat("bin_number")
         # print "zeynep sample", sample, self._wspace_out.cat("bin_number")
 
-        # for j,cr in enumerate(self._control_regions):
+        # This loops for every process in the model and builds `Bin` objects.
+        # Each of the `Bin` builds the modeled number of events for that process
+        # in that mjj bin as a function of the nuissances affecting that process
+        # and transfer factors to express it as a function of QCD Znunu in the SR
         for j, cr in enumerate(self._control_regions):
             for i, bl in enumerate(self._bins):
+
+                # Fetch the edges of the bin
                 if i >= len(self._bins) - 1:
                     continue
                 xmin, xmax = bl, self._bins[i + 1]
                 if i == len(self._bins) - 2:
                     xmax = 999999.0
+
+                # Initialize the bin, with IDs to link it to the process and model,
                 ch = Bin(self.category, self.catid, cr.chid, i, self._var, "", self._wspace, self._wspace_out, xmin, xmax, convention=self.convention)
+                # link the process
                 ch.set_control_region(cr)
+
+                # This is unused
                 if cr.has_background():
                     ch.add_background(cr.ret_background())
-                ch.set_label(sample)  # should import the sample category label
-                ch.set_initY(self._target_datasetname)
-                ch.set_sfactor(cr.ret_sfactor(i))
-                # This has to the the last thing
-                # Note, we can have an expected value which is itself a RooFormulaVar
 
-                # model_mu added to ws somewhere setup_expect_var (in else block)
+                ch.set_label(sample)  # should import the sample category label
+
+                # set the "initial yield" to the number of events of the process of that category for that mjj bin.
+                # This is only usefull for process in the `qcd_zjets` model,
+                # where initY is set to the yield of QCD Znunu in the SR
+                ch.set_initY(self._target_datasetname)
+
+                # Set the "scale factor" for this mjj bin (rather a transfer factor),
+                # the ratio between the yield of the process of the "control region" and
+                # the process of the "category" (e.g. in the `ewk_zjets` model, it would be process / EWK Znunu in SR)
+                ch.set_sfactor(cr.ret_sfactor(i))
+
+                # Compute the expected number of events as a function of QCD Znunu in the SR.
+                # This is done as a product of transfer factors such that
+                # every process is only parametrized by the QCD Znunu yield (and nuisances)
+                #
+                # for the "non dependant" case (only `qcd_zjets`), the QCD Znunu in the SR and a single transfer factors are used
+                # otherwise, for the "dependant" case, the expression passed to `setup_expect_var` is used
+                # to fetch the transfer factors and nuisances from the category it depends on, which is then multiplied
+                # to another transfer factor and set of nuisances.
                 if self.isSecondDependant:
                     ch.setup_expect_var("cat_%s_%s_ch_%s" % (self.category, self.BASE, self.CONTROL))
                 else:
                     ch.setup_expect_var()
 
+                # (Not usefull for the fit)
                 # initialise expected  (but this will be somewhat a "post" state), i.e after fiddling with the nuisance parameters.
                 ch.set_initE()
                 ch.add_to_dataset()
                 self.channels.append(ch)
         # fit is buggered so need to scale by 1.1
 
+        # Save the prefit histograms (these are not used by the combine fit)
         for j, cr in enumerate(self._control_regions):
             # save the prefit histos
             cr_pre_hist = r.TH1F(
@@ -713,6 +750,8 @@ class Category:
             self.all_hists.append(cr_pre_hist.Clone())
             self.cr_prefit_hists.append(cr_pre_hist.Clone())
 
+        # Purpose of this is unclear
+        # Maybe to check everything is computed correctly in all bins of all processes?
         for i, bl in enumerate(self.channels):
             if i >= len(self._bins) - 1:
                 break
