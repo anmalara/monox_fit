@@ -178,9 +178,13 @@ class Bin:
             self.wspace_out._import(self.sfactor, r.RooFit.RecycleConflictNodes())
 
     def setup_expect_var(self, functionalForm=""):
+
+        # Either fetch the QCD Znunu in SR yield,
+        # or the transfer factor and nuisances from the category this process depends on
         print(functionalForm)
         if not len(functionalForm):
             if not self.wspace_out.var(naming_convention(self.id, self.catid, self.convention)):
+                # RooRealVar containing `initY` (for `qcd_zjets`, this is the QCD Znunu in SR yield)
                 self.model_mu = r.RooRealVar(
                     naming_convention(self.id, self.catid, self.convention), "Model of N expected events in %d" % self.id, self.initY, 0, 3 * self.initY
                 )
@@ -194,6 +198,7 @@ class Bin:
             else:
                 DEPENDANT = "%s_bin%d" % (functionalForm, self.id + 1)
 
+            # Fetch the expected yield from the category this one depends on (pmu_cat_{category}_{BASE}_ch_{CONTROL})
             self.model_mu = self.wspace_out.function("pmu_%s" % (DEPENDANT))
 
         arglist = r.RooArgList((self.model_mu), self.wspace_out.var(self.sfactor.GetName()))
@@ -204,7 +209,12 @@ class Bin:
             prod = 0
             if len(nuisances) > 1:
                 nuis_args = r.RooArgList()
+                # Fetch each nuisance, and create a "delta" formula (1 + nuisance effect), store it for the product
                 for nuis in nuisances:
+                    # Skip nuisances that have the "temp" Attribute.
+                    # This attribute is given to nuisances in bins where the difference between up and down variation is 0
+                    # Effectively, this skips the EWK theory variations and statistical variations, which are decorelated by bin,
+                    # for the bins they don't affect.
                     if self.wspace_out.function("sys_function_%s_%s" % (nuis, self.binid)).getAttribute("temp"):
                         continue
 
@@ -226,6 +236,7 @@ class Bin:
                     r.RooArgList(self.wspace_out.function("sys_function_%s_%s" % (nuisances[0], self.binid))),
                 )
             arglist.add(prod)
+            # Now create the formula for the expected number of events, which is the product of the QCD Znunu yield, transfer factor and nuisances
             self.pure_mu = r.RooFormulaVar("pmu_%s" % self.binid, "Number of expected (signal) events in %s" % self.binid, "(@0*@1)*@2", arglist)
         else:
             self.pure_mu = r.RooFormulaVar("pmu_%s" % self.binid, "Number of expected (signal) events in %s" % self.binid, "(@0*@1)", arglist)
