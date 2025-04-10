@@ -1,7 +1,10 @@
 import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Category, Channel
-from utils.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
+from utils.generic.logger import initialize_colorized_logger
+from utils.workspace.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
+
+logger = initialize_colorized_logger(log_level="INFO")
 
 
 def define_model(
@@ -400,7 +403,7 @@ def do_stat_unc(
 
         # Safety
         if (content <= 0) or (err / content < 0.001):
-            raise ValueError(f"Cannot properly derive statistical uncertainty variations for histogram {histogram.GetName()}, issue in bin {b}")
+            logger.critical(f"Stat. unc. undefined in bin {b} of hist '{histogram.GetName()}': content = {content}, error = {err}.", exception_cls=ValueError)
 
         # Careful: The bin count "b" in this loop starts at 1
         # In the combine model, we want it to start from 0!
@@ -411,7 +414,7 @@ def do_stat_unc(
         outfile.WriteTObject(up)
         outfile.WriteTObject(down)
 
-        print("Adding an error -- ", up.GetName(), err)
+        logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
         CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
 
 

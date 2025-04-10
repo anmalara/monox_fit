@@ -24,53 +24,41 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
     assert os.path.exists(model_file)
     for bgtype in bgtypes:
         f = r.TFile(model_file, "READ")
-
-        replacements = {
-            "TYPE": bgtype,
-            "CAT": category,
-            "TAG": tag,
-            "PROC": process,
-            "YEAR": year,
-        }
-        print(replacements)
         if process == "zmm":
-            dirname = "Z_constraints_{TYPE}{TAG}category_{CAT}"
-            base = "{TYPE}zmm_weights_" + category
+            dirname = f"Z_constraints_{bgtype}{tag}category_{category}"
+            base = f"{bgtype}zmm_weights_" + category
             label = "R_{Z(#mu#mu)}"
             addsys = sqrt(0.02**2 + 0.02**2 + 0.02**2)
 
         if process == "zee":
-            dirname = "Z_constraints_{TYPE}{TAG}category_{CAT}"
-            base = "{TYPE}zee_weights_" + category
+            dirname = f"Z_constraints_{bgtype}{tag}category_{category}"
+            base = f"{bgtype}zee_weights_" + category
             label = "R_{Z(ee)}"
             addsys = sqrt(0.05**2 + 0.02**2 + 0.01**2)
 
         if process == "photon":
-            dirname = "Z_constraints_{TYPE}{TAG}category_{CAT}"
-            base = "{TYPE}photon_weights_{CAT}"
+            dirname = f"Z_constraints_{bgtype}{tag}category_{category}"
+            base = f"{bgtype}photon_weights_{category}"
             label = "R_{#gamma}"
             addsys = 0.01
 
         if process == "w_weights":
-            dirname = "Z_constraints_{TYPE}{TAG}category_{CAT}"
-            base = "{TYPE}w_weights_" + category
+            dirname = f"Z_constraints_{bgtype}{tag}category_{category}"
+            base = f"{bgtype}w_weights_" + category
             label = "R_{Z/W}"
             addsys = 0
 
         if process == "wen":
-            dirname = "W_constraints_{TYPE}category_" + category
-            base = "{TYPE}wen_weights_" + category
+            dirname = f"W_constraints_{bgtype}category_" + category
+            base = f"{bgtype}wen_weights_" + category
             label = "R_{W(e#nu)}"
             addsys = sqrt(0.025**2 + 0.01**2 + 0.01**2)
 
         if process == "wmn":
-            dirname = "W_constraints_{TYPE}category_{CAT}"
-            base = "{TYPE}wmn_weights_{CAT}"
+            dirname = f"W_constraints_{bgtype}category_{category}"
+            base = f"{bgtype}wmn_weights_{category}"
             label = "R_{W(#mu#nu)}"
             addsys = sqrt(0.01**2 + 0.01**2 + 0.01**2)
-        dirname = dirname.format(**replacements)
-        base = base.format(**replacements)
-        print(dirname + "/" + base)
         ratio = f.Get(dirname + "/" + base)
         up_final = ratio.Clone("ratio")
         up_ewk = ratio.Clone("ratio")
@@ -139,16 +127,10 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
         band_ewkunc = ratio.Clone("ratio2")
         band_fullunc = ratio.Clone("ratio3")
         for b in range(ratio.GetNbinsX() + 1):
-            band_ewkunc.SetBinError(
-                b, sqrt(unc_dict["ewk"][b] ** 2 + unc_dict["stat"][b] ** 2)
-            )
+            band_ewkunc.SetBinError(b, sqrt(unc_dict["ewk"][b] ** 2 + unc_dict["stat"][b] ** 2))
             band_ewkqcdunc.SetBinError(
                 b,
-                sqrt(
-                    unc_dict["ewk"][b] ** 2
-                    + unc_dict["qcd"][b] ** 2
-                    + unc_dict["stat"][b] ** 2
-                ),
+                sqrt(unc_dict["ewk"][b] ** 2 + unc_dict["qcd"][b] ** 2 + unc_dict["stat"][b] ** 2),
             )
             band_fullunc.SetBinError(
                 b,
@@ -172,9 +154,7 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
         band_fullunc.GetYaxis().SetTitle(label)
         band_fullunc.GetYaxis().CenterTitle()
         band_fullunc.GetYaxis().SetTitleSize(0.4 * c.GetLeftMargin())
-        band_fullunc.GetXaxis().SetTitle(
-            "U [GeV]" if "mono" in category else "M_{jj} [GeV]"
-        )
+        band_fullunc.GetXaxis().SetTitle("U [GeV]" if "mono" in category else "M_{jj} [GeV]")
         band_fullunc.GetXaxis().SetTitleSize(0.4 * c.GetBottomMargin())
         band_fullunc.SetMaximum(2.0 * ratio.GetMaximum())
         band_fullunc.SetMinimum(0.5 * ratio.GetMinimum())
@@ -209,9 +189,7 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
         latex2.SetNDC()
         latex2.SetTextSize(0.035)
         latex2.SetTextAlign(31)  # align right
-        latex2.DrawLatex(
-            0.87, 0.95, "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(LUMI=lumi)
-        )
+        latex2.DrawLatex(0.87, 0.95, f"{lumi:.1f} fb^{{#minus1}} (13.6 TeV)")
 
         latex3 = r.TLatex()
         latex3.SetNDC()
@@ -237,11 +215,6 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
             os.makedirs(outdir)
 
         for extension in ["png", "pdf", "C"]:
-            c.SaveAs(
-                outdir
-                + "/rfactor_{CAT}_{TYPE}{PROC}_{YEAR}.{EXT}".format(
-                    EXT=extension, **replacements
-                )
-            )
+            c.SaveAs(outdir + f"/rfactor_{category}_{bgtype}{process}_{year}.{extension}")
         f.Close()
         c.Close()

@@ -2,9 +2,9 @@
 # Helper functions regarding JES/JER uncertainties
 # ==============================
 
-import ROOT as r
+import ROOT  # type: ignore
 import re
-from utils.general import get_nuisance_name
+from utils.generic.general import get_nuisance_name
 
 
 def get_jes_variations(fjes, year, proc="qcd"):
@@ -34,8 +34,8 @@ def get_jes_jer_source_file_for_tf(category):
     f_jes = None
     for cat, f in f_jes_dict.items():
         if cat in category:
-            f_jes = r.TFile(f)
+            f_jes = ROOT.TFile(f)
     if not f_jes:
-        raise RuntimeError("Could not find a JES source file for category: {}".format(category))
+        raise RuntimeError(f"Could not find a JES source file for category: {category}")
 
     return f_jes

@@ -55,7 +55,7 @@ def plot_nuis(fname, outdir):
                 item.GetXaxis().SetRangeUser(i * perplot, (i + 1) * perplot)
                 item.GetXaxis().SetLabelSize(0.04)
                 item.LabelsOption("v")
-                item.SetTitle("Nuisances {name} {i}".format(name=name, i=i))
+                item.SetTitle(f"Nuisances {name} {i}")
             except:
                 pass
 
@@ -68,7 +68,7 @@ def plot_nuis(fname, outdir):
         c.Draw()
         c.SetCanvasSize(1200, 600)
         for extension in ["png", "pdf"]:
-            c.SaveAs(os.path.join(outdir, "diffnuis_{name}_{i}.{ext}".format(name=name, i=i, ext=extension)))
+            c.SaveAs(os.path.join(outdir, f"diffnuis_{name}_{i}.{extension}"))
 
 
 def cli_args():

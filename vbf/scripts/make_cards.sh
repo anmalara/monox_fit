@@ -4,8 +4,8 @@ set -e
 mkdir -p cards
 # Fill templates
 # for YEAR in 2017 2018; do
-#for YEAR in 2017; do
-for YEAR in 2018; do
+for YEAR in 2017; do
+# for YEAR in 2018; do
     CARD=cards/card_vbf_${YEAR}.txt
     # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
     # cp ../../templates/vbf_template_pyrat2.txt ${CARD}

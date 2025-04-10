@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
 import os
-import glob
-import shutil
 import hashlib
 import argparse
 from typing import Optional
 from datetime import date
-from utils.generic.file_utils import execute_command
 from utils.generic.logger import initialize_colorized_logger
 from makeWorkspace.make_workspace import create_workspace
 from makeWorkspace.generate_combine_model import generate_combine_model

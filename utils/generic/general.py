@@ -11,7 +11,7 @@ def read_key_for_year(key, year):
         return "17" in key
     elif year == 2018:
         return "18" in key
-    raise RuntimeError("Year not recognized: {}".format(year))
+    raise RuntimeError(f"Year not recognized: {year}")
 
 
 def get_nuisance_name(nuisance, year):
@@ -24,7 +24,7 @@ def get_nuisance_name(nuisance, year):
         name = nuisance.split("_")[-1]
 
     if not name:
-        raise RuntimeError("Could not determine a valid name for nuisance: {}".format(nuisance))
+        raise RuntimeError(f"Could not determine a valid name for nuisance: {nuisance}")
 
     # Remove "up/down" tag from the nuisance name
     name = re.sub("Up|Down", "", name)
