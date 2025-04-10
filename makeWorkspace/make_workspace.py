@@ -14,6 +14,7 @@ from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
 from utils.generic.general import is_MC_bkg
 from utils.generic.logger import initialize_colorized_logger
 from utils.generic.colors import green
+from utils.workspace.generic import safe_import
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -349,7 +350,7 @@ def write_histogram_to_workspace(
     msg_service = ROOT.RooMsgService.instance()
     prev_level = msg_service.globalKillBelow()
     msg_service.setGlobalKillBelow(ROOT.RooFit.WARNING)
-    workspace._import(roo_hist)
+    safe_import(workspace=workspace, obj=roo_hist)
     msg_service.setGlobalKillBelow(prev_level)
 
     # Write the individual histograms for easy transfer factor calculation later on

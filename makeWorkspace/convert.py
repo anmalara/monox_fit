@@ -1,5 +1,6 @@
 import ROOT  # type: ignore
 from counting_experiment import naming_convention
+from utils.workspace.generic import safe_import
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
 
@@ -13,8 +14,8 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
     # Loop over all years
     for icat, cat in enumerate(categories):
         # Pick up the category folder
-        fdir = f_simple_hists.Get("category_%s" % cat)
-        wlocal = fdir.Get("wspace_%s" % cat)
+        fdir = f_simple_hists.Get(f"category_{cat}")
+        wlocal = fdir.Get(f"wspace_{cat}")
 
         # pick up the number of bins FROM one of the usual guys
         # initialize samplehist with the first histogram we find in the directory, then break out of the loop
@@ -40,7 +41,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
 
         else:
             # import a Renamed copy of the variable ...
-            varnameext = varname + "_%s" % cat
+            varnameext = f"{varname}_{cat}"
             varl.SetName(varnameext)
 
         # Keys in the fdir
@@ -63,9 +64,9 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                 obj.SetBinContent(1, 0.0001)
             print("Creating Data Hist for ", name)
             # RooDataHist containing distribution of obj along dimension varl
-            dhist = ROOT.RooDataHist(cat + "_" + name, "DataSet - %s, %s" % (cat, name), ROOT.RooArgList(varl), obj)
+            dhist = ROOT.RooDataHist(f"{cat}_{name}", f"DataSet - {cat}, {name}", ROOT.RooArgList(varl), obj)
             # dhist.Print("v")
-            wsin_combine._import(dhist)
+            safe_import(workspace=wsin_combine, obj=dhist)
 
         # next Add in the V-jets backgrounds MODELS
         # Loop over all models (`Category` objects) and all their "control regions" (`Channel` objects)
@@ -82,9 +83,9 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                 for obj in x.convertHistograms:
                     name = obj.GetName()
                     print("Creating Data Hist for ", name)
-                    dhist = ROOT.RooDataHist(cat + "_" + name, "DataSet - %s, %s" % (cat, name), ROOT.RooArgList(varl), obj)
+                    dhist = ROOT.RooDataHist(f"{cat}_{name}", f"DataSet - {cat}, {name}", ROOT.RooArgList(varl), obj)
                     # dhist.Print("v")
-                    wsin_combine._import(dhist)
+                    safe_import(workspace=wsin_combine, obj=dhist)
             except:
                 print("No explicit additional convertHistograms defined")
 
@@ -94,15 +95,13 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
             expectations = ROOT.RooArgList()
             for b in range(nbins):
                 # naming_convention(b, cat+'_'+x.model, "IC" if "MTR" in renameVariable else "BU")))
-                expectations.add(wsin_combine.var("model_mu_cat_%s_bin_%d" % (cat + "_" + x.model, b)))
+                expectations.add(wsin_combine.var(f"model_mu_cat_{cat}_{x.model}_bin_{b}"))
 
             if (not ("wjet" in x.model)) and (not ("ewk" in x.model)):
-                phist = ROOT.RooParametricHist(
-                    "%s_signal_%s_model" % (cat, x.model), "Model Shape for %s in Category %s" % (x.model, cat), varl, expectations, samplehist
-                )
-                phist_norm = ROOT.RooAddition("%s_norm" % phist.GetName(), "Total number of expected events in %s" % phist.GetName(), expectations)
-                wsin_combine._import(phist)
-                wsin_combine._import(phist_norm)
+                phist = ROOT.RooParametricHist(f"{cat}_signal_{x.model}_model", f"Model Shape for {x.model} in Category {cat}", varl, expectations, samplehist)
+                phist_norm = ROOT.RooAddition(f"{phist.GetName()}_norm", f"Total number of expected events in {phist.GetName()}", expectations)
+                safe_import(workspace=wsin_combine, obj=phist)
+                safe_import(workspace=wsin_combine, obj=phist_norm)
 
             # now loop through the "control regions" for this guy
             # This part is to extract all other processes parametrized by QCD Znunu in SR,
@@ -123,24 +122,23 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
                     # Fetch the expected number of events for the process for every bin, paramertized by QCD Znunu in SR and nuisances
                     for b in range(nbins):
                         if "MTR" in renameVariable:
-                            cr_expectations.add(wsin_combine.function("pmu_cat_%s_ch_%s_bin%d" % (cat + "_" + x.model, cr.chid, b + 1)))
+                            cr_expectations.add(wsin_combine.function(f"pmu_cat_{cat}_{x.model}_ch_{cr.chid}_bin{b + 1}"))
                         else:
-                            cr_expectations.add(wsin_combine.function("pmu_cat_%s_ch_%s_bin_%d" % (cat + "_" + x.model, cr.chid, b)))
+                            cr_expectations.add(wsin_combine.function(f"pmu_cat_{cat}_{x.model}_ch_{cr.chid}_bin_{b}"))
 
-                    print("%s_%s_%s_model" % (cat, cr.crname, x.model))
+                    print(f"{cat}_{cr.crname}_{x.model}_model")
                     cr_expectations.Print()
-                    print("Look here", samplehist.GetNbinsX(), cr_expectations.getSize())
                     # Convert the distribution to RooParametricHist, save to the workspace
                     p_phist = ROOT.RooParametricHist(
-                        "%s_%s_%s_model" % (cat, cr.crname, x.model),
-                        "Expected Shape for %s in control region in Category %s" % (cr.crname, cat),
+                        f"{cat}_{cr.crname}_{x.model}_model",
+                        f"Expected Shape for {cr.crname} in control region in Category {cat}",
                         varl,
                         cr_expectations,
                         samplehist,
                     )
-                    p_phist_norm = ROOT.RooAddition("%s_norm" % p_phist.GetName(), "Total number of expected events in %s" % p_phist.GetName(), cr_expectations)
-                    wsin_combine._import(p_phist)
-                    wsin_combine._import(p_phist_norm)
+                    p_phist_norm = ROOT.RooAddition(f"{p_phist.GetName()}_norm", f"Total number of expected events in {p_phist.GetName()}", cr_expectations)
+                    safe_import(workspace=wsin_combine, obj=p_phist)
+                    safe_import(workspace=wsin_combine, obj=p_phist_norm)
 
     # This is the part that prints what parameters should added at the end of the datacard (e.g. the statistical uncertainty for each bin of each process)
     allparams = ROOT.RooArgList(wsin_combine.allVars())

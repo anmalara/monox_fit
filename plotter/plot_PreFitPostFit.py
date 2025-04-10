@@ -321,7 +321,7 @@ def plotPreFitPostFit(region, category, ws_file, fitdiag_file, outdir, lumi, yea
     latex2.SetTextSize(0.6 * c.GetTopMargin())
     latex2.SetTextFont(42)
     latex2.SetTextAlign(31)  # align right
-    latex2.DrawLatex(0.94, 0.95, "{LUMI:.1f} fb^{{-1}} (13.6 TeV)".format(LUMI=lumi))
+    latex2.DrawLatex(0.94, 0.95, f"{lumi:.1f} fb^{{#minus1}} (13.6 TeV)")
     latex2.SetTextSize(0.6 * c.GetTopMargin())
     latex2.SetTextFont(62)
     latex2.SetTextAlign(11)  # align right

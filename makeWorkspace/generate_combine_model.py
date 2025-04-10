@@ -7,6 +7,7 @@ import ROOT  # type: ignore
 from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
 
 from utils.generic.logger import initialize_colorized_logger
+from utils.workspace.generic import safe_import
 from utils.workspace.convert_to_combine_workspace import convert_to_combine_workspace
 
 logger = initialize_colorized_logger(log_level="INFO")
@@ -73,8 +74,8 @@ def generate_combine_model(
     logger.info("Creating global observables")
     sample_type = ROOT.RooCategory("bin_number", "Bin Number")
     observed = ROOT.RooRealVar("observed", "Observed Events bin", 1)
-    workspace._import(sample_type)  # Global variables for dataset
-    workspace._import(observed)
+    safe_import(workspace=workspace, obj=sample_type)  # Global variables for dataset
+    safe_import(workspace=workspace, obj=observed)
 
     # Loop over control region definitions, and load their model definitions
     diag = diagonalizer(workspace)

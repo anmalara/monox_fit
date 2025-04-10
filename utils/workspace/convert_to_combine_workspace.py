@@ -1,6 +1,7 @@
-import ROOT
+import ROOT  # type: ignore
 from typing import Any
 from utils.generic.logger import initialize_colorized_logger
+from utils.workspace.generic import safe_import
 
 ROOT.gSystem.Load("libHiggsAnalysisCombinedLimit")
 logger = initialize_colorized_logger("INFO")
@@ -62,15 +63,15 @@ def convert_to_combine_workspace(
     # save them to the workspace
     for key in fdir.GetListOfKeys():
         obj = key.ReadObj()
-        logger.info(f"{obj.GetName()}, {obj.GetTitle()}, {type(obj)}")
+        logger.debug(f"{obj.GetName()}, {obj.GetTitle()}, {type(obj)}")
         if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
             continue
         if obj.Integral() <= 0:
             obj.SetBinContent(1, 1e-4)
         name = obj.GetName()
-        logger.info(f"Importing histogram {name} for category {cat}")
+        logger.debug(f"Importing histogram {name} for category {cat}")
         dhist = ROOT.RooDataHist(f"{cat}_{name}", f"DataSet - {cat}, {name}", ROOT.RooArgList(varl), obj)
-        wsin_combine._import(dhist)
+        safe_import(workspace=wsin_combine, obj=dhist)
 
     # Add in the V-jets backgrounds MODELS
     # Loop over all models (`Category` objects) and all their "control regions" (`Channel` objects)
@@ -94,14 +95,14 @@ def convert_to_combine_workspace(
                 f"{cat}_signal_{cr_def.model}_model", f"Model Shape for {cr_def.model} in Category {cat}", varl, expectations, samplehist
             )
             norm = ROOT.RooAddition(f"{phist.GetName()}_norm", f"Total number of expected events in {phist.GetName()}", expectations)
-            wsin_combine._import(phist)
-            wsin_combine._import(norm)
+            safe_import(workspace=wsin_combine, obj=phist)
+            safe_import(workspace=wsin_combine, obj=norm)
 
         # Add control region models
         # This part is to extract all other processes parametrized by QCD Znunu in SR,
         # convert and save them to RooParametricHist in the workspace
         for cn in cmb_categories:
-            logger.info(f"CHECK {cn.catid} {cn.cname}")
+            logger.debug(f"CHECK {cn.catid} {cn.cname}")
             # TODO: we are already looping through every model,
             # is this loop really needed? We are continuing
             # if we don't match the imported model anyway
@@ -120,7 +121,6 @@ def convert_to_combine_workspace(
                 model_name = f"{cat}_{cr.crname}_{cr_def.model}_model"
                 logger.info(f"Building CR model: {model_name}")
                 cr_expectations.Print()
-                print("Look here", samplehist.GetNbinsX(), cr_expectations.getSize())
                 # Convert the distribution to RooParametricHist, save to the workspace
                 cr_phist = ROOT.RooParametricHist(
                     model_name,
@@ -130,8 +130,8 @@ def convert_to_combine_workspace(
                     samplehist,
                 )
                 cr_norm = ROOT.RooAddition(f"{cr_phist.GetName()}_norm", "Total number of expected events in {cr_phist.GetName()}", cr_expectations)
-                wsin_combine._import(cr_phist)
-                wsin_combine._import(cr_norm)
+                safe_import(workspace=wsin_combine, obj=cr_phist)
+                safe_import(workspace=wsin_combine, obj=cr_norm)
 
     # Log external nuisance parameters
     # This is the part that prints what parameters should added at the end of the datacard
@@ -143,4 +143,4 @@ def convert_to_combine_workspace(
             continue
         if par.getAttribute("BACKGROUND_NUISANCE"):
             continue  # these aren't in fact used for combine
-        logger.info(f"External nuisance parameter: {par.GetName()} = {par.getVal():.3f}")
+        logger.info(f"External nuisance parameter: {par.GetName()} param {par.getVal():.1f} {par.getError():.1f}")
