@@ -214,7 +214,8 @@ def plot_ratio(process, category, model_file, outdir, lumi, year):
         if not os.path.exists(outdir):
             os.makedirs(outdir)
 
-        for extension in ["png", "pdf", "C"]:
+        # for extension in ["png", "pdf", "C"]:
+        for extension in ["pdf"]:
             c.SaveAs(outdir + f"/rfactor_{category}_{bgtype}{process}_{year}.{extension}")
         f.Close()
         c.Close()

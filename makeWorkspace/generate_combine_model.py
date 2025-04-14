@@ -4,7 +4,7 @@ import os
 import re
 import argparse
 import ROOT  # type: ignore
-from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
+from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
 from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.generic import safe_import
@@ -69,7 +69,7 @@ def generate_combine_model(
     output_file = ROOT.TFile(output_filename, "RECREATE")
 
     workspace = ROOT.RooWorkspace("combinedws")
-    workspace._safe_import = SafeWorkspaceImporter(workspace)  # type: ignore
+    workspace._safe_import = SafeWorkspaceImporter(workspace)
 
     logger.info("Creating global observables")
     sample_type = ROOT.RooCategory("bin_number", "Bin Number")
@@ -82,14 +82,13 @@ def generate_combine_model(
     cmb_categories = []
     for cr_name in controlregions_def:
         module = __import__(cr_name)
-        match = re.match(r".*201(6|7|8).*", category)
-        if not match or len(match.groups()) != 1:
+
+        cat, year = category.split("_")
+        if year not in ["2017", "2018", "Run3"]:
             logger.critical(f"Cannot determine year from category: {category}", exception_cls=RuntimeError)
-        year = int("201" + match.group(1))
 
         cr_dir = output_file.mkdir(f"{cr_name}_category_{category}")
-        # This `cmodel` functions is where models are created.
-        # This function does two things:
+        # The `cmodel` function is where models are created. This function does two things:
         # 1) Compute transfer factors
         #   Processes are express different processes as a ratio with of QCD Znunu in SR
         #   For the qcd_zjets model, this is directly the ratio of the two processes
@@ -98,34 +97,29 @@ def generate_combine_model(
         # 2) Add nuisances and add them to the workspace
         #   for veto, JES/JER, theory and statistical uncertainties
         #   for each transfer factor in the model
-        if "MTR" in rename:
-            model = module.cmodel(category, cr_name, input_file, cr_dir, workspace, diag, year, convention="IC")
-        else:
-            model = module.cmodel(category, cr_name, input_file, cr_dir, workspace, diag, year)
-
+        convention = "IC" if "MTR" in rename else "BU"
+        model = module.cmodel(category, cr_name, input_file, cr_dir, workspace, diag, year, convention)
         cmb_categories.append(model)
 
-    # Initialize model channels: model_mu_cat_vbf_2017_qcd_zjets_bin_0 TODO
     for model in cmb_categories:
         logger.info(f"Initializing model channels for: {model}")
         # This is where the actual model distributions as a function of QCD Znunu in SR are made for all processes.
-        # Processes modeled with `qcd_zjets` are expressed as:
+        # Processes modelled with `qcd_zjets` are expressed as:
         #   (process yield) * [transfer factor = (QCD Znunu in SR) / (process yield)] * Product of all nuisances
         # Processes using the other models will first fetch the above model, before multiplying the transfer factor and nuisances
-        # For instance, EWK Zll in the diMuon region, modeled with `ewk_zjets` will fetch
+        # For instance, EWK Zll in the diMuon region, modelled with `ewk_zjets` will fetch
         #   (EWK Znunu in SR) * [transfer factor = (QCD Znunu in SR) / (EWK Znunu in SR)] * Product of all nuisances (for EWK Znunu in SR)
         # and multiply by
         #   [transfer factor = (EWK Znunu in SR) / (EWK Zll in diMuon)] * Product of all nuisances (for EWK Zll in diMuon)
         # These models are made for each bin of the mjj distribution and saved to the workspace
         model.init_channels()
-        # _ = model.ret_channels() TODO not used
 
     # Save pre-fit snapshot
     workspace.saveSnapshot("PRE_EXT_FIT_Clean", workspace.allVars())
 
     # Convert workspace to Combine workspace format
     # This actually builds the histograms used in the fit
-    # It fetches the modeled distribution for every bin of every process computed at the above `init_channels` step
+    # It fetches the modelled distribution for every bin of every process computed at the above `init_channels` step
     # and stores them as the `RooParametricHist` that will be used in the datacard
     convert_to_combine_workspace(
         wsin_combine=workspace,

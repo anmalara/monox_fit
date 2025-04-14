@@ -14,14 +14,16 @@ lumi = {
     # Temporary: replacing 2017 lumi value with that of 22+23 lumi
     2017: 62.5,
     2018: 62.5,
+    "Run3": 62.5,
 }
 regions = ["singlemuon", "dimuon", "gjets", "singleelectron", "dielectron", "signal"]
 procs = ["zmm", "zee", "w_weights", "photon", "wen", "wmn"]
 
 ### Years fit separately
 # for year in [2017, 2018]:
-for year in [2017]:
-    # for year in [2018]:
+# for year in [2017]:
+# for year in [2018]:
+for year in ["Run3"]:
     ws_file = "./root/ws_vbf.root"
     fitdiag_file = f"diagnostics/fitDiagnostics_vbf_{year}.root"
     diffnuis_file = f"diagnostics/diffnuisances_vbf_{year}.root"

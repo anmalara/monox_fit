@@ -4,8 +4,9 @@
 mkdir -p diagnostics
 pushd diagnostics
 # for YEAR in 2017 2018; do
-for YEAR in 2017; do
+# for YEAR in 2017; do
 # for YEAR in 2018; do
+for YEAR in Run3; do
     combine -M FitDiagnostics \
             --saveShapes \
             --saveWithUncertainties \

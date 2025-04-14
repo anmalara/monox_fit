@@ -334,7 +334,8 @@ def dataValidation(region1, region2, category, ws_file, fitdiag_file, outdir, lu
                 for proc in ["qcd", "ewk"]:
                     for direction in "up", "down":
                         # Uncertainties are stored in histogram form
-                        hname = f"uncertainty_ratio_z_{proc}_mjj_unc_{uncert}_{direction}_{year}"
+                        # hname = f"uncertainty_ratio_z_{proc}_mjj_unc_{uncert}_{direction}_{year}" TODO
+                        hname = f"uncertainty_ratio_z_{proc}_mjj_unc_{uncert}_{direction}_2017"
                         print(hname)
                         hist_unc = uncFile.Get(hname)
 
@@ -522,8 +523,8 @@ def dataValidation(region1, region2, category, ws_file, fitdiag_file, outdir, lu
         os.makedirs(outdir)
 
     c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.pdf")
-    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.png")
-    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.C")
+    # c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.png")
+    # c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.C")
 
     c.Close()
     f_mlfit.Close()

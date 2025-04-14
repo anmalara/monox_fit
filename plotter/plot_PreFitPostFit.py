@@ -639,9 +639,9 @@ def plotPreFitPostFit(region, category, ws_file, fitdiag_file, outdir, lumi, yea
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".pdf")
-    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".png")
-    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".C")
-    c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".root")
+    # c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".png")
+    # c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".C")
+    # c.SaveAs(outdir + "/" + category + "_PULLS_MASKED_prefit_postfit_" + region + "_" + str(year) + ".root")
 
     c.Close()
     f_mlfit.Close()

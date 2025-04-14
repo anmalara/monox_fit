@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
-from utils.workspace.jes_utils import get_jes_variations, get_jes_jer_source_file_for_tf
+from utils.workspace.jes_utils import get_jes_variations_names, get_jes_file
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -278,17 +278,17 @@ def add_jes_jer_uncertainties(
     }
     # Get the JES/JER uncertainty file for transfer factors
     # Read the split uncertainties from there
-    fjes = get_jes_jer_source_file_for_tf(category=category_id)
-    jet_variations = get_jes_variations(fjes, year, proc=production_mode)
+    jet_variations = get_jes_variations_names(year=year)
 
     for sample in channel_list:
         for var in jet_variations:
+            fjes = get_jes_file(category=category_id, source=var)
             for var_direction in ["Up", "Down"]:
                 # Scale transfer factor by relative variation and write to output file
                 add_variation(
                     nominal=transfer_factors[sample],
                     unc_file=fjes,
-                    unc_name=f"{process}_over_{jes_region_labels[sample]}{year-2000}_{production_mode}_{var}{var_direction}",
+                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}",
                     new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
                     outfile=output_file,
                 )
@@ -341,7 +341,7 @@ def add_theory_uncertainties(
         output_file.WriteTObject(sample)
 
     # File containting the theory uncertainties
-    vbf_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/vbf_z_w_gjets_theory_unc_ratio_unc.root")
+    vbf_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/vbf_z_w_gjets_theory_unc_ratio_unc.root", "READ")
 
     nbins = target_sample.GetNbinsX()
 
@@ -358,12 +358,13 @@ def add_theory_uncertainties(
 
         # Add QCD and PDF uncertainties
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            for dir in [("up", "Up"), ("down", "Down")]:
+            for dir in ["up", "down"]:
                 add_variation(
                     nominal=transfer_factors[region],
                     unc_file=vbf_sys,
-                    unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir[0]}_{year}",
-                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{dir[1]}",
+                    # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}", TODO
+                    unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_2017",
+                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{dir.capitalize()}",
                     outfile=output_file,
                 )
 
@@ -371,12 +372,14 @@ def add_theory_uncertainties(
             channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
         # EWK uncertainty (decorrelated among bins)
-        for dir in [("up", "Up"), ("down", "Down")]:
-            ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir[1]}")
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir[0]}_{year}"))
+        for dir in ["up", "down"]:
+            ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
+            # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}")) TODO
+            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_2017"))
 
             for b in range(nbins):
-                ewk_w = transfer_factors[region].Clone(f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir[1]}")
+                new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir.capitalize()}"
+                ewk_w = transfer_factors[region].Clone(new_name)
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
 
@@ -419,12 +422,12 @@ def do_stat_unc(
 
 
 def add_variation(
-    nominal,
-    unc_file,
-    unc_name,
-    new_name,
-    outfile,
-):
+    nominal: ROOT.TH1,
+    unc_file: ROOT.TFile,
+    unc_name: str,
+    new_name: str,
+    outfile: ROOT.TFile,
+) -> None:
     factor = unc_file.Get(unc_name)
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:

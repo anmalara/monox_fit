@@ -67,7 +67,8 @@ def plot_nuis(fname, outdir):
                 pass
         c.Draw()
         c.SetCanvasSize(1200, 600)
-        for extension in ["png", "pdf"]:
+        # for extension in ["png", "pdf"]:
+        for extension in ["pdf"]:
             c.SaveAs(os.path.join(outdir, f"diffnuis_{name}_{i}.{extension}"))
 
 

@@ -36,24 +36,26 @@
 
 # 1. Overview of what is done when running `generate_combine_model.py`:
 
-This script is where all processes are expressed as a product of transfer factors, nuisances, and parametrized by the same process,
-$Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$.
+This script defines all processes as products of transfer factors and nuisance parameters, all parametrized in terms of a common target process:
+$Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$.
 
 There are three main function calls:
    1. `cmodel`, The model construction scripts
-      - This is run for each "model", containing a "target process" 
-         (e.g. $Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$ or $W^{\text{EWK}}_{\text{SR}}\to l\nu$) and a list of "control processes".
-      - For each control process, it computes a transfer factors, ratio of the yield of the target process and control process.
-      - It creates the parameters for the relevant nuisances for each transfer factor 
-         (veto, JES/JER, theory, and statistical uncertainties) in the workspace.
+      - This function is executed for each "model" (e.g. `Z_constraints`), which includes:
+        - a "target process" (e.g. $Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$ or $W^{\text{EWK}}_{\text{SR}} \to \ell\nu$)
+        - a list of "control processes"
+      - For each control process, it:
+        - computes a transfer factor, defined as the ratio of the target process yield to the control process yield.
+        - creates the parameters for the relevant nuisances for each transfer factor 
+         (veto eff., JES/JER, theory, and statistical uncertainties) in the workspace.
    2. `init_channels`:
-      - makes the modeled yield of events in each bin as a function of $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu)$:
-         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
-         for channels in `qcd_zjets` model
-         - $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
-         for channels in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models
+      - constructs the yield in each bin as a function of the target process $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu)$:
+        - for each channel (CR) in `qcd_zjets` model:
+            - $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+        - for each channel (CR) in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models:
+            - $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
    3. `convert_tocombine_workspace`:
-      - stores the distribution of modeled yields above in `RooParametricHist`s and saves them to the workspace
+      - stores the distribution of yields above in `RooParametricHist` and saves them to the workspace
 
 ## 1.1. Addition of nuisances in `cmodel`
 
@@ -123,8 +125,8 @@ Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ew
          - The bin edges
          - some ID to link it to other channels in other models
          - The initial yield for that mjj bin for the target process of that model
-         ( so either $Z^{\text{QCD}}_{\text{SR}}\to \nu\nu$, $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$,
-            $W^{\text{QCD}}_{\text{SR}}\to l\nu$ or $W^{\text{EWK}}_{\text{SR}}\to l\nu$)
+         ( so either $Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$, $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$,
+            $W^{\text{QCD}}_{\text{SR}} \to \ell\nu$ or $W^{\text{EWK}}_{\text{SR}} \to \ell\nu$)
          - The transfer factor $\frac{\text{control process}}{\text{target process}}$ for that process in that bin.
             - This way, the control process can be expressed as target process $\times$ transfer factor, and parametrized by the target process
             - This is stored as a constant `RooRealVar` `sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}`
@@ -141,17 +143,17 @@ Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ew
                - For all other categories, product of `pmu_cat_vbf_2018_qcd_zjets_bin_{b}`, `sfactor_cat_vbf_2018_{model}_ch_{channel_name}_bin_{b}` and all nuisances
 
             - In other words, we have, for each bin, 
-            $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
+            $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
             for each CR in the `qcd_zjets` model:
                - $Z^{\text{QCD}}_{\text{diMuon CR}} \to ll$
                - $Z^{\text{QCD}}_{\text{diElectron CR}} \to ll$
-               - $W^{\text{QCD}}_{\text{SR}} \to l\nu$
+               - $W^{\text{QCD}}_{\text{SR}} \to \ell\nu$
                - $(\gamma + \text{jets})^{\text{QCD}}_{\text{SR}}$
                - $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$
             - For the other models, we fetch the previous expression from the channel the are linked to, and multiply to
             $\frac{CR}{target} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
-            - For instance, in the `ewk_zjets` model, the target is $Z^{\text{EWK}}_{\text{SR}}\to \nu\nu$, we are linked to the corresponding CR in `qcd_zjets`. If we look for instance at the $Z^{\text{EWK}}_{\text{diMuon CR}} \to ll$ CR, this ends up with
-            $(Z^{\text{QCD}}_{\text{SR}}\to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{Z^{\text{QCD}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}}\to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
+            - For instance, in the `ewk_zjets` model, the target is $Z^{\text{EWK}}_{\text{SR}} \to \nu\nu$, we are linked to the corresponding CR in `qcd_zjets`. If we look for instance at the $Z^{\text{EWK}}_{\text{diMuon CR}} \to ll$ CR, this ends up with
+            $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
             - This is save as `pmu_cat_vbf_2018_{model}_bin_{b}`, and also wrapped in the `RooFormulaVar` `mu_cat_vbf_2018_{model}_bin_{b}`
             - The `"observed"` is fetched, and a Poisson PDF is constructed for `observed` using `mu_cat_vbf_2018_{model}_bin_{b}`.
                It is uncleared where `observed` comes from
@@ -202,13 +204,13 @@ This is only done for the Z models (EWK and QCD).
 
    - Getting theory uncertainties from file `sys/vbf_z_w_gjets_theory_unc_ratio_unc.root`
 
-   - Compute $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu} \times$ theory uncertainty for QCD and PDF uncertainties
+   - Compute $\frac{Z_\text{SR} \to \nu\nu}{W_\text{SR} \to \ell\nu} \times$ theory uncertainty for QCD and PDF uncertainties
 
    - For EWK uncertainties, decorrelated among bins:
-      - Create one clone of $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu}$ for each bin
-      - Each clone i get only bin i replace with bin i of $\frac{Z_\text{SR}\to \nu\nu}{W_\text{SR}\to l\nu} \times $ EWK uncertainty
+      - Create one clone of $\frac{Z_\text{SR} \to \nu\nu}{W_\text{SR} \to \ell\nu}$ for each bin
+      - Each clone i get only bin i replace with bin i of $\frac{Z_\text{SR} \to \nu\nu}{W_\text{SR} \to \ell\nu} \times $ EWK uncertainty
 
-   - Same computations for $\frac{Z_\text{SR}\to \nu\nu}{{\gamma + \text{jets}}_\text{SR}}$:
+   - Same computations for $\frac{Z_\text{SR} \to \nu\nu}{{\gamma + \text{jets}}_\text{SR}}$:
       - QCD
       - PDF
       - EWK, decorrelated among bins
@@ -242,11 +244,11 @@ This is only done for the Z models (EWK and QCD).
 
 | Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
 | ----------- | ----------------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
-| `Zmm`       | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{QCD}_{2\mu}\to ll}$          |      | X       |        | X    |
-| `Zee`       | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{QCD}_{2e}\to ll}$            |      | X       |        | X    |
-| `WZ`        | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{W^\text{QCD}_{SR}\to l\nu}$          | X    | X       | X      | X    |
-| `EQ`        | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$        |      | X       |        | X    |
-| `Photon`    | $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{{\gamma+jets}^\text{QCD}_{1\gamma}}$ |      | X       | X      | X    |
+| `Zmm`       | $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{QCD}_{2\mu} \to ll}$          |      | X       |        | X    |
+| `Zee`       | $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{QCD}_{2e} \to ll}$            |      | X       |        | X    |
+| `WZ`        | $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{W^\text{QCD}_{SR} \to \ell\nu}$          | X    | X       | X      | X    |
+| `EQ`        | $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{SR} \to \nu\nu}$        |      | X       |        | X    |
+| `Photon`    | $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{{\gamma+jets}^\text{QCD}_{1\gamma}}$ |      | X       | X      | X    |
 
 Return everything as `Category` called `qcd_zjets`
 
@@ -254,47 +256,47 @@ Return everything as `Category` called `qcd_zjets`
 
 | Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
 | ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
-| `Wmu`       | $\frac{W^\text{QCD}_\text{SR}\to l\nu}{W^\text{QCD}_{1\mu}\to l\nu}$ | X    | X       |        | X    |
-| `We`        | $\frac{W^\text{QCD}_\text{SR}\to l\nu}{W^\text{QCD}_{1e}\to l\nu}$   | X    | X       |        | X    |
+| `Wmu`       | $\frac{W^\text{QCD}_\text{SR} \to \ell\nu}{W^\text{QCD}_{1\mu} \to \ell\nu}$ | X    | X       |        | X    |
+| `We`        | $\frac{W^\text{QCD}_\text{SR} \to \ell\nu}{W^\text{QCD}_{1e} \to \ell\nu}$   | X    | X       |        | X    |
 
 Return everything as `Category` called `qcd_wjets`,  specifying it is dependant on `WZ` transfer factor of previous `qcd_zjets` category.
 
-Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{W^\text{QCD}_{SR}\to l\nu}$
-to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{W^\text{QCD}_{SR} \to \ell\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
 ## 2.4. Recap of `Z_constraints_ewk_withphoton.py`:
 
 
 | Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
 | ----------- | ----------------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
-| `Zmm`       | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{2\mu}\to ll}$          |      | X       |        | X    |
-| `Zee`       | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{2e}\to ll}$            |      | X       |        | X    |
-| `WZ`        | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{W^\text{EWK}_{SR}\to l\nu}$          | X    | X       | X      | X    |
-| `Photon`    | $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{{\gamma+jets}^\text{EWK}_{1\gamma}}$ |      | X       | X      | X    |
+| `Zmm`       | $\frac{Z^\text{EWK}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{2\mu} \to ll}$          |      | X       |        | X    |
+| `Zee`       | $\frac{Z^\text{EWK}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{2e} \to ll}$            |      | X       |        | X    |
+| `WZ`        | $\frac{Z^\text{EWK}_\text{SR} \to \nu\nu}{W^\text{EWK}_{SR} \to \ell\nu}$          | X    | X       | X      | X    |
+| `Photon`    | $\frac{Z^\text{EWK}_\text{SR} \to \nu\nu}{{\gamma+jets}^\text{EWK}_{1\gamma}}$ |      | X       | X      | X    |
 
 Return everything as `Category` called `ewk_zjets`, specifying it is dependant on `EQ` transfer factor of previous `qcd_zjets` category.
 
-Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$
-to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{SR} \to \nu\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
 ## 2.5. Recap of `W_constraints.py`:
 
 | Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
 | ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
-| `Wmu`       | $\frac{W^\text{EWK}_\text{SR}\to l\nu}{W^\text{EWK}_{1\mu}\to l\nu}$ | X    | X       |        | X    |
-| `We`        | $\frac{W^\text{EWK}_\text{SR}\to l\nu}{W^\text{EWK}_{1e}\to l\nu}$   | X    | X       |        | X    |
+| `Wmu`       | $\frac{W^\text{EWK}_\text{SR} \to \ell\nu}{W^\text{EWK}_{1\mu} \to \ell\nu}$ | X    | X       |        | X    |
+| `We`        | $\frac{W^\text{EWK}_\text{SR} \to \ell\nu}{W^\text{EWK}_{1e} \to \ell\nu}$   | X    | X       |        | X    |
 
 Return everything as `Category` called `ewk_wjets`, specifying it is dependant on `WZ` transfer factor of previous `ewk_zjets` category.
 
-Later on, both transfer factor above will be multiplied by $\frac{Z^\text{EWK}_\text{SR}\to \nu\nu}{W^\text{EWK}_{SR}\to l\nu}$
-which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR}\to \nu\nu}{Z^\text{EWK}_{SR}\to \nu\nu}$
-to parametrize it to $Z^\text{QCD}_\text{SR}\to \nu\nu$
+Later on, both transfer factor above will be multiplied by $\frac{Z^\text{EWK}_\text{SR} \to \nu\nu}{W^\text{EWK}_{SR} \to \ell\nu}$
+which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{SR} \to \nu\nu}$
+to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
 # 3. Overview of `Category`, `Channel` and `Bin` classes
 
 These classes are used at the different stages of `generate_combine_model.py`
 to store transfer factors, nuisances, and build the distributions
-of the different process parametrized by the $Z^\text{QCD}_\text{SR}\to \nu\nu$ yield.
+of the different process parametrized by the $Z^\text{QCD}_\text{SR} \to \nu\nu$ yield.
 
 ## 3.2. `Channel`
 
@@ -322,7 +324,7 @@ A `Category` object holds:
 
 It's main method is `init_channels`, 
 which is used to build the distributions of all the different process,
-parametrized by the $Z^\text{QCD}_\text{SR}\to \nu\nu$ yield and all nuisances affecting each process.
+parametrized by the $Z^\text{QCD}_\text{SR} \to \nu\nu$ yield and all nuisances affecting each process.
 This is done by first creating a collection of `Bin` objects that handle parametrizing the number of events for each bin separately.
 
 
@@ -331,7 +333,7 @@ This is done by first creating a collection of `Bin` objects that handle paramet
 A `Bin` object holds:
    - A name, and some IDs to link to `Category` and `Bin`
 
-This is the class that handles, inside the `setup_expect_var` method, fetching the transfer factor, yield of $Z^\text{QCD}_\text{SR}\to \nu\nu$,
+This is the class that handles, inside the `setup_expect_var` method, fetching the transfer factor, yield of $Z^\text{QCD}_\text{SR} \to \nu\nu$,
 and nuisances for a given process and make their product to make a parametrized distribution.
 
 # 4. Stepping through `init_channels` in more details
