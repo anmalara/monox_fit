@@ -9,7 +9,7 @@ from typing import Optional
 from collections import defaultdict
 from collections.abc import Callable
 import ROOT  # type: ignore
-from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
+from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
 from utils.generic.general import is_MC_bkg
 from utils.generic.logger import initialize_colorized_logger
@@ -81,58 +81,6 @@ def multiply_histogram_by_function(histogram: ROOT.TH1, function: Callable[[floa
         error = histogram.GetBinError(bin_idx)
         histogram.SetBinContent(bin_idx, content * scale)
         histogram.SetBinError(bin_idx, error * scale)
-
-
-def get_jes_file(category: str) -> ROOT.TFile:
-    """Get the JES shape uncertainty ROOT file."""
-    jer_suffix = "jer_smeared" if "vbf" in category else "not_jer_smeared"
-    jes_files = {
-        r"(monoj|monov).*": f"inputs/sys/{category}/monoj_monov_shape_jes_uncs_smooth_{jer_suffix}.root",
-        r"vbf.*": f"inputs/sys/{category}/vbf_shape_jes_uncs_smooth_{jer_suffix}.root",
-    }
-    for pattern, filepath in jes_files.items():
-        if re.match(pattern, category):
-            jes_file = ROOT.TFile(filepath, "READ")
-            logger.debug(f"Using JES/JER uncertainty file: {jes_file.GetName()}")
-            return jes_file
-    logger.critical(f"No JES file found for category: {category}", exception_cls=RuntimeError)
-
-
-def get_jes_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.TH1]:
-    """Build varied histograms by applying JES variations from an external file."""
-    f_jes = get_jes_file(category)
-    keys = [key.GetName() for key in f_jes.GetListOfKeys()]
-    f_jes.Close()
-
-    # Use QCD Z(vv) shapes from the source file
-    # Save varied histograms for all JES variations and the histogram names in this dictionary
-    variations: dict[str, ROOT.TH1] = {}
-    if "vbf" in category:
-        tag = "ZJetsToNuNu"
-        is_valid = lambda k: tag in k and "jesTotal" not in k
-        prefix = f"{tag}20\\d\\d_"
-    else:
-        channel = "monov" if "monov" in category else "monojet"
-        is_valid = lambda k: k.startswith(channel)
-        prefix = f"{channel}_20\\d\\d_"
-
-    for key in filter(is_valid, keys):
-        variation = re.sub(prefix, "", key)
-        variation_name = f"{hist.GetName()}_{variation}"
-
-        # Skip invalid combinations
-        if ("up" in variation_name and "Down" in variation) or ("down" in variation_name and "Up" in variation):
-            continue
-
-        # Clean up duplicated suffix
-        variation_name = variation_name.replace("_jec_Total_up", "").replace("_jec_Total_down", "")
-        varied_hist = hist.Clone(variation_name)
-        varied_hist.SetDirectory(0)
-        # TODO: old method. multiply by JES factor to get the varied yields
-        # varied_hist.Multiply(f_jes.Get(key))
-        variations[variation_name] = varied_hist
-
-    return variations
 
 
 def get_photon_id_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.TH1]:
@@ -355,7 +303,8 @@ def write_histogram_to_workspace(
 
     # Write the individual histograms for easy transfer factor calculation later on
     hist.SetDirectory(0)
-    hist.Sumw2()
+    if not hist.GetSumw2N():
+        hist.Sumw2()
     output_dir.cd()
     output_dir.WriteTObject(hist)
 
@@ -399,11 +348,6 @@ def process_histogram(
         # for MC-based background, merge the stat unc into single nuisance
         region = name.split("_")[0]
         to_merge_mc_bkgs[region].append(hist)
-
-    # JES variations: Get them from the source file and save them to workspace
-    if "jec_Total" in name:
-        jes_variations = get_jes_variations(hist, category)
-        write_variations_to_workspace(variations=jes_variations, **common_kwargs)
 
     return
     # TODO: import shapes for photon id
@@ -456,7 +400,7 @@ def create_workspace(
     output_dir = output_file.mkdir(f"category_{category}")
 
     workspace = ROOT.RooWorkspace(f"wspace_{category}", f"wspace_{category}")
-    workspace._safe_import = SafeWorkspaceImporter(workspace)  # type: ignore
+    workspace._safe_import = SafeWorkspaceImporter(workspace)
     logger.info(green(f"Creating main observable: {variable}"))
     observable = ROOT.RooRealVar(variable, variable, 0, 10000)
 

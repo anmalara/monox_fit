@@ -90,7 +90,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Arguments for workspace creation.")
     parser.add_argument("-d", "--dir", type=str, default=None, help="Path to the directory containing the input ROOT files")
     parser.add_argument("-a", "--analysis", type=str, default="vbf", help="Analysis name (e.g., 'vbf', 'monojet', 'monov').")
-    parser.add_argument("-y", "--year", type=str, default="2017", help="Data-taking year (e.g., '2017', '2018', 'Run3').")
+    parser.add_argument("-y", "--year", type=str, default="Run3", help="Data-taking year (e.g., '2017', '2018', 'Run3').")
     parser.add_argument("-v", "--variable", type=str, default="mjj", help="Observable variable name (e.g., 'mjj', 'met').")
     parser.add_argument("-f", "--folder", type=str, default=None, help="Optional folder name inside the ROOT file to read histograms from.")
     parser.add_argument("-t", "--tag", type=str, default=None, help="Custom tag for the output directory (default: today's date in YYYY_MM_DD format).")

@@ -2,7 +2,7 @@ import ROOT  # type: ignore
 import sys
 import array
 import re
-from HiggsAnalysis.CombinedLimit.ModelTools import *  # type: ignore
+from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 from utils.workspace.generic import safe_import
 from utils.generic.logger import initialize_colorized_logger
 
@@ -52,7 +52,7 @@ class Bin:
             self.binid = f"cat_{catid}_ch_{chid}_bin{id + 1}"
 
         self.wspace_out = wspace_out
-        self.wspace_out._safe_import = SafeWorkspaceImporter(self.wspace_out)  # type: ignore
+        self.wspace_out._safe_import = SafeWorkspaceImporter(self.wspace_out)
 
         self.set_wspace(wspace)
 
@@ -167,7 +167,7 @@ class Bin:
 
     def set_wspace(self, w):
         self.wspace = w
-        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)  # type: ignore
+        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)
 
     def set_sfactor(self, val):
         # print "Scale Factor for " ,self.binid,val
@@ -270,9 +270,6 @@ class Bin:
     def ret_binid(self):
         return self.binid
 
-    def ret_observed_dset(self):
-        return self.wspace_out.data(dsname)
-
     def ret_observed(self):
         return self.o
 
@@ -344,7 +341,7 @@ class Channel:
         self.chname = f"ControlRegion_{self.chid}"
         self.backgroundname = ""
         self.wspace_out = wspace_out
-        self.wspace_out._safe_import = SafeWorkspaceImporter(self.wspace_out)  # type: ignore
+        self.wspace_out._safe_import = SafeWorkspaceImporter(self.wspace_out)
         # self.wspace_out = getattr(self.wspace_out, "import")
         self.set_wspace(wspace)
         self.nuisances = []
@@ -356,35 +353,6 @@ class Channel:
 
     def ret_title(self):
         return self.crname
-
-    def add_systematic_shape(self, sys, file):
-        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
-        sfbase = f"{self.scalefactors.GetName()}_{sys}"
-        sfup = f"{sfbase}Up_"
-        sfdn = f"{sfbase}Down_"
-        logger.info(f"Looking for systematic shapes ... {sfup}, {sfdn}")
-        sysup, sysdn = file.Get(sfup), file.Get(sfdn)
-        try:
-            sysup.GetName()
-            sysdn.GetName()
-        except AttributeError:
-            print("Missing one of ", sfup, sfdn, " in ", file.GetName())
-            print("Following is in directory ")
-            file.Print()
-            sys.exit()
-        self.systematics[sys] = [file.Get(sfup), file.Get(sfdn)]
-
-    def add_systematic_yield(self, syst, kappa):
-        sys.exit("Nothing Will Happen with add_systematic, use add_nuisance")
-        sf_base = f"{self.scalefactors.GetName()}_{syst}_"
-        sfup = self.scalefactors.Clone()
-        sfup.SetName(f"{sf_base}Up")
-        sfdn = self.scalefactors.Clone()
-        sfdn.SetName(f"{sf_base}Down")
-        # log-normal scalefactors
-        sfup.Scale(1 + kappa)
-        sfdn.Scale(1.0 / (1 + kappa))
-        self.systematics[syst] = [sfup, sfdn]
 
     def add_nuisance(self, name, size, bkg=False):
         # print "Error, Nuisance parameter model not supported fully for shape variations, dont use it!"
@@ -432,25 +400,24 @@ class Channel:
             safe_import(workspace=self.wspace_out, obj=cont)
 
         sf_base = f"{self.scalefactors.GetName()}_{name}"
-        sfup = f"{sf_base}_Up"
-        sfdn = f"{sf_base}_Down"
-        logger.info(f"Looking for systematic shapes ... {sfup}, {sfdn}")
-        sysup, sysdn = file.Get(sfup), file.Get(sfdn)
+        logger.debug(f"Looking for systematic shapes: {sf_base}")
+        sysup, sysdn = file.Get(f"{sf_base}_Up"), file.Get(f"{sf_base}_Down")
         try:
             sysup.GetName()
             sysdn.GetName()
         except ReferenceError:
-            logger.info(f"Missing one of {sfup}, {sfdn} in {file.GetName()}")
+            logger.info(f"Missing {sf_base} up or down in {file.GetName()}")
             logger.info("Following is in directory ")
             file.ls()
             sys.exit()
         # Now we loop through each bin and construct a polynomial function per bin
         for b in range(self.nbins):
             # Name of the function depends on naming scheme
+            fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}"
             if self.convention == "BU":
-                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin_{b}"
+                fname = f"{fname}_bin_{b}"
             else:
-                fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin{b + 1}"
+                fname = f"{fname}_bin{b + 1}"
             if functype == "quadratic":
                 if self.scalefactors.GetBinContent(b + 1) == 0:
                     nsf = 0
@@ -508,7 +475,7 @@ class Channel:
 
     def set_wspace(self, w):
         self.wspace = w
-        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)  # type: ignore
+        self.wspace._safe_import = SafeWorkspaceImporter(self.wspace)
 
     def ret_bkg_nuisances(self):
         return self.bkg_nuisances
@@ -575,8 +542,8 @@ class Category:
         self._wspace = _wspace
         self._wspace_out = _wspace_out
 
-        self._wspace_out._safe_import = SafeWorkspaceImporter(self._wspace_out)  # type: ignore
-        self._wspace._safe_import = SafeWorkspaceImporter(self._wspace)  # type: ignore
+        self._wspace_out._safe_import = SafeWorkspaceImporter(self._wspace_out)
+        self._wspace._safe_import = SafeWorkspaceImporter(self._wspace)
 
         # self.diag = diag
         self.additional_vars = {}
@@ -756,9 +723,6 @@ class Category:
 
     def ret_control_regions(self):
         return self._control_regions
-
-    def ret_channels(self):
-        return self.channels
 
     def generate_systematic_templates(self, diag, npars):
         if self.model_hist == 0:
