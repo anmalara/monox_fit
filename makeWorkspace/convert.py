@@ -31,7 +31,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
         nbins = samplehist.GetNbinsX()
         varname = samplehist.GetXaxis().GetTitle()
 
-        # Fetch the mjj variable, rename it to vbf_{year}_mjj
+        # Fetch the variable, rename it to vbf_{year}_{variable}
         print(wlocal, varname)
         varl = wlocal.var(varname)
         print("VAR NAME", varl.GetName(), renameVariable)
@@ -48,9 +48,7 @@ def convertToCombineWorkspace(wsin_combine, f_simple_hists, categories, cmb_cate
         # Same thing as samplehistos actually
         keys_local = fdir.GetListOfKeys()
 
-        # Loop other all the histograms in the input file,
-        # convert them to RooDataHist (as a function of mjj) and
-        # save them to the workspace
+        # Loop other all the histograms in the input file, convert them to RooDataHist and save them to the workspace
         for key in keys_local:
             obj = key.ReadObj()
             print(obj.GetName(), obj.GetTitle(), type(obj))

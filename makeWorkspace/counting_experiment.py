@@ -184,7 +184,7 @@ class Bin:
 
         # Either fetch the QCD Znunu in SR yield,
         # or the transfer factor and nuisances from the category this process depends on
-        print(functionalForm)
+        print("functionalForm", functionalForm)
         if not len(functionalForm):
             if not self.wspace_out.var(naming_convention(self.id, self.catid, self.convention)):
                 # RooRealVar containing `initY` (for `qcd_zjets`, this is the QCD Znunu in SR yield)
@@ -195,7 +195,7 @@ class Bin:
             else:
                 self.model_mu = self.wspace_out.var(naming_convention(self.id, self.catid, self.convention))
         else:
-            print("Setting up dependence!!")
+            logger.info("Setting up dependence!!")
             if self.convention == "BU":
                 DEPENDANT = f"{functionalForm}_bin_{self.id}"
             else:
@@ -648,7 +648,7 @@ class Category:
 
         # This loops for every process in the model and builds `Bin` objects.
         # Each of the `Bin` builds the modeled number of events for that process
-        # in that mjj bin as a function of the nuissances affecting that process
+        # in that given bin as a function of the nuissances affecting that process
         # and transfer factors to express it as a function of QCD Znunu in the SR
         for j, cr in enumerate(self._control_regions):
             for i, bl in enumerate(self._bins):
@@ -671,12 +671,12 @@ class Category:
 
                 ch.set_label(sample)  # should import the sample category label
 
-                # set the "initial yield" to the number of events of the process of that category for that mjj bin.
+                # set the "initial yield" to the number of events of the process of that category for that given bin.
                 # This is only usefull for process in the `qcd_zjets` model,
                 # where initY is set to the yield of QCD Znunu in the SR
                 ch.set_initY(self._target_datasetname)
 
-                # Set the "scale factor" for this mjj bin (rather a transfer factor),
+                # Set the "scale factor" for this given bin (rather a transfer factor),
                 # the ratio between the yield of the process of the "control region" and
                 # the process of the "category" (e.g. in the `ewk_zjets` model, it would be process / EWK Znunu in SR)
                 ch.set_sfactor(cr.ret_sfactor(i))

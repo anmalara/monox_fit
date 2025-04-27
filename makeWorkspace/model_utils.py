@@ -15,6 +15,7 @@ def define_model(
     output_workspace: ROOT.RooWorkspace,
     diagonalizer: Any,
     year: int,
+    variable: str,
     convention: str,
     model_name: str,
     target_name: str,
@@ -116,6 +117,7 @@ def define_model(
         year=year,
         category_id=category_id,
         output_file=output_file,
+        production_mode=model_name.split("_")[0],
     )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
@@ -135,7 +137,7 @@ def define_model(
         _wspace=input_wspace,
         _wspace_out=output_workspace,
         _bins=bin_edges,
-        _varname="mjj",
+        _varname=variable,
         _target_datasetname=target.GetName(),
         _control_regions=list(CRs.values()),
         diag=diagonalizer,
@@ -288,7 +290,8 @@ def add_jes_jer_uncertainties(
                 add_variation(
                     nominal=transfer_factors[sample],
                     unc_file=fjes,
-                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}",
+                    # unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}", TODO
+                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_jec_Total{var_direction}",
                     new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
                     outfile=output_file,
                 )
@@ -305,6 +308,7 @@ def add_theory_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
+    production_mode: str,
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -340,48 +344,51 @@ def add_theory_uncertainties(
         sample.SetName(f"{spectrum_label[region]}_spectrum_{category_id}_")
         output_file.WriteTObject(sample)
 
-    # File containting the theory uncertainties
-    vbf_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/vbf_z_w_gjets_theory_unc_ratio_unc.root", "READ")
-
     nbins = target_sample.GetNbinsX()
 
     # different labels to convert naming scheme between the different histogram and nuisances to read and write
     label_dict = {
-        "qcd_w": ("zoverw", "z_qcd", "ZnunuWJets_QCD", "qcd_ewk"),
-        "qcd_photon": ("goverz", "gjets_qcd", "Photon_QCD", "qcd_photon_ewk"),
-        "ewk_w": ("zoverw", "z_ewk", "ZnunuWJets_EWK", "ewk_ewk"),
-        "ewk_photon": ("goverz", "gjets_ewk", "Photon_EWK", "ewkphoton_ewk"),
+        "qcd_w": ("zoverw", "ZnunuWJets_QCD", "qcd_ewk"),
+        "qcd_photon": ("goverz", "Photon_QCD", "qcd_photon_ewk"),
+        "ewk_w": ("zoverw", "ZnunuWJets_EWK", "ewk_ewk"),
+        "ewk_photon": ("goverz", "Photon_EWK", "ewkphoton_ewk"),
     }
 
     for region in channel_list:
-        ratio, denom_label, qcd_label, ewk_label = label_dict[region]
+        ratio, qcd_label, ewk_label = label_dict[region]
 
         # Add QCD and PDF uncertainties
+        # TODO follow https://cms-analysis.docs.cern.ch/guidelines/systematics/systematics/#pdf-uncertainties
+        # QCD_ren_scale_<process> QCD_fac_scale_<process>
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            for dir in ["up", "down"]:
+            vbf_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/systematics_{var[0]}.root", "READ")
+            for var_direction in ["Up", "Down"]:
                 add_variation(
                     nominal=transfer_factors[region],
                     unc_file=vbf_sys,
-                    # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}", TODO
-                    unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_2017",
-                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{dir.capitalize()}",
+                    # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}",
+                    unc_name=f"{ratio}_over_{region}_{production_mode}_{var[0]}{var_direction}",
+                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{var_direction}",
                     outfile=output_file,
                 )
+            vbf_sys.Close()
 
             # Add function (quadratic) to model the nuisance
             channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
         # EWK uncertainty (decorrelated among bins)
-        for dir in ["up", "down"]:
+        ewk_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/systematics_pdf.root", "READ")  # TODO
+        for dir in ["Up", "Down"]:
             ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
-            # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}")) TODO
-            ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_2017"))
+            # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
+            ratio_ewk.Multiply(ewk_sys.Get(f"signal_ewkzjets_over_signal_ewkwjets_pdf{dir}"))
 
             for b in range(nbins):
-                new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir.capitalize()}"
+                new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir}"
                 ewk_w = transfer_factors[region].Clone(new_name)
                 ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
                 output_file.WriteTObject(ewk_w)
+        ewk_sys.Close()
 
         for b in range(nbins):
             # Add function (quadratic) to model the nuisance
@@ -428,6 +435,24 @@ def add_variation(
     new_name: str,
     outfile: ROOT.TFile,
 ) -> None:
+    # TODO: remove
+    unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
+    unc_name = unc_name.replace("wlnu_qcd", "signal_qcdwjets").replace("gjets_qcd", "gjets_qcdgjets")
+    unc_name = unc_name.replace("wlnu_over_", "signal_qcdwjets_over_").replace("wmunu_qcd", "Wmn_qcdwjets").replace("wenu_qcd", "Wen_qcdwjets")
+    if "_ewk" in unc_name:
+        unc_name = unc_name.replace("signal_qcdzjets", "signal_ewkzjets")
+        unc_name = unc_name.replace("zmumu_ewk", "Zmm_ewkzll").replace("zee_ewk", "Zee_ewkzll")
+        unc_name = unc_name.replace("wlnu_ewk", "signal_ewkwjets").replace("wmunu_ewk", "Wmn_ewkwjets").replace("wenu_ewk", "Wen_ewkwjets")
+        unc_name = unc_name.replace("gjets_ewk", "gjets_ewkgjets")
+
+    unc_name = unc_name.replace("zoverw_over_qcd_w_qcd", "signal_qcdzjets_over_signal_qcdwjets")
+    unc_name = unc_name.replace("zoverw_over_ewk_w_ewk", "signal_ewkzjets_over_signal_ewkwjets")
+    unc_name = unc_name.replace("goverz_over_qcd_photon_qcd", "signal_qcdzjets_over_gjets_qcdgjets")
+    unc_name = unc_name.replace("goverz_over_ewk_photon_ewk", "signal_ewkzjets_over_gjets_ewkgjets")
+
+    # TODO: why are these ratios missing?
+    unc_name = unc_name.replace("signal_qcdwjets_over_Wmn_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
+    unc_name = unc_name.replace("signal_qcdwjets_over_Wen_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
     factor = unc_file.Get(unc_name)
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:

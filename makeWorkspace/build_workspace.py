@@ -63,7 +63,7 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     output_dir = os.path.realpath(os.path.join(os.getenv("FIT_FRAMEWORK_PATH", ""), analysis, year, tag, "root"))
     os.makedirs(output_dir, exist_ok=True)
 
-    input_filename = os.path.join(input_dir, f"limit_{analysis}.root")
+    input_filename = os.path.join(input_dir, f"histograms_{analysis}.root")
     workspace_file = os.path.join(output_dir, f"ws_{analysis}.root")
     combined_model_file = os.path.join(output_dir, f"combined_model_{analysis}.root")
     info_file = os.path.join(output_dir, "INFO.txt")
@@ -72,7 +72,7 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     create_workspace(input_filename=input_filename, output_filename=workspace_file, category=category, variable=variable, root_folder=root_folder)
 
     logger.info("Running model generation...")
-    generate_combine_model(input_filename=workspace_file, output_filename=combined_model_file, category=category)
+    generate_combine_model(input_filename=workspace_file, output_filename=combined_model_file, category=category, variable=variable)
 
     logger.info("Finalizing...")
 
@@ -97,7 +97,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    input_dir = args.dir or "/ada_mnt/ada/user/anmalara/WorkingArea/pyRAT/hinvisible/plots/for_fit/Run3/"
+    input_dir = args.dir or f"inputs/histograms/{args.analysis}_{args.year}/"
     root_folder = args.folder or f"category_{args.analysis}_{args.year}"
     tag = args.tag or date.today().strftime("%Y_%m_%d")
 

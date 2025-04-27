@@ -13,6 +13,7 @@ def cmodel(
     output_workspace: ROOT.RooWorkspace,
     diagonalizer,
     year: int,
+    variable: str,
     convention: str = "BU",
 ) -> Category:
     """
@@ -90,6 +91,7 @@ def cmodel(
         output_workspace=output_workspace,
         diagonalizer=diagonalizer,
         year=year,
+        variable=variable,
         convention=convention,
         # model-specific arguments
         **model_args,

@@ -27,7 +27,8 @@ def get_jes_variations_names(year: str) -> list[str]:
 
 def get_jes_file(category: str, source: str) -> ROOT.TFile:
     """Get the JES shape uncertainty ROOT file."""
-    jes_file = ROOT.TFile(f"inputs/sys/{category}/systematics_{source}.root", "READ")
+    # jes_file = ROOT.TFile(f"inputs/sys/{category}/systematics_{source}.root", "READ") TODO
+    jes_file = ROOT.TFile(f"inputs/sys/{category}/systematics_jec_Total.root", "READ")
     if jes_file:
         return jes_file
     raise RuntimeError(f"No JES file found for category: {category}")

@@ -29,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input_filename", type=str, required=True, help="Input file containing histograms and workspace.")
     parser.add_argument("--output_filename", type=str, default="combined_model.root", help="Path to the output ROOT file.")
     parser.add_argument("--category", type=str, required=True, help="Analysis category, e.g., 'vbf_2017'.")
+    parser.add_argument("--variable", type=str, required=True, help="Variable name")
     parser.add_argument("--rename", type=str, default="", help="Optional new name for the observable variable.")
 
     args = parser.parse_args()
@@ -48,6 +49,7 @@ def generate_combine_model(
     input_filename: str,
     output_filename: str,
     category: str,
+    variable: str,
     rename: str = "",
 ) -> None:
     """Generate a Combine RooWorkspace with control region models."""
@@ -98,7 +100,17 @@ def generate_combine_model(
         #   for veto, JES/JER, theory and statistical uncertainties
         #   for each transfer factor in the model
         convention = "IC" if "MTR" in rename else "BU"
-        model = module.cmodel(category, cr_name, input_file, cr_dir, workspace, diag, year, convention)
+        model = module.cmodel(
+            category_id=category,
+            category_name=cr_name,
+            input_file=input_file,
+            output_file=cr_dir,
+            output_workspace=workspace,
+            diagonalizer=diag,
+            year=year,
+            variable=variable,
+            convention=convention,
+        )
         cmb_categories.append(model)
 
     for model in cmb_categories:
@@ -111,7 +123,7 @@ def generate_combine_model(
         #   (EWK Znunu in SR) * [transfer factor = (QCD Znunu in SR) / (EWK Znunu in SR)] * Product of all nuisances (for EWK Znunu in SR)
         # and multiply by
         #   [transfer factor = (EWK Znunu in SR) / (EWK Zll in diMuon)] * Product of all nuisances (for EWK Zll in diMuon)
-        # These models are made for each bin of the mjj distribution and saved to the workspace
+        # These models are made for each bin of the given variable distribution and saved to the workspace
         model.init_channels()
 
     # Save pre-fit snapshot
@@ -141,6 +153,7 @@ def main() -> None:
         input_filename=args.input_filename,
         output_filename=args.output_filename,
         category=args.category,
+        variable=args.variable,
         rename=args.rename,
     )
 
