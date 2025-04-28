@@ -97,7 +97,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    input_dir = args.dir or f"inputs/histograms/{args.analysis}_{args.year}/"
+    input_dir = args.dir or f"inputs/histograms/{args.variable}/{args.analysis}_{args.year}/"
     root_folder = args.folder or f"category_{args.analysis}_{args.year}"
     tag = args.tag or date.today().strftime("%Y_%m_%d")
 

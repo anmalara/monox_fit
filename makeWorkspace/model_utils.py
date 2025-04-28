@@ -107,6 +107,7 @@ def define_model(
         output_file=output_file,
         process=jes_jer_process,
         production_mode=model_name.split("_")[0],
+        syst_folder=f"inputs/sys/{variable}",
     )
     add_theory_uncertainties(
         control_samples=control_samples,
@@ -118,6 +119,7 @@ def define_model(
         category_id=category_id,
         output_file=output_file,
         production_mode=model_name.split("_")[0],
+        syst_folder=f"inputs/sys/{variable}",
     )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
@@ -243,6 +245,7 @@ def add_jes_jer_uncertainties(
     output_file: ROOT.TFile,
     process: str,
     production_mode: str,
+    syst_folder: str,
 ) -> None:
     """
     Adds JES and JER uncertainties to transfer factors.
@@ -284,7 +287,7 @@ def add_jes_jer_uncertainties(
 
     for sample in channel_list:
         for var in jet_variations:
-            fjes = get_jes_file(category=category_id, source=var)
+            fjes = get_jes_file(category=category_id, source=var, syst_folder=syst_folder)
             for var_direction in ["Up", "Down"]:
                 # Scale transfer factor by relative variation and write to output file
                 add_variation(
@@ -309,6 +312,7 @@ def add_theory_uncertainties(
     category_id: str,
     output_file: ROOT.TFile,
     production_mode: str,
+    syst_folder: str,
 ) -> None:
     """
     Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
@@ -361,7 +365,7 @@ def add_theory_uncertainties(
         # TODO follow https://cms-analysis.docs.cern.ch/guidelines/systematics/systematics/#pdf-uncertainties
         # QCD_ren_scale_<process> QCD_fac_scale_<process>
         for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            vbf_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/systematics_{var[0]}.root", "READ")
+            vbf_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
             for var_direction in ["Up", "Down"]:
                 add_variation(
                     nominal=transfer_factors[region],
@@ -377,7 +381,7 @@ def add_theory_uncertainties(
             channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
         # EWK uncertainty (decorrelated among bins)
-        ewk_sys = ROOT.TFile.Open(f"inputs/sys/{category_id}/systematics_pdf.root", "READ")  # TODO
+        ewk_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_pdf.root", "READ")  # TODO
         for dir in ["Up", "Down"]:
             ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
             # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
