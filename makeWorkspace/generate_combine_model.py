@@ -58,10 +58,10 @@ def generate_combine_model(
         controlregions_def = ["Z_constraints", "W_constraints"]
     elif "vbf" in category:
         controlregions_def = [
-            "Z_constraints_qcd_withphoton",
-            "W_constraints_qcd",
-            "Z_constraints_ewk_withphoton",
-            "W_constraints_ewk",
+            "vbf_qcd_z",
+            "vbf_qcd_w",
+            "vbf_ewk_z",
+            "vbf_ewk_w",
         ]
     else:
         logger.critical("Could not infer control region definitions from category.", exception_cls=RuntimeError)
