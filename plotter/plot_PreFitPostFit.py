@@ -65,14 +65,7 @@ def create_ratios(h_data: rt.TH1, h_all_prefit: rt.TH1, h_all_postfit: rt.TH1) -
 
 
 def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: str, outdir: str, lumi: str, year: str, sb: bool = False) -> None:
-    logger.debug(f"region: {region}")
-    logger.debug(f"category: {category}")
-    logger.debug(f"ws file: {ws_file}")
-    logger.debug(f"fitdiag file: {fitdiag_file}")
-    logger.debug(f"outdir: {outdir}")
-    logger.debug(f"lumi: {lumi}")
-    logger.debug(f"year: {year}")
-    logger.debug(f"sb: {sb}")
+    logger.debug(f"Input parameters: {locals()}")
 
     os.makedirs(outdir, exist_ok=True)
 
@@ -251,8 +244,8 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
         x_max=x_max,
         y_up_min=y_up_min,
         y_up_max=y_up_max,
-        y_mid_min=0.5,
-        y_mid_max=1.5,
+        y_mid_min=0.2,
+        y_mid_max=1.8,
         y_low_min=-3.5,
         y_low_max=3.5,
         nameXaxis=nameXaxis,
@@ -289,7 +282,7 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
     if region == "dielectron":
         legname = "Z #rightarrow ee"
 
-    n_leg_entries = (len(h_postfit) - 1) if is_SR else 5
+    n_leg_entries = (len(h_postfit) - 1) if is_SR else 6
     legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.045, x2=0.89, y2=0.89, textSize=0.045)
     if is_SR:
         legend.AddEntry(h_data, "Pseudo data", "elp")
@@ -366,10 +359,9 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
     for i in range(1, 4):
         CMS.UpdatePad(canv.cd(i))
 
-    canv.SaveAs(f"{outdir}/{category}_PULLS_MASKED_prefit_postfit_{region}_{year}.pdf")
-    # canv.SaveAs(f"{outdir}/{category}_PULLS_MASKED_prefit_postfit_{region}_{year}.png")
-    # canv.SaveAs(f"{outdir}/{category}_PULLS_MASKED_prefit_postfit_{region}_{year}.C")
-    # canv.SaveAs(f"{outdir}/{category}_PULLS_MASKED_prefit_postfit_{region}_{year}.root")
+    # for extension in ["png", "pdf", "C","root"]:
+    for extension in ["pdf"]:
+        canv.SaveAs(f"{outdir}/prefit_postfit_{category}_{region}_{year}.pdf")
 
     canv.Close()
     f_mlfit.Close()

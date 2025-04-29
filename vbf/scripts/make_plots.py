@@ -2,11 +2,10 @@
 import sys
 import os
 
-sys.path.append(os.path.abspath("../../../plotter"))
-from plot_PreFitPostFit import plotPreFitPostFit
-from plot_datavalidation import dataValidation
-from plot_ratio import plot_ratio
-from plot_diffnuis import plot_nuis
+from plotter.plot_PreFitPostFit import plot_prefit_postfit
+from plotter.plot_datavalidation import dataValidation
+from plotter.plot_ratio import plot_ratio
+from plotter.plot_diffnuis import plot_nuis
 
 lumi = {
     # 2017: 41.5,
@@ -17,7 +16,7 @@ lumi = {
     "Run3": 62.5,
 }
 regions = ["singlemuon", "dimuon", "gjets", "singleelectron", "dielectron", "signal"]
-procs = ["zmm", "zee", "w_weights", "photon", "wen", "wmn"]
+procs = ["zmm", "zee", "w", "photon", "wen", "wmn"]
 
 ### Years fit separately
 # for year in [2017, 2018]:
@@ -30,9 +29,9 @@ for year in ["Run3"]:
     category = f"vbf_{year}"
     outdir = f"./plots/{year}/"
     for region in regions:
-        plotPreFitPostFit(region, category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_prefit_postfit(region=region, category=category, ws_file=ws_file, fitdiag_file=fitdiag_file, outdir=outdir, lumi=lumi[year], year=year)
     for proc in procs:
-        plot_ratio(proc, category, "root/combined_model_vbf.root", outdir, lumi[year], year)
+        plot_ratio(process=proc, category=category, model_filename="root/combined_model_vbf.root", outdir=outdir, lumi=lumi[year], year=year)
 
     # Flavor integrated
     dataValidation("combined", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
