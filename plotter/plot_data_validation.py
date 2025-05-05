@@ -98,6 +98,7 @@ def get_mc_variations(region1: str, region2: str, ws_filename: str, category: st
     histogram_names = [x.GetName() for x in subdir.GetListOfKeys()]
     histogram_names = [hname for hname in histogram_names if "Up" not in hname and "Down" not in hname]
     syst_names = list(set(sum(syst_groups.values(), [])))
+    logger.debug(f"Systematics: {syst_names}")
 
     def retrieve(region: str) -> dict[str, rt.TH1]:
         if region == "combined":
@@ -107,8 +108,13 @@ def get_mc_variations(region1: str, region2: str, ws_filename: str, category: st
         else:
             labels = [region]
         hnames = [hname for hname in histogram_names if "_data" not in hname and any(hname.startswith(get_region_label(region=r)) for r in labels)]
+        logger.debug(f"Histograms: {hnames}")
         hists = [ws_file.Get(f"category_{category}/{hname}").Clone() for hname in hnames]
-        syst_hists = {syst: add_histograms(hists=[ws_file.Get(f"category_{category}/{hname}_{syst}Up").Clone() for hname in hnames]) for syst in syst_names}
+        syst_hists = {}
+        for syst in syst_names:
+            syst_hist_names = [f"category_{category}/{hname}_{syst}Up" for hname in hnames]
+            logger.debug(f"Systematic: {syst}. Histograms: {syst_hist_names}")
+            syst_hists[syst] = add_histograms(hists=[ws_file.Get(hname).Clone() for hname in syst_hist_names])
         nominal_hist = add_histograms(hists=hists)
         grouped_syst_hists = {syst: nominal_hist.Clone(syst) for syst in syst_groups}
         for bin in range(1, nominal_hist.GetNbinsX() + 1):
@@ -157,7 +163,7 @@ def get_prefit_histograms(region1: str, region2: str, fitdiag_filename: str, cat
     return h_prefit
 
 
-def data_validation(region1: str, region2: str, category: str, ws_filename: str, fitdiag_filename: str, outdir: str, lumi: float, year: str) -> None:
+def plot_data_validation(region1: str, region2: str, category: str, ws_filename: str, fitdiag_filename: str, outdir: str, lumi: float, year: str) -> None:
     """Compare data and MC prediction between two regions with prefit uncertainties."""
     logger.debug(f"Input parameters: {locals()}")
     os.makedirs(outdir, exist_ok=True)
@@ -166,7 +172,20 @@ def data_validation(region1: str, region2: str, category: str, ws_filename: str,
     # Define systematics
     syst_groups = {
         "Exp.": ["prefiring_jet", "pu", "trigger_met", "trigger_electron", "trigger_photon", "electron", "photon", "muonID", "muonISO"],
-        "JECs": ["jec_Total"],
+        "JECs": [
+            "jer_Run3",
+            "jesBBEC1_Run3",
+            "jesEC2_Run3",
+            "jesAbsolute_Run3",
+            "jesRelativeBal",
+            "jesEC2",
+            "jesHF",
+            "jesRelativeSample_Run3",
+            "jesAbsolute",
+            "jesHF_Run3",
+            "jesBBEC1",
+            "jesFlavorQCD",
+        ],
         "Theory": ["muf", "mur", "pdf"],
     }
     syst_groups["Total"] = list(set(sum(syst_groups.values(), [])))
@@ -210,14 +229,14 @@ def data_validation(region1: str, region2: str, category: str, ws_filename: str,
     canv.cd(1)
     color_data, color_mc, color_stat_unc, color_tot_unc = rt.kBlack, rt.kRed + 1, rt.kGray, rt.kAzure + 5
     color_map = [
-        ("Total", color_tot_unc),
+        ("Total", rt.kViolet + 2),
         ("Theory", rt.kRed + 1),
         ("JECs", rt.kGreen + 2),
         ("Exp.", rt.kOrange + 1),
         ("Stat.", rt.kGray + 1),
     ]
 
-    CMS.cmsDraw(h_tot_error, "e2", msize=0, lwidth=1, lcolor=rt.kOrange, fcolor=rt.kOrange)
+    CMS.cmsDraw(h_tot_error, "e2", msize=0, lwidth=1, lcolor=color_tot_unc, fcolor=color_tot_unc)
     for syst, color in color_map:
         CMS.cmsDraw(h_mc_syst_variations[syst], "e2", msize=0, lwidth=1, lcolor=color, fcolor=color, alpha=0.7)
     CMS.cmsDraw(h_mc, "hist", msize=0, lwidth=1, lcolor=color_mc, fstyle=0)
