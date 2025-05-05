@@ -1,16 +1,12 @@
 import os
 import ROOT as rt  # type: ignore
-import numpy as np
 from collections import defaultdict
-from utils.generic.logger import initialize_colorized_logger
 import plotter.cmsstyle as CMS
+from utils.generic.general import oplus
+from utils.workspace.flat_uncertainties import get_flat_uncertainties
+from utils.generic.logger import initialize_colorized_logger
 
 logger = initialize_colorized_logger(log_level="INFO")
-
-
-def oplus(*args: float) -> float:
-    """Compute the quadrature sum of an arbitrary number of inputs."""
-    return np.sqrt(np.sum(np.array(args) ** 2))
 
 
 def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lumi: float, year: str) -> None:
@@ -26,14 +22,15 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
     model_file = rt.TFile.Open(model_filename, "READ")
 
     process_config = {
-        "zmm": {"model": "z", "label": "Z(#mu#mu)", "addsys": oplus(0.02, 0.02, 0.02)},
-        "zee": {"model": "z", "label": "Z(ee)", "addsys": oplus(0.05, 0.02, 0.01)},
-        "photon": {"model": "z", "label": "#gamma", "addsys": 0.01},
-        "w": {"model": "z", "label": "Z/W", "addsys": 0},
-        "wen": {"model": "w", "label": "W(e#nu)", "addsys": oplus(0.025, 0.01, 0.01)},
-        "wmn": {"model": "w", "label": "W(#mu#nu)", "addsys": oplus(0.01, 0.01, 0.01)},
+        "zmm": {"model": "z", "label": "Z(#mu#mu)"},
+        "zee": {"model": "z", "label": "Z(ee)"},
+        "photon": {"model": "z", "label": "#gamma"},
+        "w": {"model": "z", "label": "Z/W"},
+        "wen": {"model": "w", "label": "W(e#nu)"},
+        "wmn": {"model": "w", "label": "W(#mu#nu)"},
     }
     config = process_config[process]
+    flat_uncertainties = list(get_flat_uncertainties(process=process).values())
 
     for mode in production_modes:
         dirname = f"{tag}_{mode}_{config['model']}_category_{category}"
@@ -80,7 +77,7 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
             stat = unc_dict["stat"][b]
             ewk = oplus(stat, unc_dict["ewk"][b])
             qcd = oplus(ewk, unc_dict["qcd"][b])
-            tot = oplus(qcd, unc_dict["exp"][b], config["addsys"] * ratio.GetBinContent(b))
+            tot = oplus(qcd, unc_dict["exp"][b], oplus(*flat_uncertainties) * ratio.GetBinContent(b))
             bands["ewk"].SetBinError(b, ewk)
             bands["ewk_qcd"].SetBinError(b, qcd)
             bands["total"].SetBinError(b, tot)
@@ -105,8 +102,8 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
             nameXaxis=nameXaxis,
             nameYaxis=label,
             square=True,
-            extraSpace=0.025,
-            yTitOffset=1.15,
+            extraSpace=0.03,
+            yTitOffset=1.2,
         )
 
         CMS.cmsDraw(bands["total"], "e2", fcolor=rt.TColor.GetColor(CMS.petroff_6[2]))

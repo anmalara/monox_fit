@@ -1,571 +1,256 @@
-from ROOT import *
-import math
 import os
-import numpy as np
-from math import sqrt, pow
-from array import array
-from tdrStyle import *
-import sys
-import re
+import ROOT as rt  # type:ignore
+import plotter.cmsstyle as CMS
+from utils.generic.general import oplus
+from utils.workspace.flat_uncertainties import get_flat_uncertainties
+from utils.generic.logger import initialize_colorized_logger
 
-DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.abspath(os.path.join(DIR, "../makeWorkspace")))
-
-from parameters import flat_uncertainties
-
-setTDRStyle()
+logger = initialize_colorized_logger(log_level="INFO")
 
 
-def quadsum(*args):
-    """Quadratic sum"""
-    return sqrt(sum([x**2 for x in args]))
-
-
-def scale_uncertainty_histogram(histogram, scale):
-    """
-    For an input histogram with bin content (1+x),
-    this function changes the bin contents to
-    1+scale*x, and returns the histogram. This operation is needed
-    to apply manual rescaling to uncertainty
-    histograms.
-
-    The histogram is not copied, but modified in-situ.
-    """
-
-    for i in range(1, histogram.GetNbinsX() + 1):
-        content = histogram.GetBinContent(i)
-        error = histogram.GetBinError(i)
-        new_content = 1 + (content - 1) * scale
-        new_error = 1 + (error - 1) * scale
-        histogram.SetBinContent(i, new_content)
-        histogram.SetBinError(i, new_error)
-
-    return histogram
-
-
-def dataValidation(region1, region2, category, ws_file, fitdiag_file, outdir, lumi, year):
-    if region1 == "combined" and region2 == "gjets":
-        name = "Z(ll)+jets / #gamma+jets"
-    if region1 == "combined" and region2 == "combinedW":
-        name = "Z(ll)+jets / W(l#nu)+jets"
-    if region1 == "dielectron" and region2 == "gjets":
-        name = "Z(ee)/#gamma"
-    if region1 == "dimuon" and region2 == "gjets":
-        name = "Z(mm)/#gamma"
-    if region1 == "combinedW" and region2 == "gjets":
-        name = "W(l#nu)+jets / #gamma+jets"
-    if region1 == "singleelectron" and region2 == "gjets":
-        name = "W(en)/#gamma"
-    if region1 == "singlemuon" and region2 == "gjets":
-        name = "W(mn)/#gamma"
-    if region1 == "dielectron" and region2 == "singleelectron":
-        name = "Z(ee)/W(en)"
-    if region1 == "dimuon" and region2 == "singlemuon":
-        name = "Z(mm)/W(mn)"
-
-    if region1 == "dimuon" and region2 == "dielectron":
-        name = "Z(mm)/Z(ee)"
-    if region1 == "singlemuon" and region2 == "singleelectron":
-        name = "W(mn)/W(en)"
-
-    datalab = {
-        "singlemuon": "Wmn",
-        "dimuon": "Zmm",
-        "gjets": "gjets",
-        "signal": "signal",
-        "singleelectron": "Wen",
-        "dielectron": "Zee",
+def get_label_name(region1: str, region2: str) -> str:
+    """Return the formatted label for the given region comparison."""
+    label_map: dict[str, str] = {
+        "combined": "Z #rightarrow ll",
+        "combinedW": "W #rightarrow l#nu",
+        "gjets": "#gamma",
+        "dielectron": "Z #rightarrow ee",
+        "dimuon": "Z #rightarrow #mu#mu",
+        "singleelectron": "W #rightarrow e#nu",
+        "singlemuon": "W #rightarrow #mu#nu",
     }
+    if region1 not in label_map:
+        logger.critical(f"No label defined for {region1}", exception_cls=ValueError)
+    if region2 not in label_map:
+        logger.critical(f"No label defined for {region2}", exception_cls=ValueError)
+    return f"{label_map[region1]} / {label_map[region2]}"
 
-    f_data = TFile(ws_file, "READ")
-    f_data.cd("category_" + category)
 
-    if region1 == "combined":
-        h_data_1 = gDirectory.Get("Zmm_data")
-        h_data_1_b = gDirectory.Get("Zee_data")
-        h_data_1.Add(h_data_1_b)
-    elif region1 == "combinedW":
-        h_data_1 = gDirectory.Get("Wmn_data")
-        h_data_1_b = gDirectory.Get("Wen_data")
-        h_data_1.Add(h_data_1_b)
-
-    else:
-        h_data_1 = gDirectory.Get(datalab[region1] + "_data")
-    h_data_1.Sumw2()
-    if "monojet" in category:
-        h_data_1.Rebin(2)
-
-    if region2 == "combinedW":
-        h_data_2 = gDirectory.Get("Wmn_data")
-        h_data_2_b = gDirectory.Get("Wen_data")
-        h_data_2.Add(h_data_2_b)
-    else:
-        h_data_2 = gDirectory.Get(datalab[region2] + "_data")
-
-    h_data_2.Sumw2()
-    if "monojet" in category:
-        h_data_2.Rebin(2)
-
-    h_data_1.Divide(h_data_2)
-
-    f_mlfit = TFile(fitdiag_file, "READ")
-
-    def get_shape(region, process):
-        """Helper function to easily retrieve histograms from diagnostics file"""
-        return f_mlfit.Get("shapes_prefit/" + category + "_" + region + "/" + process)
-
-    def get_shape_sum(regions, process):
-        """Helper function to get sum of shapes for different regions"""
-        histos = [get_shape(x, process) for x in regions]
-        h = histos[0]
-        for ih in histos[1:]:
-            h.Add(ih)
-        return h
-
-    channel = {
+def get_regions_and_leadbg(region: str) -> tuple[list[str], str]:
+    channel_map = {
         "singlemuon": "singlemu",
-        "dimuon": "dimuon",
-        "gjets": "photon",
-        "signal": "signal",
         "singleelectron": "singleel",
+        "dimuon": "dimuon",
         "dielectron": "dielec",
+        "gjets": "photon",
     }
-    leadbg = {
+    leadbkg_map = {
         "singlemuon": "wjets",
-        "dimuon": "zll",
-        "gjets": "gjets",
         "singleelectron": "wjets",
+        "dimuon": "zll",
         "dielectron": "zll",
+        "gjets": "gjets",
     }
+    if region == "combined":
+        return ["dimuon", "dielec"], "zll"
+    elif region == "combinedW":
+        return ["singlemu", "singleel"], "wjets"
+    else:
+        return [channel_map[region]], leadbkg_map[region]
+
+
+def add_histograms(hists: list[rt.TH1]) -> rt.TH1:
+    """Sum the histograms of a given process over multiple regions."""
+    tot_hist = hists[0].Clone()
+    for h in hists[1:]:
+        tot_hist.Add(h)
+    tot_hist.SetDirectory(0)
+    return tot_hist
+
+
+def get_region_label(region: str) -> str:
+    label_map: dict[str, str] = {
+        "singlemuon": "Wmn",
+        "singleelectron": "Wen",
+        "dimuon": "Zmm",
+        "dielectron": "Zee",
+        "gjets": "gjets",
+    }
+    return label_map[region]
+
+
+def get_data(region1: str, region2: str, ws_filename: str, category: str) -> rt.TH1:
+    """Return the data histogram ratio: region1 / region2."""
+    ws_file = rt.TFile.Open(ws_filename, "READ")
+
+    def retrieve(region: str) -> rt.TH1:
+        if region == "combined":
+            labels = ["dimuon", "dielectron"]
+        elif region == "combinedW":
+            labels = ["singlemuon", "singleelectron"]
+        else:
+            labels = [region]
+        hists = [ws_file.Get(f"category_{category}/{get_region_label(region=r)}_data").Clone() for r in labels]
+        hist = add_histograms(hists=hists)
+        return hist
+
+    ratio = retrieve(region1)
+    den = retrieve(region2)
+    ratio.Divide(den)
+    ws_file.Close()
+    return ratio
+
+
+def get_mc_variations(region1: str, region2: str, ws_filename: str, category: str, syst_groups: dict[str, list[str]] = {}) -> dict[str, rt.TH1]:
+    """Return the ratio of MC histograms (region1 / region2) with grouped systematics."""
+    ws_file = rt.TFile.Open(ws_filename, "READ")
+    subdir = ws_file.Get(f"category_{category}")
+    histogram_names = [x.GetName() for x in subdir.GetListOfKeys()]
+    histogram_names = [hname for hname in histogram_names if "Up" not in hname and "Down" not in hname]
+    syst_names = list(set(sum(syst_groups.values(), [])))
+
+    def retrieve(region: str) -> dict[str, rt.TH1]:
+        if region == "combined":
+            labels = ["dimuon", "dielectron"]
+        elif region == "combinedW":
+            labels = ["singlemuon", "singleelectron"]
+        else:
+            labels = [region]
+        hnames = [hname for hname in histogram_names if "_data" not in hname and any(hname.startswith(get_region_label(region=r)) for r in labels)]
+        hists = [ws_file.Get(f"category_{category}/{hname}").Clone() for hname in hnames]
+        syst_hists = {syst: add_histograms(hists=[ws_file.Get(f"category_{category}/{hname}_{syst}Up").Clone() for hname in hnames]) for syst in syst_names}
+        nominal_hist = add_histograms(hists=hists)
+        grouped_syst_hists = {syst: nominal_hist.Clone(syst) for syst in syst_groups}
+        for bin in range(1, nominal_hist.GetNbinsX() + 1):
+            content = nominal_hist.GetBinContent(bin)
+            stat_error = nominal_hist.GetBinError(bin)
+            for group_name, syst_variation in list(syst_groups.items()):
+                total_error = stat_error
+                for syst in syst_variation:
+                    total_error = oplus(total_error, syst_hists[syst].GetBinContent(bin) - content)
+                grouped_syst_hists[group_name].SetBinContent(bin, content)
+                grouped_syst_hists[group_name].SetBinError(bin, total_error)
+        grouped_syst_hists["Stat."] = nominal_hist
+        return grouped_syst_hists
+
+    ratio = retrieve(region1)
+    den = retrieve(region2)
+    for syst in ratio:
+        ratio[syst].Divide(den[syst])
+        ratio[syst].SetDirectory(0)
+    ws_file.Close()
+    return ratio
+
+
+def get_prefit_histograms(region1: str, region2: str, fitdiag_filename: str, category: str) -> dict[str, rt.TH1]:
+    fitdiag_file = rt.TFile.Open(fitdiag_filename, "READ")
+
+    def get_shape(region: str, process: str) -> rt.TH1:
+        """Retrieve a prefit histogram from the diagnostics file for a given region and process."""
+        path = f"shapes_prefit/{category}_{region}/{process}"
+        hist = fitdiag_file.Get(path)
+        if not hist:
+            logger.critical(f"Histogram not found at path: {path}")
+        hist.SetDirectory(0)
+        return hist
 
     h_prefit = {}
-    h_qcd_prefit = {}
-    h_ewk_prefit = {}
-
-    ### Step 1: Read prefit histogram
+    # Read prefit histogram
     for region in [region1, region2]:
-        if region == "combined":
-            regions_to_retrieve = ["dimuon", "dielec"]
-            h_prefit[region] = get_shape_sum(regions_to_retrieve, "total_background")
+        region_list, leadbkg = get_regions_and_leadbg(region)
+        h_prefit[region] = add_histograms(hists=[get_shape(region=region, process="total_background") for region in region_list])
+        if "vbf" in category:
+            h_prefit[f"qcd_{region}"] = add_histograms(hists=[get_shape(region, process=f"qcd_{leadbkg}") for region in region_list])
+            h_prefit[f"ewk_{region}"] = add_histograms(hists=[get_shape(region, process=f"ewk_{leadbkg}") for region in region_list])
 
-            if "vbf" in category:
-                h_qcd_prefit[region] = get_shape_sum(regions_to_retrieve, "qcd_zll")
-                h_ewk_prefit[region] = get_shape_sum(regions_to_retrieve, "ewk_zll")
-        elif region == "combinedW":
-            regions_to_retrieve = ["singlemu", "singleel"]
-            h_prefit[region] = get_shape_sum(regions_to_retrieve, "total_background")
-            if "vbf" in category:
-                h_qcd_prefit[region] = get_shape_sum(regions_to_retrieve, "qcd_wjets")
-                h_ewk_prefit[region] = get_shape_sum(regions_to_retrieve, "ewk_wjets")
-        elif region == "gjets":
-            h_prefit[region] = get_shape("photon", "total_background")
-            if "vbf" in category:
-                h_qcd_prefit[region] = get_shape("photon", "qcd_gjets")
-                h_ewk_prefit[region] = get_shape("photon", "ewk_gjets")
-        else:
-            h_prefit[region] = get_shape(channel[region], "total_background")
-            if "vbf" in category:
-                h_qcd_prefit[region] = get_shape(channel[region], "qcd_" + leadbg[region])
-                h_ewk_prefit[region] = get_shape(channel[region], "ewk_" + leadbg[region])
-        h_prefit[region].Sumw2()
+    fitdiag_file.Close()
+    return h_prefit
 
-        if "monojet" in category:
-            h_prefit[region].Rebin(2)
 
-    h_prefit[region1].Divide(h_prefit[region2])
+def data_validation(region1: str, region2: str, category: str, ws_filename: str, fitdiag_filename: str, outdir: str, lumi: float, year: str) -> None:
+    """Compare data and MC prediction between two regions with prefit uncertainties."""
+    logger.debug(f"Input parameters: {locals()}")
+    os.makedirs(outdir, exist_ok=True)
 
-    uncertainties = []
-    if "mono" in category:
-        if region2 == "gjets":
-            uncFile = TFile(os.path.join(DIR, f"../inputs/sys/{category}/vjets_reco_theory_unc.root"))
-            uncFile_pdf = TFile(os.path.join(DIR, f"../inputs/sys/{category}/tf_pdf_unc.root"))
-            uncFile_photon = TFile(os.path.join(DIR, f"../inputs/sys/{category}/photon_id_unc.root"))
-            uncFile_photon_scale = TFile(os.path.join(DIR, f"../inputs/sys/{category}/photon_scale_unc.root"))
-            if "monojet" in category:
-                uncertainties = uncertainties + [
-                    uncFile.monojet_z_over_g_d1k_up,
-                    uncFile.monojet_z_over_g_d2k_up,
-                    uncFile.monojet_z_over_g_d3k_up,
-                    uncFile.monojet_z_over_g_d1kappa_up,
-                    uncFile.monojet_z_over_g_d2kappa_g_up,
-                    uncFile.monojet_z_over_g_d2kappa_z_up,
-                    uncFile.monojet_z_over_g_d3kappa_g_up,
-                    uncFile.monojet_z_over_g_d3kappa_z_up,
-                    uncFile.monojet_z_over_g_mix_up,
-                    uncFile_pdf.monojet_z_over_g_pdf_2017_up,
-                ]
+    # flat_uncertainties = get_flat_uncertainties(process=process)
+    # Define systematics
+    syst_groups = {
+        "Exp.": ["prefiring_jet", "pu", "trigger_met", "trigger_electron", "trigger_photon", "electron", "photon", "muonID", "muonISO"],
+        "JECs": ["jec_Total"],
+        "Theory": ["muf", "mur", "pdf"],
+    }
+    syst_groups["Total"] = list(set(sum(syst_groups.values(), [])))
 
-                if year == 2017:
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2017_photon_id_extrap_up, 2))
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2017_photon_id_up, 2))
-                elif year == 2018:
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2018_photon_id_extrap_up, 2))
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monojet_2018_photon_id_up, 2))
+    # Retrieve histograms. This is to show the input to the workspace
+    h_data = get_data(region1=region1, region2=region2, ws_filename=ws_filename, category=category)
+    h_mc_syst_variations = get_mc_variations(region1=region1, region2=region2, ws_filename=ws_filename, category=category, syst_groups=syst_groups)
 
-                uncertainties.append(scale_uncertainty_histogram(uncFile_photon_scale.Get("photon_pt_scale_monojet_0.02_up"), 0.5))
+    # Compute MC ratio histogram. This is to show the total syst as seen by combine
+    h_prefit = get_prefit_histograms(region1=region1, region2=region2, fitdiag_filename=fitdiag_filename, category=category)
+    h_mc = h_prefit[region1].Clone()
+    h_mc.Divide(h_prefit[region2])
+    h_tot_error = h_mc.Clone("tot_error")
 
-            elif "monov" in category:
-                uncertainties = uncertainties + [
-                    uncFile.monov_z_over_g_d1k_up,
-                    uncFile.monov_z_over_g_d2k_up,
-                    uncFile.monov_z_over_g_d3k_up,
-                    uncFile.monov_z_over_g_d1kappa_up,
-                    uncFile.monov_z_over_g_d2kappa_g_up,
-                    uncFile.monov_z_over_g_d2kappa_z_up,
-                    uncFile.monov_z_over_g_d3kappa_g_up,
-                    uncFile.monov_z_over_g_d3kappa_z_up,
-                    uncFile.monov_z_over_g_mix_up,
-                    uncFile_pdf.monov_z_over_g_pdf_2017_up,
-                ]
-                if year == 2017:
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2017_photon_id_extrap_up, 2))
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2017_photon_id_up, 2))
-                elif year == 2018:
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2018_photon_id_extrap_up, 2))
-                    uncertainties.append(scale_uncertainty_histogram(uncFile_photon.monov_2018_photon_id_up, 2))
-                uncertainties.append(scale_uncertainty_histogram(uncFile_photon_scale.Get("photon_pt_scale_monov_0.02_up"), 0.5))
-        if "wjets" in (region1, region2):
-            uncFile = TFile(os.path.join(DIR, f"../inputs/sys/{category}/vjets_reco_theory_unc.root"))
-            uncFile_pdf = TFile(os.path.join(DIR, f"../inputs/sys/{category}/tf_pdf_unc.root"))
-            if "monojet" in category:
-                uncertainties = [
-                    uncFile.monov_z_over_w_d1k_up,
-                    uncFile.monov_z_over_w_d2k_up,
-                    uncFile.monov_z_over_w_d3k_up,
-                    uncFile.monov_z_over_w_d1kappa_up,
-                    uncFile.monov_z_over_w_d2kappa_w_up,
-                    uncFile.monov_z_over_w_d2kappa_z_up,
-                    uncFile.monov_z_over_w_d3kappa_w_up,
-                    uncFile.monov_z_over_w_d3kappa_z_up,
-                    uncFile.monov_z_over_w_mix_up,
-                    uncFile_pdf.monov_z_over_w_pdf_2017_up,
-                ]
-            elif "monov" in category:
-                uncertainties = [
-                    uncFile.monojet_z_over_w_d1k_up,
-                    uncFile.monojet_z_over_w_d2k_up,
-                    uncFile.monojet_z_over_w_d3k_up,
-                    uncFile.monojet_z_over_w_d1kappa_up,
-                    uncFile.monojet_z_over_w_d2kappa_w_up,
-                    uncFile.monojet_z_over_w_d2kappa_z_up,
-                    uncFile.monojet_z_over_w_d3kappa_w_up,
-                    uncFile.monojet_z_over_w_d3kappa_z_up,
-                    uncFile.monojet_z_over_w_mix_up,
-                    uncFile_pdf.monoj_z_over_w_pdf_2017_up,
-                ]
-        uncertainties += ["experiment"]
-    else:
-        uncFile = TFile(os.path.join(DIR, f"../inputs/sys/{category}/vbf_z_w_gjets_theory_unc_ratio_unc.root"))
-        uncertainties = [
-            "w_ewkcorr_overz_common",
-            "zoverw_nlo_muf",
-            "zoverw_nlo_mur",
-            "zoverw_nlo_pdf",
-            "experiment",
-        ]
-    # print uncertainties
+    # Canvas setup
+    CMS.SetEnergy(13.6)
+    CMS.SetLumi(lumi)
+    CMS.ResetAdditionalInfo()
+    category_label = "mono-V" if "monov" in category else ("monojet" if "mono" in category else "VBF")
+    CMS.AppendAdditionalInfo(f"{category_label} cat.")
 
-    regions = (region1, region2)
-    for iBin in range(1, h_prefit[region1].GetNbinsX() + 1):
-        if iBin == 0:
-            continue
+    x_min = h_mc.GetBinLowEdge(1) - h_mc.GetBinWidth(1)
+    x_max = h_mc.GetBinLowEdge(h_mc.GetNbinsX() + 1) + h_mc.GetBinWidth(1)
+    name_x_axis = "DNN score" if x_max < 10 else ("Recoil [GeV]" if "mono" in category else "m_{jj} [GeV]")
 
-        # TODO
-        if h_prefit[region1].GetBinContent(iBin) <= 0.0:
-            continue
+    canv = CMS.cmsDiCanvas(
+        canvName="canv",
+        x_min=x_min,
+        x_max=x_max,
+        y_min=0,
+        y_max=2.0 * h_mc.GetMaximum(),
+        r_min=0.4,
+        r_max=1.6,
+        nameXaxis=name_x_axis,
+        nameYaxis=get_label_name(region1=region1, region2=region2),
+        nameRatio="Data / Pred.",
+        extraSpace=0.08,
+    )
 
-        # Bare minimum is the prefit stat unc.
-        sumw2 = pow(h_prefit[region1].GetBinError(iBin), 2)
-        # Systematic uncertainties
-        for uncert in uncertainties:
-            # print(iBin, uncert, sumw2)
-            ### Experimental uncertainties are treated the same for all channes
-            if uncert == "experiment":
-                # Photon ID / trig
-                if "gjets" in regions:
-                    value = quadsum(
-                        flat_uncertainties[year]["eff_photrig"],
-                    )
-                    sumw2 += pow(h_prefit[region1].GetBinContent(iBin) * value, 2)
+    # Upper pad: draw main distributions
+    canv.cd(1)
+    color_data, color_mc, color_stat_unc, color_tot_unc = rt.kBlack, rt.kRed + 1, rt.kGray, rt.kAzure + 5
+    color_map = [
+        ("Total", color_tot_unc),
+        ("Theory", rt.kRed + 1),
+        ("JECs", rt.kGreen + 2),
+        ("Exp.", rt.kOrange + 1),
+        ("Stat.", rt.kGray + 1),
+    ]
 
-                one_muon_unc = quadsum(
-                    flat_uncertainties[year]["eff_m"],
-                    flat_uncertainties[year]["eff_m_iso"],
-                    flat_uncertainties[year]["eff_m_reco"],
-                )
-                one_electron_unc = quadsum(
-                    flat_uncertainties[year]["eff_e"],
-                    flat_uncertainties[year]["eff_e_reco"],
-                )
-                # Uncertainty representing the average uncertainty associated to
-                # one additional lepton for combined regions
-                one_lepton_unc = 1 / sqrt(2) * quadsum(one_muon_unc, one_electron_unc)
+    CMS.cmsDraw(h_tot_error, "e2", msize=0, lwidth=1, lcolor=rt.kOrange, fcolor=rt.kOrange)
+    for syst, color in color_map:
+        CMS.cmsDraw(h_mc_syst_variations[syst], "e2", msize=0, lwidth=1, lcolor=color, fcolor=color, alpha=0.7)
+    CMS.cmsDraw(h_mc, "hist", msize=0, lwidth=1, lcolor=color_mc, fstyle=0)
+    CMS.cmsDraw(h_data, "Pe", marker=20, lwidth=1, lcolor=color_data)
 
-                if regions == ("combined", "combinedW") or regions == ("combinedW", "gjets"):
-                    value = one_lepton_unc
-                elif regions == ("combined", "gjets"):
-                    value = one_lepton_unc * sqrt(2)
-                elif regions == ("dimuon", "singlemuon") or regions == ("singlemuon", "gjets"):
-                    value = one_muon_unc
-                elif regions == ("dielectron", "singleelectron") or regions == ("singleelectron", "gjets"):
-                    value = one_electron_unc
-                elif regions == ("dielectron", "gjets"):
-                    value = one_electron_unc * sqrt(2)
-                elif regions == ("dimuon", "gjets"):
-                    value = one_muon_unc * sqrt(2)
-
-                sumw2 += pow(h_prefit[region1].GetBinContent(iBin) * value, 2)
-
-            elif "mono" in category:
-                ### Theory uncertainties for monojet / mono-V
-                findbin = uncert.FindBin(h_prefit[region1].GetBinCenter(iBin))
-                print(iBin, findbin, h_prefit[region1].GetBinCenter(iBin))
-                unc = uncert.GetBinContent(findbin)
-                if unc > 0.5:
-                    unc = unc - 1
-                sumw2 += pow(h_prefit[region1].GetBinContent(iBin) * unc, 2)
-            elif "vbf" in category:
-                ### Theory uncertainties for VBF
-                # For VBF, we calculate the uncertainty separately for EWK and QCD
-                # the uncertainty calculated in each iteration is the absolute
-                # uncertainty on the absolute spectrum, i.e. not on the ratio!
-                # The uncertainty on the ratio is obtained by dividing after summing
-                theory_sumw2 = 0
-                for proc in ["qcd", "ewk"]:
-                    for direction in "up", "down":
-                        # Uncertainties are stored in histogram form
-                        # hname = f"uncertainty_ratio_z_{proc}_mjj_unc_{uncert}_{direction}_{year}" TODO
-                        hname = f"uncertainty_ratio_z_{proc}_mjj_unc_{uncert}_{direction}_2017"
-                        print(hname)
-                        hist_unc = uncFile.Get(hname)
-
-                        # Find the right bin to read uncertainty from
-                        findbin = hist_unc.FindBin(h_prefit[region1].GetBinCenter(iBin))
-
-                        # Nominal QCD / EWK V value
-                        nom = (h_qcd_prefit if proc == "qcd" else h_ewk_prefit)[region1].GetBinContent(iBin)
-
-                        # Total nominal value
-                        nom_tot = h_prefit[region1].GetBinContent(iBin)
-
-                        # Total unc = relative uncertainty * nominal
-                        # factor of 0.5 accounts for symmetrizing up/down
-                        theory_sumw2 += pow(0.5 * (hist_unc.GetBinContent(findbin) - 1) * nom, 2)
-
-                # After QCD and EWK have been summed over, we divide by the denominator
-                theory_sumw2 /= pow(h_prefit[region2].GetBinContent(iBin), 2)
-
-                # And add to the total
-                sumw2 += theory_sumw2
-        h_prefit[region1].SetBinError(iBin, sqrt(sumw2))
-
-    c = TCanvas("c", "c", 600, 650)
-    SetOwnership(c, False)
-    # c.SetTopMargin(0.08)
-
-    c.SetBottomMargin(0.3)
-    c.SetRightMargin(0.06)
-
-    c.SetLeftMargin(0.15)
-
-    c.cd()
-
-    h_clone = h_prefit[region1].Clone()
-    h_clone.SetFillColor(kGray)  # SetFillColor(ROOT.kYellow)
-    h_clone.SetLineColor(kGray)  # SetLineColor(1)
-    h_clone.SetLineWidth(1)
-    h_clone.SetMarkerSize(0)
-    h_clone.GetXaxis().SetTitle("")
-    h_clone.GetXaxis().SetLabelSize(0)
-    h_clone.GetYaxis().SetTitle(name)
-    # h_clone.GetYaxis().CenterTitle()
-    h_clone.GetYaxis().SetTitleSize(0.05)
-    h_clone.GetYaxis().SetLabelSize(0.04)
-    h_clone.GetYaxis().SetTitleOffset(1.50)
-    h_clone.SetMinimum(0)
-
-    h_clone.SetMaximum(h_clone.GetMaximum() * 2)
-
-    h_clone.Draw("e2")
-
-    h_prefit[region1].SetLineColor(2)
-    h_prefit[region1].Draw("samehist")
-    h_data_1.SetLineColor(1)
-    h_data_1.SetMarkerColor(1)
-    h_data_1.SetMarkerStyle(20)
-    h_data_1.Draw("same")
-
-    # legend = TLegend(0.35, 0.79, 0.95, .92);
-
-    legend = TLegend(0.35, 0.77, 0.95, 0.90)
-
-    legend.SetFillStyle(0)
-    legend.AddEntry(h_data_1, name + " Data", "elp")
-
-    if region2 == "gjets" and region1 == "combinedW":
-        legend.AddEntry(h_prefit[region1], name + " MC      ", "l")
-    elif region2 == "gjets" and region1 == "combined":
-        legend.AddEntry(h_prefit[region1], name + " MC        ", "l")
-    else:
-        legend.AddEntry(h_prefit[region1], name + " MC", "l")
-
-    legend.SetShadowColor(0)
-    legend.SetFillColor(0)
-    legend.SetLineColor(0)
-    legend.SetLineStyle(0)
-    legend.SetBorderSize(0)
+    # Add legend
+    legend = CMS.cmsLeg(x1=0.40, y1=0.89 - (len(h_mc_syst_variations) + 4) * 0.05, x2=0.70, y2=0.89, textSize=0.05)
+    legend.AddEntry(h_data, "Data", "lep")
+    legend.AddEntry(h_mc, "MC", "l")
+    for syst, _ in list(reversed(color_map)):
+        legend.AddEntry(h_mc_syst_variations[syst], f"{syst} unc.", "f")
+    legend.AddEntry(h_tot_error, "Tot. unc.", "f")
     legend.Draw("same")
 
-    latex2 = TLatex()
-    latex2.SetNDC()
-    latex2.SetTextSize(0.6 * c.GetTopMargin())
-    latex2.SetTextFont(42)
-    latex2.SetTextAlign(31)  # align right
-    latex2.DrawLatex(0.94, 0.95, f"{lumi:.1f} fb^{{#minus1}} (13.6 TeV)")
-    latex2.SetTextSize(0.6 * c.GetTopMargin())
-    latex2.SetTextFont(62)
-    latex2.SetTextAlign(11)  # align right
-    latex2.DrawLatex(0.200, 0.85, "CMS")
-    latex2.SetTextSize(0.6 * c.GetTopMargin())
-    latex2.SetTextFont(52)
-    latex2.SetTextAlign(11)
-    offset = 0.005
-    # latex2.DrawLatex(0.20, 0.80, "Preliminary")
+    # Lower pad: ratio plot
+    canv.cd(2)
+    ratio = h_data.Clone("ratio")
+    ratio_stat = h_mc_syst_variations["Stat."].Clone("ratio_stat")
+    ratio_tot = h_tot_error.Clone("ratio_tot")
+    ratio.Divide(h_mc)
+    ratio_stat.Divide(h_mc)
+    ratio_tot.Divide(h_mc)
 
-    categoryLabel = TLatex()
-    categoryLabel.SetNDC()
-    # categoryLabel.SetTextSize(0.5*c.GetTopMargin());
-    categoryLabel.SetTextSize(0.042)
-    categoryLabel.SetTextFont(42)
-    categoryLabel.SetTextAlign(11)
-    if "monojet" in category:
-        categoryLabel.DrawLatex(0.2, 0.35, "Monojet")
-    elif "loose" in category:
-        categoryLabel.DrawLatex(0.2, 0.35, "Mono-V (low-purity)")
-    elif "tight" in category:
-        categoryLabel.DrawLatex(0.2, 0.35, "Mono-V (high-purity)")
-    categoryLabel.Draw("same")
+    ref_line = rt.TLine(x_min, 1, x_max, 1)
+    CMS.cmsDraw(ratio_tot, "e2", msize=0, lwidth=1, lcolor=color_tot_unc, fcolor=color_tot_unc)
+    CMS.cmsDraw(ratio_stat, "e2", msize=0, lwidth=1, lcolor=color_stat_unc, fcolor=color_stat_unc)
+    CMS.cmsDrawLine(line=ref_line, lcolor=rt.kBlack, lstyle=rt.kDashed, lwidth=2)
+    CMS.cmsDraw(ratio, "Pe", marker=20, lwidth=1, lcolor=color_data)
 
-    pad = TPad("pad", "pad", 0.0, 0.0, 1.0, 0.9)
-    SetOwnership(pad, False)
+    CMS.UpdatePad(canv.cd(1))
+    CMS.UpdatePad(canv.cd(2))
 
-    pad.SetTopMargin(0.7)
-    pad.SetRightMargin(0.06)
-    pad.SetLeftMargin(0.15)
-    pad.SetFillColor(0)
-    pad.SetGridy(0)
-
-    pad.SetFillStyle(0)
-    pad.Draw()
-    pad.cd(0)
-
-    dummy2 = h_data_1.Clone("dummy")
-    dummy2.Sumw2()
-    dummy2.Divide(h_prefit[region1])
-    # for i in range(1,dummy2.GetNbinsX()):
-    #    print dummy2.GetBinContent(i)
-    #    dummy2.SetBinContent(i,1.0)
-
-    ratiosys = dummy2.Clone("ratiosys")
-    for hbin in range(0, ratiosys.GetNbinsX() + 1):
-        print("RATIOSYS", ratiosys.GetBinError(hbin + 1), h_clone.GetBinError(hbin + 1), h_data_1.GetBinError(hbin + 1))
-        ratiosys.SetBinContent(hbin + 1, 1.0)
-        if h_clone.GetBinContent(hbin + 1) > 0:
-            ratiosys.SetBinError(hbin + 1, h_clone.GetBinError(hbin + 1) / h_clone.GetBinContent(hbin + 1))
-
-    dummy2.GetYaxis().SetTitle("Data / Pred.")
-    dummy2.GetXaxis().SetTitle("Hadronic recoil p_{T} [GeV]" if "mono" in category else "M_{jj} [GeV]")
-    dummy2.GetXaxis().SetTitleOffset(1.15)
-    dummy2.GetXaxis().SetTitleSize(0.05)
-    dummy2.GetXaxis().SetLabelSize(0.04)
-
-    # dummy2.SetLineColor(0)
-    # dummy2.SetMarkerColor(0)
-    # dummy2.SetLineWidth(0)
-    # dummy2.SetMarkerSize(0)
-    dummy2.GetYaxis().SetLabelSize(0.04)
-    dummy2.GetYaxis().SetNdivisions(5)
-    # dummy2.GetXaxis().SetNdivisions(510)
-    dummy2.GetYaxis().CenterTitle()
-    dummy2.GetYaxis().SetTitleSize(0.04)
-    #    dummy2.GetYaxis().SetLabelSize(0.04)
-    dummy2.GetYaxis().SetTitleOffset(1.5)
-    dummy2.SetMaximum(1.6)
-    dummy2.SetMinimum(0.4)
-
-    dummy2.Draw()
-
-    ratiosys.SetFillColor(kGray)  # SetFillColor(ROOT.kYellow)
-    ratiosys.SetLineColor(kGray)  # SetLineColor(1)
-    ratiosys.SetLineWidth(1)
-    ratiosys.SetMarkerSize(0)
-    ratiosys.Draw("e2same")
-
-    dummy2.Draw("same")
-
-    f1 = TF1("f1", "1", -5000, 5000)
-    f1.SetLineColor(1)
-    f1.SetLineStyle(2)
-    f1.SetLineWidth(1)
-    f1.Draw("same")
-
-    pad.RedrawAxis("G sameaxis")
-    gPad.RedrawAxis()
-
-    # ratiosys.SetFillColor(kGray) #SetFillColor(ROOT.kYellow)
-    # ratiosys.SetLineColor(kGray) #SetLineColor(1)
-    # ratiosys.SetLineWidth(1)
-    # ratiosys.SetMarkerSize(0)
-    # ratiosys.Draw("e2same")
-    # g_ratio_pre.Draw("epsame")
-
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.pdf")
-    # c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.png")
-    # c.SaveAs(outdir + region1 + "_" + region2 + "_cat_" + category + "_" + str(year) + "ratio.C")
-
-    c.Close()
-    f_mlfit.Close()
-    f_data.Close()
-
-
-# dataValidation("dielectron","gjets","monojet")
-# dataValidation("dimuon"    ,"gjets","monojet")
-# ws_file="../monojet/root/ws_monojet_2017.root"
-# fitdiag_file = '../monojet/higgsCombineTest.FitDiagnostics.mH120.root'
-# dataValidation("combined"  ,  "gjets",  "monojet", ws_file, fitdiag_file)
-# dataValidation("combinedW", "gjets"    ,"monojet", ws_file, fitdiag_file)
-# dataValidation("combined" , "combinedW","monojet", ws_file, fitdiag_file)
-
-
-# dataValidation("singlemuon","singleelectron","monojet")
-# dataValidation("dimuon","dielectron","monojet")
-
-# dataValidation("singleelectron","gjets","monojet")
-# dataValidation("singlemuon","gjets","monojet")
-
-# dataValidation("dielectron","gjets","monojet")
-# dataValidation("dimuon","gjets","monojet")
-# dataValidation("dielectron","singleelectron","monojet")
-# dataValidation("dimuon","singlemuon","monojet")
-
-
-# dataValidation("dielectron","gjets","monov")
-# dataValidation("dimuon"    ,"gjets","monov")
-# dataValidation("combined"  ,"gjets","monov")
-
-# dataValidation("combinedW","gjets"    ,"monov")
-# dataValidation("combined" ,"combinedW","monov")
-
-# dataValidation("singlemuon","singleelectron","monov")
-# dataValidation("dimuon","dielectron","monov")
-
-# dataValidation("singleelectron","gjets","monov")
-# dataValidation("singlemuon","gjets","monov")
-
-# dataValidation("dielectron","gjets","monov")
-# dataValidation("dimuon","gjets","monov")
-# dataValidation("dielectron","singleelectron","monov")
-# dataValidation("dimuon","singlemuon","monov")
+    # for extension in ["png", "pdf", "C","root"]:
+    for extension in ["pdf"]:
+        canv.SaveAs(f"{outdir}/ratio_{category}_{region1}_{region2}_{year}.{extension}")
+    canv.Close()

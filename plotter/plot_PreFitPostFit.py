@@ -355,13 +355,12 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
     legend_pull.Draw("same")
     legend_pull.AddEntry(data_pull, "Background only", "f")
 
-    rt.gPad.RedrawAxis()
     for i in range(1, 4):
         CMS.UpdatePad(canv.cd(i))
 
     # for extension in ["png", "pdf", "C","root"]:
     for extension in ["pdf"]:
-        canv.SaveAs(f"{outdir}/prefit_postfit_{category}_{region}_{year}.pdf")
+        canv.SaveAs(f"{outdir}/prefit_postfit_{category}_{region}_{year}.{extension}")
 
     canv.Close()
     f_mlfit.Close()
