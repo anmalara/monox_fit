@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
-import ROOT as r
 import os
 import math
-import argparse
-
-r.gROOT.SetBatch(r.kTRUE)
+import ROOT as rt  # type: ignore
 
 
 def get_nbins(canvas):
@@ -18,19 +15,19 @@ def get_nbins(canvas):
     return nbins
 
 
-def plot_nuis(fname, outdir):
+def plot_diff_nuis(fname, outdir):
     if not os.path.exists(fname):
         raise IOError("Input file does not exist: " + fname)
-    r.gStyle.SetOptStat(0)
+    rt.gStyle.SetOptStat(0)
 
-    f = r.TFile(fname)
+    f = rt.TFile(fname)
 
-    c = f.Get("nuisances")
+    canvas = f.Get("nuisances")
 
-    c.SetBottomMargin(0.3)
-    c.SetRightMargin(0.02)
-    c.SetLeftMargin(0.02)
-    c.SetTopMargin(0.05)
+    canvas.SetBottomMargin(0.4)
+    canvas.SetRightMargin(0.02)
+    canvas.SetLeftMargin(0.02)
+    canvas.SetTopMargin(0.05)
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -38,7 +35,7 @@ def plot_nuis(fname, outdir):
     name = os.path.basename(fname).replace(".root", "").replace("diffnuisances_", "")
 
     # Derive the splitting
-    nbins = get_nbins(c)  # total bins
+    nbins = get_nbins(canvas)  # total bins
     perplot = 30  # optimal bins per plot
     rest = nbins % perplot  # bins in the last plot
     nplots = int(math.ceil(float(nbins) / perplot))
@@ -50,10 +47,10 @@ def plot_nuis(fname, outdir):
         perplot = perplot + int(math.ceil(float(rest)) / nplots)
 
     for i in range(nplots + 1):
-        for item in c.GetListOfPrimitives():
+        for item in canvas.GetListOfPrimitives():
             try:
                 item.GetXaxis().SetRangeUser(i * perplot, (i + 1) * perplot)
-                item.GetXaxis().SetLabelSize(0.04)
+                item.GetXaxis().SetLabelSize(0.03)
                 item.LabelsOption("v")
                 item.SetTitle(f"Nuisances {name} {i}")
             except:
@@ -65,33 +62,8 @@ def plot_nuis(fname, outdir):
                 item.SetBBoxY2(75)
             except AttributeError:
                 pass
-        c.Draw()
-        c.SetCanvasSize(1200, 600)
+        canvas.Draw()
+        canvas.SetCanvasSize(1200, 600)
         # for extension in ["png", "pdf"]:
         for extension in ["pdf"]:
-            c.SaveAs(os.path.join(outdir, f"diffnuis_{name}_{i}.{extension}"))
-
-
-def cli_args():
-    parser = argparse.ArgumentParser(prog="Make nice nuisance plots.")
-    parser.add_argument("file", type=str, help="Input file to use.")
-    parser.add_argument("--out", type=str, help="Path to save output under.", default="combined_model.root")
-    args = parser.parse_args()
-
-    args.file = os.path.abspath(args.file)
-    args.out = os.path.abspath(args.out)
-    if not os.path.exists(args.file):
-        raise IOError("Input file not found: " + args.file)
-    if not args.file.endswith(".root"):
-        raise IOError("Input file is not a ROOT file: " + args.file)
-
-    return args
-
-
-def main():
-    args = cli_args()
-    plot_nuis(args.file, args.out)
-
-
-if __name__ == "__main__":
-    main()
+            canvas.SaveAs(os.path.join(outdir, f"diffnuis_{name}_{i}.{extension}"))

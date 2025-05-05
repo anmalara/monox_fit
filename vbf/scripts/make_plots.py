@@ -1,8 +1,8 @@
 #!/bin/env python3
-from plotter.plot_PreFitPostFit import plot_prefit_postfit
-from plotter.plot_datavalidation import data_validation
+from plotter.plot_prefit_postfit import plot_prefit_postfit
+from plotter.plot_data_validation import plot_data_validation
 from plotter.plot_ratio import plot_ratio
-from plotter.plot_diffnuis import plot_nuis
+from plotter.plot_diff_nuis import plot_diff_nuis
 
 
 def main():
@@ -30,17 +30,17 @@ def main():
             plot_ratio(process=proc, category=category, model_filename="root/combined_model_vbf.root", outdir=outdir, lumi=lumi[year], year=year)
 
         # Flavor integrated
-        data_validation("combined", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("combinedW", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("combined", "combinedW", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("combined", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("combinedW", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("combined", "combinedW", category, ws_file, fitdiag_file, outdir, lumi[year], year)
         # Split by flavor
-        data_validation("dimuon", "singlemuon", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("dielectron", "singleelectron", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("singleelectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("singlemuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("dielectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        data_validation("dimuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_nuis(diffnuis_file, outdir)
+        plot_data_validation("dimuon", "singlemuon", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("dielectron", "singleelectron", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("singleelectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("singlemuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("dielectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_data_validation("dimuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
+        plot_diff_nuis(diffnuis_file, outdir)
 
 
 if __name__ == "__main__":
