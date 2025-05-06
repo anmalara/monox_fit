@@ -256,9 +256,14 @@ def plot_data_validation(region1: str, region2: str, category: str, ws_filename:
     ratio = h_data.Clone("ratio")
     ratio_stat = h_mc_syst_variations["Stat."].Clone("ratio_stat")
     ratio_tot = h_tot_error.Clone("ratio_tot")
-    ratio.Divide(h_mc)
-    ratio_stat.Divide(h_mc)
-    ratio_tot.Divide(h_mc)
+    for bin in range(1, ratio.GetNbinsX() + 1):
+        den = h_mc.GetBinContent(bin)
+        ratio.SetBinContent(bin, ratio.GetBinContent(bin) / den)
+        ratio.SetBinError(bin, ratio.GetBinError(bin) / den)
+        ratio_stat.SetBinContent(bin, ratio_stat.GetBinContent(bin) / den)
+        ratio_stat.SetBinError(bin, ratio_stat.GetBinError(bin) / den)
+        ratio_tot.SetBinContent(bin, ratio_tot.GetBinContent(bin) / den)
+        ratio_tot.SetBinError(bin, ratio_tot.GetBinError(bin) / den)
 
     ref_line = rt.TLine(x_min, 1, x_max, 1)
     CMS.cmsDraw(ratio_tot, "e2", msize=0, lwidth=1, lcolor=color_tot_unc, fcolor=color_tot_unc)
