@@ -8,9 +8,7 @@ mkdir -p cards
 # for YEAR in 2018; do
 for YEAR in Run3; do
     CARD=cards/card_vbf_${YEAR}.txt
-    # cp ../../templates/vbf_template_pretty_withphotons.txt ${CARD}
-    # cp ../../templates/vbf_template_pyrat2.txt ${CARD}
-    cp ../../templates/vbf_template.txt ${CARD}
+    cp ../../../templates/vbf_template.txt ${CARD}
     sed -i "s|@YEAR|${YEAR}|g" ${CARD}
 
     if [ "$YEAR" = "2017" ]; then

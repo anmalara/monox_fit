@@ -232,8 +232,10 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
 
     x_min = h_all_prefit.GetBinLowEdge(1)
     x_max = h_all_prefit.GetBinLowEdge(h_all_prefit.GetNbinsX() + 1)
-    nameXaxis = "DNN score" if x_max < 10 else ("Recoil [GeV]" if "mono" in category else "m_{jj} [GeV]")
-    y_up_min, y_up_max = 0.002, 50 * h_all_prefit.GetMaximum()
+    is_dnn = x_max < 10
+    nameXaxis = "DNN score" if is_dnn else ("Recoil [GeV]" if "mono" in category else "m_{jj} [GeV]")
+    nameYaxis = "Events / bin" if is_dnn else "Events / GeV"
+    y_up_min, y_up_max = 10 if is_dnn else 0.002, (1000 if is_dnn else 50) * h_all_prefit.GetMaximum()
     CMS.SetEnergy(13.6)
     CMS.SetLumi(lumi)
     CMS.ResetAdditionalInfo()
@@ -249,7 +251,7 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         y_low_min=-3.5,
         y_low_max=3.5,
         nameXaxis=nameXaxis,
-        nameYaxis_up="Events / GeV",
+        nameYaxis_up=nameYaxis,
         nameYaxis_mid="Data / Pred.",
         nameYaxis_low="#frac{(Data-Pred.)}{#sigma}",
     )
@@ -333,11 +335,30 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     # Compute the pulls
     data_pull = h_data.Clone("pull")
     data_pull_sig = h_data.Clone("pull")
+
+    def get_pull(hist_1: rt.TH1, hist_2: rt.TH1, hbin: int) -> float:
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/DataMCComparison
+        # formula: pull = data-pred/sigma, with
+        # sigma = sqrt(sigma_data^2-sigma_fit^2)
+        # sigma_data = sqrt(mc_pred) -> Poisson statistical error estimated from the MC prediction
+        # sigma_fit = mc_err -> mc postfit error
+        # sigma = sqrt(mc_pred-mc_err^2)
+        width = hist_1.GetBinWidth(hbin)
+        data_pred = width * hist_1.GetBinContent(hbin)
+        mc_pred = width * hist_2.GetBinContent(hbin)
+        postfit_err = width * hist_2.GetBinError(hbin)
+        sigma = mc_pred - postfit_err**2
+        if sigma < 0:
+            logger.warning(f"Bin {hbin} at x={hist_2.GetBinCenter(hbin)} with too large post fit errors.")
+            sigma = mc_pred + postfit_err**2
+        pull = (data_pred - mc_pred) / math.sqrt(sigma)
+        return pull
+
     for hbin in range(1, data_pull.GetNbinsX() + 1):
-        pull = get_pull(hist_1=h_data, hist_2=h_all_postfit)
+        pull = get_pull(hist_1=h_data, hist_2=h_all_postfit, hbin=hbin)
         data_pull.SetBinContent(hbin, pull)
         data_pull.SetBinError(hbin, 0)
-        pull = get_pull(hist_1=h_data, hist_2=h_postfit_total_sig_bkg)
+        pull = get_pull(hist_1=h_data, hist_2=h_postfit_total_sig_bkg, hbin=hbin)
         data_pull_sig.SetBinContent(hbin, pull)
         data_pull_sig.SetBinError(hbin, 0)
 

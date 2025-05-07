@@ -60,7 +60,7 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     """Run the full pipeline for a given category and date tag."""
     input_dir = os.path.realpath(input_dir)
     category = f"{analysis}_{year}"
-    output_dir = os.path.realpath(os.path.join(os.getenv("FIT_FRAMEWORK_PATH", ""), analysis, year, tag, "root"))
+    output_dir = os.path.realpath(os.path.join(os.getenv("FIT_FRAMEWORK_PATH", ""), analysis, year, tag, variable, "root"))
     os.makedirs(output_dir, exist_ok=True)
 
     input_filename = os.path.join(input_dir, f"histograms_{analysis}.root")

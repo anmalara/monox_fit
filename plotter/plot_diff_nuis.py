@@ -45,7 +45,7 @@ def get_validated_nuisance(fname: str) -> list[str]:
     valid_nps = []
     for idx in range(total):
         name = nps.at(idx).GetName()
-        if "model_mu_cat" in name:
+        if name == "r" or "model_mu_cat" in name:
             continue
         nuisance_prefit = prefit.find(name)
         if nuisance_prefit == None:
@@ -115,19 +115,13 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
 
     validate_categories(indices_map=indices_map, nuis_names=nuis_names)
 
-    graphs = {}
+    graph_bonly_all, graphs_sb_all = None, None
     for item in canvas.GetListOfPrimitives():
         title = item.GetTitle()
         if title == "fit_b_g":
-            graphs["bonly_all"] = item.Clone("fit_bonly")
+            graph_bonly_all = item.Clone("fit_bonly")
         if title == "fit_b_s":
-            graphs["sb_all"] = item.Clone("fit_sb")
-
-    leg = CMS.cmsLeg(x1=0.55, y1=0.94, x2=0.98, y2=1.0, textSize=0.05)
-    leg.SetNColumns(3)
-    leg.AddEntry(nuisances, "Prefit", "FL")
-    leg.AddEntry(graphs["bonly_all"], "B-only fit", "EPL")
-    leg.AddEntry(graphs["sb_all"], "S+B fit", "EPL")
+            graphs_sb_all = item.Clone("fit_sb")
 
     for group, label_idx in indices_map.items():
         canv = get_canvas(category=category, group=group)
@@ -135,12 +129,12 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
         h_axis = rt.TH1F(f"h_axis_{group}", "", num_nuis, 0, num_nuis)
         h_prefit_err = rt.TH1F(f"prefit_{group}", "", num_nuis, 0, num_nuis)
         gr_bonly, gr_sb = rt.TGraphAsymmErrors(), rt.TGraphAsymmErrors()
-        y_bonly = list(graphs["bonly_all"].GetY())
-        ere_up_bonly = list(graphs["bonly_all"].GetEYhigh())
-        err_dn_bonly = list(graphs["bonly_all"].GetEYlow())
-        y_sb = list(graphs["sb_all"].GetY())
-        ere_up_sb = list(graphs["sb_all"].GetEYhigh())
-        err_dn_sb = list(graphs["sb_all"].GetEYlow())
+        y_bonly = list(graph_bonly_all.GetY())
+        ere_up_bonly = list(graph_bonly_all.GetEYhigh())
+        err_dn_bonly = list(graph_bonly_all.GetEYlow())
+        y_sb = list(graphs_sb_all.GetY())
+        ere_up_sb = list(graphs_sb_all.GetEYhigh())
+        err_dn_sb = list(graphs_sb_all.GetEYlow())
         for h_idx, (np_name, np_idx) in enumerate(sorted(label_idx.items())):
             h_axis.GetXaxis().SetBinLabel(h_idx + 1, np_name)
             h_prefit_err.SetBinContent(h_idx + 1, nuisances.GetBinContent(np_idx))
@@ -163,6 +157,11 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
         CMS.cmsDrawLine(line=ref_line, lcolor=rt.kBlack, lstyle=rt.kSolid, lwidth=2)
         CMS.cmsDraw(gr_bonly, "ep", lcolor=rt.kBlue, mcolor=rt.kBlue, marker=20, lwidth=2)
         CMS.cmsDraw(gr_sb, "ep", lcolor=rt.kRed, mcolor=rt.kRed, marker=20, lwidth=2)
+        leg = CMS.cmsLeg(x1=0.55, y1=0.94, x2=0.98, y2=1.0, textSize=0.05)
+        leg.SetNColumns(3)
+        leg.AddEntry(h_prefit_err, "Prefit", "FL")
+        leg.AddEntry(gr_bonly, "B-only fit", "EPL")
+        leg.AddEntry(gr_sb, "S+B fit", "EPL")
         leg.Draw("same")
         CMS.UpdatePad(canv)
         canv.RedrawAxis("g")
