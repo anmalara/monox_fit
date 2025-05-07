@@ -5,42 +5,50 @@ from plotter.plot_ratio import plot_ratio
 from plotter.plot_diff_nuis import plot_diff_nuis
 
 
-def main():
+def main() -> None:
     lumi = {
-        # 2017: 41.5,
-        # 2018: 59.7,
+        2017: 41.5,
+        2018: 59.7,
         "Run3": 62.5,
     }
     regions = ["singlemuon", "dimuon", "gjets", "singleelectron", "dielectron", "signal"]
     procs = ["zmm", "zee", "w", "photon", "wen", "wmn"]
+    region_pairs = [
+        # Flavor integrated
+        ("combined", "gjets"),
+        ("combinedW", "gjets"),
+        ("combined", "combinedW"),
+        # Split by flavor
+        ("dimuon", "singlemuon"),
+        ("dielectron", "singleelectron"),
+        ("singleelectron", "gjets"),
+        ("singlemuon", "gjets"),
+        ("dielectron", "gjets"),
+        ("dimuon", "gjets"),
+    ]
+
     # years = [2017, 2018]
     # years = [2017]
     # years = [2018]
     years = ["Run3"]
 
     for year in years:
-        ws_file = "./root/ws_vbf.root"
-        fitdiag_file = f"diagnostics/fitDiagnostics_vbf_{year}.root"
-        diffnuis_file = f"diagnostics/diffnuisances_vbf_{year}.root"
+        ws_filename = "./root/ws_vbf.root"
         category = f"vbf_{year}"
         outdir = f"./plots/{year}/"
-        for region in regions:
-            plot_prefit_postfit(region=region, category=category, ws_file=ws_file, fitdiag_file=fitdiag_file, outdir=outdir, lumi=lumi[year], year=year)
-        for proc in procs:
-            plot_ratio(process=proc, category=category, model_filename="root/combined_model_vbf.root", outdir=outdir, lumi=lumi[year], year=year)
+        fitdiag_file = f"diagnostics/fitDiagnostics_{category}.root"
+        diffnuis_file = f"diagnostics/diffnuisances_{category}.root"
+        common_args = {"category": category, "outdir": outdir, "lumi": lumi[year], "year": year}
 
-        # Flavor integrated
-        plot_data_validation("combined", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("combinedW", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("combined", "combinedW", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        # Split by flavor
-        plot_data_validation("dimuon", "singlemuon", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("dielectron", "singleelectron", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("singleelectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("singlemuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("dielectron", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_data_validation("dimuon", "gjets", category, ws_file, fitdiag_file, outdir, lumi[year], year)
-        plot_diff_nuis(diffnuis_file, outdir)
+        for region in regions:
+            plot_prefit_postfit(region=region, ws_filename=ws_filename, fitdiag_file=fitdiag_file, **common_args)
+        for proc in procs:
+            plot_ratio(process=proc, model_filename="root/combined_model_vbf.root", **common_args)
+
+        for region1, region2 in region_pairs:
+            plot_data_validation(region1=region1, region2=region2, ws_filename=ws_filename, fitdiag_filename=fitdiag_file, **common_args)
+
+        plot_diff_nuis(diffnuis_file=diffnuis_file, outdir=outdir, category=category)
 
 
 if __name__ == "__main__":

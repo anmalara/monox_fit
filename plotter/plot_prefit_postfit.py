@@ -64,7 +64,7 @@ def create_ratios(h_data: rt.TH1, h_all_prefit: rt.TH1, h_all_postfit: rt.TH1) -
     return g_ratio_pre, g_ratio_post, ratiosys
 
 
-def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: str, outdir: str, lumi: str, year: str, sb: bool = False) -> None:
+def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_file: str, outdir: str, lumi: str, year: str, sb: bool = False) -> None:
     logger.debug(f"Input parameters: {locals()}")
 
     os.makedirs(outdir, exist_ok=True)
@@ -90,7 +90,7 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
     }[region]
 
     f_mlfit = rt.TFile(fitdiag_file, "READ")
-    f_data = rt.TFile(ws_file, "READ")
+    f_data = rt.TFile(ws_filename, "READ")
 
     # using this instead of the graph from shapes_fit_b to avoid conversion
     h_data = f_data.Get(f"category_{category}/{datalab[region]}_data")
@@ -334,14 +334,10 @@ def plot_prefit_postfit(region: str, category: str, ws_file: str, fitdiag_file: 
     data_pull = h_data.Clone("pull")
     data_pull_sig = h_data.Clone("pull")
     for hbin in range(1, data_pull.GetNbinsX() + 1):
-        pull = data_pull.GetBinContent(hbin) - h_all_postfit.GetBinContent(hbin)
-        sigma = math.sqrt(h_data.GetBinError(hbin) ** 2 - h_all_postfit.GetBinError(hbin) ** 2)
-        pull /= sigma
+        pull = get_pull(hist_1=h_data, hist_2=h_all_postfit)
         data_pull.SetBinContent(hbin, pull)
         data_pull.SetBinError(hbin, 0)
-        pull = data_pull.GetBinContent(hbin) - h_postfit_total_sig_bkg.GetBinContent(hbin)
-        sigma = math.sqrt(h_data.GetBinError(hbin) ** 2 - h_postfit_total_sig_bkg.GetBinError(hbin) ** 2)
-        pull /= sigma
+        pull = get_pull(hist_1=h_data, hist_2=h_postfit_total_sig_bkg)
         data_pull_sig.SetBinContent(hbin, pull)
         data_pull_sig.SetBinError(hbin, 0)
 
