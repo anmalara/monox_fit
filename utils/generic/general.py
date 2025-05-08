@@ -3,6 +3,12 @@
 # ==============================
 
 import re
+import numpy as np
+
+
+def oplus(*args: float) -> float:
+    """Compute the quadrature sum of an arbitrary number of inputs."""
+    return np.sqrt(np.sum(np.array(args) ** 2))
 
 
 def read_key_for_year(key, year):

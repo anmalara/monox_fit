@@ -47,20 +47,14 @@ def convert_to_combine_workspace(
     nbins = samplehist.GetNbinsX()
     varname = samplehist.GetXaxis().GetTitle()
 
-    # Fetch the mjj variable, rename it to vbf_{year}_mjj
-    logger.info(varname)
+    # Fetch the variable, rename it to vbf_{year}_{variable}
+    logger.debug(f"x-axis label:{varname}. Hist name: {samplehist.GetName()}")
     varl = wlocal.var(varname)
-    logger.info("VAR NAME {varl.GetName()} {rename_variable}")
+    rename_variable = rename_variable or f"{varname}_{cat}"
+    varl.SetName(rename_variable)
+    logger.info(f"Renaming: {varl.GetName()} -> {rename_variable}")
 
-    if rename_variable:
-        varl.SetName(rename_variable)
-    else:
-        # import a Renamed copy of the variable ...
-        varl.SetName(f"{varname}_{cat}")
-
-    # Loop other all the histograms in the directory for the year
-    # convert them to RooDataHist (as a function of mjj) and
-    # save them to the workspace
+    # Loop other all the histograms in the directory for the year convert them to RooDataHist and save them to the workspace
     for key in fdir.GetListOfKeys():
         obj = key.ReadObj()
         logger.debug(f"{obj.GetName()}, {obj.GetTitle()}, {type(obj)}")
@@ -143,4 +137,4 @@ def convert_to_combine_workspace(
             continue
         if par.getAttribute("BACKGROUND_NUISANCE"):
             continue  # these aren't in fact used for combine
-        logger.info(f"External nuisance parameter: {par.GetName()} param {par.getVal():.1f} {par.getError():.1f}")
+        logger.info(f"External nuisance parameter: {par.GetName()} param {par.getVal():.1f} 1.0")

@@ -10,6 +10,7 @@ for YEAR in Run3; do
     combine -M FitDiagnostics \
             --saveShapes \
             --saveWithUncertainties \
+            --cminDefaultMinimizerStrategy 0 \
             -n _vbf_${YEAR} \
             ../cards/card_vbf_${YEAR}.root | tee log_diag_${YEAR}.txt
             # --setParameters mask_vbf_${YEAR}_signal=1 \

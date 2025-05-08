@@ -61,7 +61,6 @@ def merge_overflow_into_last_bin(hist: ROOT.TH1) -> None:
     if overflow_content == 0 and overflow_error == 0:
         return
 
-    pdb.set_trace()
     last_bin_content = hist.GetBinContent(n_bins)
     last_bin_error = hist.GetBinError(n_bins)
     new_content = last_bin_content + overflow_content
@@ -402,7 +401,7 @@ def create_workspace(
     workspace = ROOT.RooWorkspace(f"wspace_{category}", f"wspace_{category}")
     workspace._safe_import = SafeWorkspaceImporter(workspace)
     logger.info(green(f"Creating main observable: {variable}"))
-    observable = ROOT.RooRealVar(variable, variable, 0, 10000)
+    observable = ROOT.RooRealVar(variable, variable, 0, 10000)  # large enough to capture all ranges
 
     # Loop through all histograms in the input file and add them to the work space.
     logger.info(green("Adding histograms to workspace..."))
