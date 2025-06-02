@@ -43,16 +43,18 @@ def get_validated_nuisance(fname: str) -> list[str]:
     nps = file_.Get("fit_s").floatParsFinal()
     total = nps.getSize()
     valid_nps = []
+    n_model_pars = 0
     for idx in range(total):
         name = nps.at(idx).GetName()
         if name == "r" or "model_mu_cat" in name:
+            n_model_pars += 1
             continue
         nuisance_prefit = prefit.find(name)
         if nuisance_prefit == None:
             logger.warning(f"Null NP found: {name}")
         else:
             valid_nps.append(name)
-    logger.info(f"NPs found: total={total}, not null={len(valid_nps)}, null={total - len(valid_nps)}")
+    logger.info(f"NPs found: total={total}, not null={len(valid_nps)}, null={total - len(valid_nps)-n_model_pars}")
     file_.Close()
     return valid_nps
 

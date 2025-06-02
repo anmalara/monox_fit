@@ -26,6 +26,9 @@ printimpacts:
 limits:
 	bash $(TOPDIR)/scripts/limits.sh
 
+gof:
+	bash $(TOPDIR)/scripts/gof.sh
+
 printlimits:
 	cat $(TOPDIR)/scripts/limits.sh
 
