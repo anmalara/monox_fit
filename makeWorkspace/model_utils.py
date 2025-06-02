@@ -293,8 +293,7 @@ def add_jes_jer_uncertainties(
                 add_variation(
                     nominal=transfer_factors[sample],
                     unc_file=fjes,
-                    # unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}", TODO
-                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_jec_Total{var_direction}",
+                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}",
                     new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
                     outfile=output_file,
                 )
@@ -463,7 +462,12 @@ def add_variation(
         factor_value = factor.GetBinContent(1)
         variation.Scale(factor_value)
     else:
-        # TODO: re-introduce this assert once the binning is fixed
-        # assert variation.Multiply(factor)
+        assert variation.Multiply(factor)
+        # TODO
+        if "_pdf" in unc_name:
+            for bin_idx in range(0, factor.GetNbinsX() + 2):  # includes underflow (0) and overflow (nbins+1)
+                content = factor.GetBinContent(bin_idx)
+                new_content = (content - 1) / 10 + 1
+                factor.SetBinContent(bin_idx, new_content)
         variation.Multiply(factor)
     outfile.WriteTObject(variation)
