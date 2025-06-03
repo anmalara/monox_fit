@@ -105,15 +105,15 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
             "dielectron": ["zll"],
         }
         processes = [
-            "qcd",
+            # "qcd",
             "zll",
             "gjets",
             "top",
-            # 'diboson',
+            "diboson",
             "ewk",
-            "ww",
-            "wz",
-            "zz",
+            # "ww",
+            # "wz",
+            # "zz",
             "wjets",
             "zjets",
             "wgamma",
@@ -235,7 +235,7 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     is_dnn = x_max < 10
     nameXaxis = "DNN score" if is_dnn else ("Recoil [GeV]" if "mono" in category else "m_{jj} [GeV]")
     nameYaxis = "Events / bin" if is_dnn else "Events / GeV"
-    y_up_min, y_up_max = 10 if is_dnn else 0.002, (1000 if is_dnn else 50) * h_all_prefit.GetMaximum()
+    y_up_min, y_up_max = 10 if is_dnn else 0.002, (1000 if is_dnn else 100) * h_all_prefit.GetMaximum()
     CMS.SetEnergy(13.6)
     CMS.SetLumi(lumi)
     CMS.ResetAdditionalInfo()
@@ -246,7 +246,7 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         x_max=x_max,
         y_up_min=y_up_min,
         y_up_max=y_up_max,
-        y_mid_min=0.5,
+        y_mid_min=0.7,
         y_mid_max=1.5,
         y_low_min=-3.5,
         y_low_max=3.5,
@@ -291,10 +291,10 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         if "mono" in category:
             legend.AddEntry(h_postfit["zjets"], "Z(#nu#nu)+jets", "f")
             legend.AddEntry(h_postfit["wjets"], "W(l#nu)+jets", "f")
-            legend.AddEntry(h_postfit["zz"], "WW/ZZ/WZ", "f")
+            legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
             legend.AddEntry(h_postfit["top"], "Top quark", "f")
             # legend.AddEntry(h_postfit['gjets'], "Z(ll)+jets, #gamma+jets", "f")
-            legend.AddEntry(h_postfit["qcd"], "QCD", "f")
+            # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
         else:
             # pass
             legend.AddEntry(h_postfit["qcd_zjets"], "QCD Z(#nu#nu)+jets", "f")
@@ -304,7 +304,7 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
             legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
             legend.AddEntry(h_postfit["top"], "Top quark", "f")
             # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO
-            legend.AddEntry(h_postfit["qcd"], "QCD", "f")
+            # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
         if sb:
             legend.AddEntry(h_postfit_total_sig_bkg, "S+B post-fit", "f")
 
