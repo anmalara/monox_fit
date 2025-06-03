@@ -54,6 +54,11 @@ def cmodel(
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
+        # TODO: trigger uncertainties (met, wmn only)
+        # TODO: lepton veto uncertainties from sys file (ele id, ele reco, mu id, mu iso, tau id; both wmn and wen)
+        # TODO: electron id and iso uncertainties from sys file (wen region only)
+        # TODO: prefiring uncertainties (both wmn and wen)
+        # TODO: pdf uncertainties (both wmn and wen)
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_wmn", "qcd_wen"],
         "veto_dict": {
