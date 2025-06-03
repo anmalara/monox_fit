@@ -58,6 +58,15 @@ def cmodel(
             "qcd_w": "qcd_wjetssignal",
             "qcd_photon": "qcd_photon",
         },
+        # TODO: trigger uncertainties (met, zmm only)
+        # TODO: theory uncertainties for Z/Gamma, Z/W
+        # TODO: mistag nuisances (photon: gamma and Z, w: Z and W)
+        # TODO: pdf uncertainties (zmm, zee, w, photon)
+        # TODO: lepton veto uncertainties (ele id, ele reco, mu id, mu iso, tau id; w only)
+        # TODO: prefiring uncertainties (zee, zmm)
+        # TODO: photon id (and id_extrap) (photon only)
+        # TODO: electron id and iso uncertainties (zee region only)
+        # TODO: photon scale (photon only)
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_w"],
         "veto_dict": {

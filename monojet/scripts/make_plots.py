@@ -12,7 +12,9 @@ def main() -> None:
         "Run3": 62.5,
     }
     regions = ["singlemuon", "dimuon", "gjets", "singleelectron", "dielectron", "signal"]
-    procs = ["zmm", "zee", "w_weights", "photon", "wen", "wmn"]
+    # TODO: double check why w_weights is used for vbf
+    # procs = ["zmm", "zee", "w_weights", "photon", "wen", "wmn"]
+    procs = ["zmm", "zee", "w", "photon", "wen", "wmn"]
     region_pairs = [
         # Flavor integrated
         ("combined", "gjets"),
