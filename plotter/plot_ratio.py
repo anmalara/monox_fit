@@ -33,8 +33,9 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
     flat_uncertainties = list(get_flat_uncertainties(process=process).values())
 
     for mode in production_modes:
-        dirname = f"{tag}_{mode}_{config['model']}_category_{category}"
-        base_name = f"{mode}_{process}_weights_{category}"
+        # TODO: fix these names for monojet
+        dirname = f"{tag}_{mode}_{config['model']}_category_{category}".replace("monojet__", "mono_qcd_")
+        base_name = ("qcd" if "mono" in category else "") + f"{mode}_{process}_weights_{category}"
         label = f"R_{{{mode}}}^{{{config['label']}}}"
         ratio = model_file.Get(f"{dirname}/{base_name}")
         subdir = model_file.Get(dirname)

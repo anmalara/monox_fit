@@ -45,7 +45,8 @@ def convert_to_combine_workspace(
         logger.critical(f"No valid histogram found for category {cat}.", exception_cls=RuntimeError)
 
     nbins = samplehist.GetNbinsX()
-    varname = samplehist.GetXaxis().GetTitle()
+    # varname = samplehist.GetXaxis().GetTitle()
+    varname = "recoil"  # TODO: pass this as an argument
 
     # Fetch the variable, rename it to vbf_{year}_{variable}
     logger.debug(f"x-axis label:{varname}. Hist name: {samplehist.GetName()}")
