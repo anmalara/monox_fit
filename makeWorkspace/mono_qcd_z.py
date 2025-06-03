@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from counting_experiment import Category
 from model_utils import *
 
-model = "wjets"
+model = "zjets"
 
 
 def cmodel(
@@ -43,33 +43,39 @@ def cmodel(
     model_args = {
         "model_name": model,
         # Name of the target sample in the input ROOT file.
-        "target_name": "signal_wjets",
+        "target_name": "signal_qcdzjets",
         # Mapping of control sample names to their ROOT file entries.
         "samples_map": {
-            "wmn": "Wmn_qcdwjets",
-            "wen": "Wen_qcdwjets",
+            "qcd_zmm": "Zmm_qcdzll",
+            "qcd_zee": "Zee_qcdzll",
+            "qcd_w": "signal_qcdwjets",
+            "qcd_photon": "gjets_qcdgjets",
         },
         # Mapping of transfer factor labels to channel names.
         "channel_names": {
-            "wmn": "singlemuon",
-            "wen": "singleelectron",
+            "qcd_zmm": "qcd_dimuon",
+            "qcd_zee": "qcd_dielectron",
+            "qcd_w": "qcd_wjetssignal",
+            "qcd_photon": "qcd_photon",
         },
         # Channels where veto uncertainties are applied.
-        "veto_channel_list": ["wmn", "wen"],
+        "veto_channel_list": ["qcd_w"],
         "veto_dict": {
-            f"CMS_veto{year}_t": 0.01,
-            f"CMS_veto{year}_m": 0.015,
-            f"CMS_veto{year}_e": 0.03,
+            f"CMS_veto{year}_t": -0.01,
+            f"CMS_veto{year}_m": -0.015,
+            f"CMS_veto{year}_e": -0.03,
         },
         # Channels where JES/JER uncertainties are applied.
-        "jes_jer_channel_list": ["wmn", "wen"],
-        "jes_jer_process": "wlnu",
+        "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],  # TODO missing one?
+        "jes_jer_process": "znunu",
         # Channels where theory uncertainties are applied.
-        "theory_channel_list": [],
+        "theory_channel_list": ["qcd_w", "qcd_photon"],
         # Mapping of transfer factor labels to region names.
         "region_names": {
-            "wmn": "singlemuon",
-            "wen": "singleelectron",
+            "qcd_zmm": "qcd_dimuonCR",
+            "qcd_zee": "qcd_dielectronCR",
+            "qcd_w": "qcd_wzCR",
+            "qcd_photon": "qcd_photonCR",
         },
     }
 
@@ -88,6 +94,4 @@ def cmodel(
         **model_args,
     )
 
-    # Specify this is dependant on QCD (Z->nunu / W->lnu) in SR from corresponding channel in vbf_qcd_z
-    cat.setDependant("zjets", "wjetssignal")
     return cat

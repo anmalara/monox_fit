@@ -440,8 +440,13 @@ def add_variation(
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
+    unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_", "Zmm_qcdzll_").replace("zee_", "Zee_qcdzll_")
+    unc_name = unc_name.replace("Zmm_qcdzll_zjets", "Zmm_qcdzll").replace("Zee_qcdzll_zjets", "Zee_qcdzll")
     unc_name = unc_name.replace("wlnu_qcd", "signal_qcdwjets").replace("gjets_qcd", "gjets_qcdgjets")
     unc_name = unc_name.replace("wlnu_over_", "signal_qcdwjets_over_").replace("wmunu_qcd", "Wmn_qcdwjets").replace("wenu_qcd", "Wen_qcdwjets")
+    unc_name = unc_name.replace("wlnu_", "signal_qcdwjets_")
+    unc_name = unc_name.replace("qcdwjets_zjets", "qcdwjets").replace("gjets_zjets", "gjets_qcdgjets")
+    unc_name = unc_name.replace("wmunu_wjets", "Wmn_qcdwjets").replace("wenu_wjets", "Wen_qcdwjets")
     if "_ewk" in unc_name:
         unc_name = unc_name.replace("signal_qcdzjets", "signal_ewkzjets")
         unc_name = unc_name.replace("zmumu_ewk", "Zmm_ewkzll").replace("zee_ewk", "Zee_ewkzll")
@@ -452,6 +457,9 @@ def add_variation(
     unc_name = unc_name.replace("zoverw_over_ewk_w_ewk", "signal_ewkzjets_over_signal_ewkwjets")
     unc_name = unc_name.replace("goverz_over_qcd_photon_qcd", "signal_qcdzjets_over_gjets_qcdgjets")
     unc_name = unc_name.replace("goverz_over_ewk_photon_ewk", "signal_ewkzjets_over_gjets_ewkgjets")
+
+    unc_name = unc_name.replace("zoverw_over_qcd_w_zjets", "signal_qcdzjets_over_signal_qcdwjets")
+    unc_name = unc_name.replace("goverz_over_qcd_photon_zjets", "signal_qcdzjets_over_gjets_qcdgjets")
 
     # TODO: why are these ratios missing?
     unc_name = unc_name.replace("signal_qcdwjets_over_Wmn_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")

@@ -17,7 +17,7 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
 
     is_mono_category = "mono" in category
     production_modes = [""] if is_mono_category else ["qcd", "ewk"]
-    tag = "" if is_mono_category else "vbf"
+    tag = "monojet" if is_mono_category else "vbf"
 
     model_file = rt.TFile.Open(model_filename, "READ")
 

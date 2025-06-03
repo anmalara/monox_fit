@@ -55,7 +55,10 @@ def generate_combine_model(
     """Generate a Combine RooWorkspace with control region models."""
     # Determine CR configurations based on category
     if "mono" in category:
-        controlregions_def = ["monojet_z", "monojet_w"]
+        controlregions_def = [
+            "mono_qcd_z",
+            "mono_qcd_w",
+        ]
     elif "vbf" in category:
         controlregions_def = [
             "vbf_qcd_z",

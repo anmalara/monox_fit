@@ -203,6 +203,8 @@ class Bin:
 
             # Fetch the expected yield from the category this one depends on (pmu_cat_{category}_{BASE}_ch_{CONTROL})
             self.model_mu = self.wspace_out.function(f"pmu_{DEPENDANT}")
+            if not self.model_mu:
+                logger.critical(f"Missing pmu_{DEPENDANT} from wspace_out.", exception_cls=ValueError)
 
         arglist = ROOT.RooArgList((self.model_mu), self.wspace_out.var(self.sfactor.GetName()))
 
