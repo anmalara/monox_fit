@@ -3,10 +3,10 @@ TOPDIR=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))/..
 .PHONY: *
 
 cards:
-	bash $(TOPDIR)/scripts/make_cards.sh
+	python3 $(TOPDIR)/scripts/make_cards.py
 
 printcards:
-	cat $(TOPDIR)/scripts/make_cards.sh
+	cat $(TOPDIR)/scripts/make_cards.py
 
 diag:
 	bash $(TOPDIR)/scripts/diagnostics.sh
