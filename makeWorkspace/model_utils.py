@@ -353,9 +353,10 @@ def add_theory_uncertainties(
     label_dict = {
         "qcd_w": ("zoverw", "ZnunuWJets_QCD", "qcd_ewk"),
         "qcd_photon": ("goverz", "Photon_QCD", "qcd_photon_ewk"),
-        "ewk_w": ("zoverw", "ZnunuWJets_EWK", "ewk_ewk"),
-        "ewk_photon": ("goverz", "Photon_EWK", "ewkphoton_ewk"),
     }
+    if "vbf" in category_id:
+        label_dict["ewk_w"] = ("zoverw", "ZnunuWJets_EWK", "ewk_ewk")
+        label_dict["ewk_photon"] = ("goverz", "Photon_EWK", "ewkphoton_ewk")
 
     for region in channel_list:
         ratio, qcd_label, ewk_label = label_dict[region]
@@ -379,19 +380,20 @@ def add_theory_uncertainties(
             # Add function (quadratic) to model the nuisance
             channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
 
-        # EWK uncertainty (decorrelated among bins)
-        ewk_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_pdf.root", "READ")  # TODO
-        for dir in ["Up", "Down"]:
-            ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
-            # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
-            ratio_ewk.Multiply(ewk_sys.Get(f"signal_ewkzjets_over_signal_ewkwjets_pdf{dir}"))
+        if "vbf" in category_id:
+            # EWK uncertainty (decorrelated among bins)
+            ewk_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_pdf.root", "READ")  # TODO
+            for dir in ["Up", "Down"]:
+                ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
+                # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
+                ratio_ewk.Multiply(ewk_sys.Get(f"signal_ewkzjets_over_signal_ewkwjets_pdf{dir}"))
 
-            for b in range(nbins):
-                new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir}"
-                ewk_w = transfer_factors[region].Clone(new_name)
-                ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
-                output_file.WriteTObject(ewk_w)
-        ewk_sys.Close()
+                for b in range(nbins):
+                    new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir}"
+                    ewk_w = transfer_factors[region].Clone(new_name)
+                    ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
+                    output_file.WriteTObject(ewk_w)
+            ewk_sys.Close()
 
         for b in range(nbins):
             # Add function (quadratic) to model the nuisance
