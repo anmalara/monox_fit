@@ -23,7 +23,6 @@ def define_model(
     samples_map: dict[str, str],
     channel_names: dict[str, str],
     veto_channel_list: list[str],
-    # veto_dict: dict[str, float],
     jes_jer_channel_list: list[str],
     jes_jer_process: str,
     theory_channel_list: list[str],
@@ -224,9 +223,7 @@ def define_channels(
     }
 
 
-def add_veto_nuisances(
-    channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: int
-) -> None:  # , veto_dict: dict[str, float]) -> None:
+def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: int) -> None:
     """
     Adds veto systematic uncertainties to the specified control regions.
 
