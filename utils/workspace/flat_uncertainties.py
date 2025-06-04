@@ -7,3 +7,35 @@ def get_flat_uncertainties(process: str) -> dict[str, float]:
         "wen": {"pu": 0.01, "id": 0.015, "trigger": 0.01},
         "wmn": {"pu": 0.01, "id": 0.005, "trigger": 0.01},
     }[process]
+
+
+def get_lumi_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@LUMIXY": "1.008",
+            "@LUMILS": "1.003",
+            "@LUMIBBD": "1.004",
+            "@LUMIDB": "1.005",
+            "@LUMIBCC": "1.003",
+            "@LUMIGS": "1.001",
+            "@LUMI": "1.020",
+        },
+        "2018": {
+            "@LUMIXY": "1.02",
+            "@LUMILS": "1.002",
+            "@LUMIBBD": "1.0",
+            "@LUMIDB": "1.0",
+            "@LUMIBCC": "1.02",
+            "@LUMIGS": "1.00",
+            "@LUMI": "1.015",
+        },
+        "Run3": {
+            "@LUMIXY": "1.02",
+            "@LUMILS": "1.002",
+            "@LUMIBBD": "1.0",
+            "@LUMIDB": "1.0",
+            "@LUMIBCC": "1.02",
+            "@LUMIGS": "1.00",
+            "@LUMI": "1.015",
+        },
+    }[year]
