@@ -79,7 +79,7 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
                 "singleel": "-",
                 "photon": "-",
             },
-            "@photon_efficiency": "1.03",
+            "@gamma_efficiency": "1.03",
         },
         "2018": {
             "@b_efficiency": "1.03",
@@ -108,7 +108,7 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
                 "singleel": "-",
                 "photon": "-",
             },
-            "@photon_efficiency": "1.03",
+            "@gamma_efficiency": "1.03",
         },
         "Run3": {
             "@b_efficiency": "1.03",
@@ -137,7 +137,7 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
                 "singleel": "-",
                 "photon": "-",
             },
-            "@photon_efficiency": "1.03",
+            "@gamma_efficiency": "1.03",
         },
     }[year]
 
@@ -211,27 +211,27 @@ def get_qcd_uncertainties(year: str) -> dict[str, str]:
     return {
         "2017": {
             "@diboson_scale": "1.15",
-            "@diboson_scale_accept": "1.15",
+            "@diboson_scale_acc": "1.15",
             "@tt_scale": "1.1",
-            "@tt_scale_accept": "1.1",
+            "@tt_scale_acc": "1.1",
             "@ggH_scale": "1.4",
-            "@vbf_scale_accept": "1.02",
+            "@vbf_scale_acc": "1.02",
         },
         "2018": {
             "@diboson_scale": "1.15",
-            "@diboson_scale_accept": "1.15",
+            "@diboson_scale_acc": "1.15",
             "@tt_scale": "1.1",
-            "@tt_scale_accept": "1.1",
+            "@tt_scale_acc": "1.1",
             "@ggH_scale": "1.4",
-            "@vbf_scale_accept": "1.02",
+            "@vbf_scale_acc": "1.02",
         },
         "Run3": {
             "@diboson_scale": "1.15",
-            "@diboson_scale_accept": "1.15",
+            "@diboson_scale_acc": "1.15",
             "@tt_scale": "1.1",
-            "@tt_scale_accept": "1.1",
+            "@tt_scale_acc": "1.1",
             "@ggH_scale": "1.4",
-            "@vbf_scale_accept": "1.02",
+            "@vbf_scale_acc": "1.02",
         },
     }[year]
 
@@ -239,23 +239,23 @@ def get_qcd_uncertainties(year: str) -> dict[str, str]:
 def get_pdf_uncertainties(year: str) -> dict[str, str]:
     return {
         "2017": {
-            "@ggH_pdf": "1.032",
+            "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
-            "@vbf_pdf_accept": "1.01",
+            "@vbf_pdf_acc": "1.01",
             "@vbf_qcd_scale": "0.997 / 1.044",
             "@ggh_qcd_scale": "0.933 / 1.046",
         },
         "2018": {
-            "@ggH_pdf": "1.032",
+            "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
-            "@vbf_pdf_accept": "1.01",
+            "@vbf_pdf_acc": "1.01",
             "@vbf_qcd_scale": "0.997 / 1.044",
             "@ggh_qcd_scale": "0.933 / 1.046",
         },
         "Run3": {
-            "@ggH_pdf": "1.032",
+            "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
-            "@vbf_pdf_accept": "1.01",
+            "@vbf_pdf_acc": "1.01",
             "@vbf_qcd_scale": "0.997 / 1.044",
             "@ggh_qcd_scale": "0.933 / 1.046",
         },
