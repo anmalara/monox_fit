@@ -15,7 +15,7 @@ def get_veto_uncertainties(model: str) -> dict[str, float]:
         "qcd_wjets": {"t": 0.01, "m": 0.015, "e": 0.03},
         "ewk_zjets": {"t": -0.01, "m": -0.02, "e": -0.03},
         "qcd_zjets": {"t": -0.01, "m": -0.015, "e": -0.03},
-    }
+    }[model]
 
 
 def get_lumi_uncertainties(year: str) -> dict[str, str]:

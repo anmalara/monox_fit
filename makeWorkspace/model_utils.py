@@ -23,7 +23,7 @@ def define_model(
     samples_map: dict[str, str],
     channel_names: dict[str, str],
     veto_channel_list: list[str],
-    veto_dict: dict[str, float],
+    # veto_dict: dict[str, float],
     jes_jer_channel_list: list[str],
     jes_jer_process: str,
     theory_channel_list: list[str],
@@ -448,11 +448,11 @@ def add_variation(
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
-    unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_", "Zmm_qcdzll_").replace("zee_", "Zee_qcdzll_")
+    # unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_", "Zmm_qcdzll_").replace("zee_", "Zee_qcdzll_")
     unc_name = unc_name.replace("Zmm_qcdzll_zjets", "Zmm_qcdzll").replace("Zee_qcdzll_zjets", "Zee_qcdzll")
     unc_name = unc_name.replace("wlnu_qcd", "signal_qcdwjets").replace("gjets_qcd", "gjets_qcdgjets")
     unc_name = unc_name.replace("wlnu_over_", "signal_qcdwjets_over_").replace("wmunu_qcd", "Wmn_qcdwjets").replace("wenu_qcd", "Wen_qcdwjets")
-    unc_name = unc_name.replace("wlnu_", "signal_qcdwjets_")
+    # unc_name = unc_name.replace("wlnu_", "signal_qcdwjets_")
     unc_name = unc_name.replace("qcdwjets_zjets", "qcdwjets").replace("gjets_zjets", "gjets_qcdgjets")
     unc_name = unc_name.replace("wmunu_wjets", "Wmn_qcdwjets").replace("wenu_wjets", "Wen_qcdwjets")
     if "_ewk" in unc_name:
