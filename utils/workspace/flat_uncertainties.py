@@ -205,3 +205,78 @@ def get_trigger_uncertainties(year: str) -> dict[str, str]:
             },
         },
     }[year]
+
+
+def get_qcd_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@diboson_scale": "1.15",
+            "@diboson_scale_accept": "1.15",
+            "@tt_scale": "1.1",
+            "@tt_scale_accept": "1.1",
+            "@ggH_scale": "1.4",
+            "@vbf_scale_accept": "1.02",
+        },
+        "2018": {
+            "@diboson_scale": "1.15",
+            "@diboson_scale_accept": "1.15",
+            "@tt_scale": "1.1",
+            "@tt_scale_accept": "1.1",
+            "@ggH_scale": "1.4",
+            "@vbf_scale_accept": "1.02",
+        },
+        "Run3": {
+            "@diboson_scale": "1.15",
+            "@diboson_scale_accept": "1.15",
+            "@tt_scale": "1.1",
+            "@tt_scale_accept": "1.1",
+            "@ggH_scale": "1.4",
+            "@vbf_scale_accept": "1.02",
+        },
+    }[year]
+
+
+def get_pdf_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@ggH_pdf": "1.032",
+            "@vbf_pdf": "1.021",
+            "@vbf_pdf_accept": "1.01",
+            "@vbf_qcd_scale": "0.997 / 1.044",
+            "@ggh_qcd_scale": "0.933 / 1.046",
+        },
+        "2018": {
+            "@ggH_pdf": "1.032",
+            "@vbf_pdf": "1.021",
+            "@vbf_pdf_accept": "1.01",
+            "@vbf_qcd_scale": "0.997 / 1.044",
+            "@ggh_qcd_scale": "0.933 / 1.046",
+        },
+        "Run3": {
+            "@ggH_pdf": "1.032",
+            "@vbf_pdf": "1.021",
+            "@vbf_pdf_accept": "1.01",
+            "@vbf_qcd_scale": "0.997 / 1.044",
+            "@ggh_qcd_scale": "0.933 / 1.046",
+        },
+    }[year]
+
+
+def get_misc_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@top_reweight": "1.1",
+            "@ueps": "1.168",
+            "@zjets_norm": "1.2",
+        },
+        "2018": {
+            "@top_reweight": "1.1",
+            "@ueps": "1.168",
+            "@zjets_norm": "1.2",
+        },
+        "Run3": {
+            "@top_reweight": "1.1",
+            "@ueps": "1.168",
+            "@zjets_norm": "1.2",
+        },
+    }[year]
