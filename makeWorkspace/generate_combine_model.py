@@ -142,6 +142,7 @@ def generate_combine_model(
         category=category,
         cmb_categories=cmb_categories,
         controlregions_def=controlregions_def,
+        variable=variable,
         rename_variable=rename,
     )
 

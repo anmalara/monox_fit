@@ -13,6 +13,7 @@ def convert_to_combine_workspace(
     category: str,
     cmb_categories: list[Any],
     controlregions_def: list[str],
+    variable: str,
     rename_variable: str = "",
 ) -> None:
     """Converts histograms into RooDataHists and RooParametricHist models and adds them to the RooWorkspace.
@@ -45,13 +46,11 @@ def convert_to_combine_workspace(
         logger.critical(f"No valid histogram found for category {cat}.", exception_cls=RuntimeError)
 
     nbins = samplehist.GetNbinsX()
-    # varname = samplehist.GetXaxis().GetTitle()
-    varname = "recoil"  # TODO: pass this as an argument
 
     # Fetch the variable, rename it to vbf_{year}_{variable}
-    logger.debug(f"x-axis label:{varname}. Hist name: {samplehist.GetName()}")
-    varl = wlocal.var(varname)
-    rename_variable = rename_variable or f"{varname}_{cat}"
+    logger.debug(f"x-axis label:{variable}. Hist name: {samplehist.GetName()}")
+    varl = wlocal.var(variable)
+    rename_variable = rename_variable or f"{variable}_{cat}"
     varl.SetName(rename_variable)
     logger.info(f"Renaming: {varl.GetName()} -> {rename_variable}")
 
