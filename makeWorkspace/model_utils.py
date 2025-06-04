@@ -96,7 +96,6 @@ def define_model(
     add_veto_nuisances(
         channel_objects=CRs,
         channel_list=veto_channel_list,
-        # veto_dict=veto_dict,
         model_name=model_name,
         year=year,
     )
@@ -398,9 +397,9 @@ def add_theory_uncertainties(
                     output_file.WriteTObject(ewk_w)
             ewk_sys.Close()
 
-        for b in range(nbins):
-            # Add function (quadratic) to model the nuisance
-            channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
+            for b in range(nbins):
+                # Add function (quadratic) to model the nuisance
+                channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
 # Ported from W_constraints, WIP
@@ -445,11 +444,11 @@ def add_variation(
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
-    # unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_", "Zmm_qcdzll_").replace("zee_", "Zee_qcdzll_")
+    unc_name = unc_name.replace("zmumu_zjets_", "Zmm_qcdzll_").replace("zee_zjets_", "Zee_qcdzll_")
     unc_name = unc_name.replace("Zmm_qcdzll_zjets", "Zmm_qcdzll").replace("Zee_qcdzll_zjets", "Zee_qcdzll")
     unc_name = unc_name.replace("wlnu_qcd", "signal_qcdwjets").replace("gjets_qcd", "gjets_qcdgjets")
     unc_name = unc_name.replace("wlnu_over_", "signal_qcdwjets_over_").replace("wmunu_qcd", "Wmn_qcdwjets").replace("wenu_qcd", "Wen_qcdwjets")
-    # unc_name = unc_name.replace("wlnu_", "signal_qcdwjets_")
+    unc_name = unc_name.replace("wlnu_zjets", "signal_qcdwjets_zjets")
     unc_name = unc_name.replace("qcdwjets_zjets", "qcdwjets").replace("gjets_zjets", "gjets_qcdgjets")
     unc_name = unc_name.replace("wmunu_wjets", "Wmn_qcdwjets").replace("wenu_wjets", "Wen_qcdwjets")
     if "_ewk" in unc_name:
