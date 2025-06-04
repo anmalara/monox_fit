@@ -3,6 +3,7 @@ from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.jes_utils import get_jes_variations_names, get_jes_file
+from utils.workspace.flat_uncertainties import get_veto_uncertainties
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -96,7 +97,9 @@ def define_model(
     add_veto_nuisances(
         channel_objects=CRs,
         channel_list=veto_channel_list,
-        veto_dict=veto_dict,
+        # veto_dict=veto_dict,
+        model_name=model_name,
+        year=year,
     )
     add_jes_jer_uncertainties(
         transfer_factors=transfer_factors,
@@ -221,7 +224,9 @@ def define_channels(
     }
 
 
-def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], veto_dict: dict[str, float]) -> None:
+def add_veto_nuisances(
+    channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: int
+) -> None:  # , veto_dict: dict[str, float]) -> None:
     """
     Adds veto systematic uncertainties to the specified control regions.
 
@@ -231,6 +236,7 @@ def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[s
         veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
     """
 
+    veto_dict = {f"CMS_veto{year}_{key}": value for key, value in get_veto_uncertainties(model=model_name).items()}
     for channel in channel_list:
         for veto_name, veto_value in veto_dict.items():
             channel_objects[channel].add_nuisance(veto_name, veto_value)
