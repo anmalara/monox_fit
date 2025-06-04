@@ -131,9 +131,9 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         processes = [
             "qcd",
             "qcd_zll",
-            "qcdzll",
             "ewkzll",
             "ewk_zll",
+            "qcdzll",
             "ewk_gjets",
             "qcd_gjets",
             "top",
@@ -158,9 +158,9 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         "ewk": "#000000",
         "zll": "#9A9EAB",
         "qcd_zll": "#9A9EAB",
-        "qcdzll": "#9A9EAB",
+        "qcdzll": "#82ba34",
         "ewk_zll": "#9A9EAB",
-        "ewkzll": "#9A9EAB",
+        "ewkzll": "#b4c754",
         "wjets": "#FAAF08",
         "qcd_wjets": "#feb24c",
         "ewk_wjets": "#ffeda0",
@@ -173,25 +173,31 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
 
     binLowE = []
 
-    # Pre-Fit
+    # Pre/Post Fit
+    prefit_dir = "shapes_prefit"
+    postfit_dir = "shapes_fit_b"
     h_prefit = {}
     h_postfit = {}
-    h_all_prefit = f_mlfit.Get(f"shapes_prefit/{channel}/total_background")
-    h_all_postfit = f_mlfit.Get(f"shapes_fit_b/{channel}/total_background")
-    h_postfit_total_sig_bkg = f_mlfit.Get(f"shapes_fit_b/{channel}/total")
+    h_all_prefit = f_mlfit.Get(f"{prefit_dir}/{channel}/total_background").Clone("h_all_prefit")
+    h_all_postfit = f_mlfit.Get(f"{postfit_dir}/{channel}/total_background").Clone("h_all_postfit")
+    h_postfit_total_sig_bkg = f_mlfit.Get(f"{postfit_dir}/{channel}/total").Clone("h_postfit_total_sig_bkg")
 
     h_other_prefit = None
     h_other_postfit = None
-    h_prefit["total"] = f_mlfit.Get(f"shapes_prefit/{channel}/total")
+    h_prefit["total"] = f_mlfit.Get(f"{prefit_dir}/{channel}/total").Clone("h_prefit_total")
     for i in range(1, h_prefit["total"].GetNbinsX() + 2):
         binLowE.append(h_prefit["total"].GetBinLowEdge(i))
 
     h_stack_postfit = rt.THStack("h_stack_postfit", "h_stack_postfit")
 
     for process in processes:
-        h_prefit[process] = f_mlfit.Get(f"shapes_prefit/{channel}/{process}")
-        h_postfit[process] = f_mlfit.Get(f"shapes_fit_b/{channel}/{process}")
-        if not h_prefit[process] and not h_postfit[process]:
+        h_prefit[process] = f_mlfit.Get(f"{prefit_dir}/{channel}/{process}")
+        if not h_prefit[process]:
+            continue
+        h_prefit[process] = h_prefit[process].Clone(f"h_prefit_{process}")
+        h_postfit[process] = f_mlfit.Get(f"{postfit_dir}/{channel}/{process}")
+        h_postfit[process] = h_postfit[process].Clone(f"h_postfit_{process}")
+        if not h_postfit[process]:
             continue
         if str(h_prefit[process].Integral()) == "nan" or str(h_postfit[process].Integral()) == "nan":
             logger.critical(f"Found process with integral==Nan: {process}", exception_cls=RuntimeError)
@@ -303,6 +309,8 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
             legend.AddEntry(h_postfit["ewk_wjets"], "EWK W(l#nu)+jets", "f")
             legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
             legend.AddEntry(h_postfit["top"], "Top quark", "f")
+            legend.AddEntry(h_postfit["qcdzll"], "QCD Z(ll)+jets", "f")
+            legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
             # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO
             # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
         if sb:
