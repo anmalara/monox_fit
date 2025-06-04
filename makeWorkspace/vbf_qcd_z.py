@@ -62,11 +62,6 @@ def cmodel(
         },
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_w"],
-        "veto_dict": {
-            f"CMS_veto{year}_t": -0.01,
-            f"CMS_veto{year}_m": -0.015,
-            f"CMS_veto{year}_e": -0.03,
-        },
         # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
         "jes_jer_process": "znunu",
