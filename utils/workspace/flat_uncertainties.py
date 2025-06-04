@@ -48,3 +48,160 @@ def get_lumi_uncertainties(year: str) -> dict[str, str]:
             "@LUMI": "1.015",
         },
     }[year]
+
+
+def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@b_efficiency": "1.03",
+            "@b_fake": "1.01",
+            "@e_efficiency": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.06",
+                "singlemu": "-",
+                "singleel": "1.03",
+                "photon": "-",
+            },
+            "@e_reco": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.02",
+                "singlemu": "-",
+                "singleel": "1.01",
+                "photon": "-",
+            },
+            "@mu_efficiency": {
+                "signal": "-",
+                "dimuon": "1.01",
+                "dielec": "-",
+                "singlemu": "1.005",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@photon_efficiency": "1.03",
+        },
+        "2018": {
+            "@b_efficiency": "1.03",
+            "@b_fake": "1.01",
+            "@e_efficiency": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.06",
+                "singlemu": "-",
+                "singleel": "1.03",
+                "photon": "-",
+            },
+            "@e_reco": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.02",
+                "singlemu": "-",
+                "singleel": "1.01",
+                "photon": "-",
+            },
+            "@mu_efficiency": {
+                "signal": "-",
+                "dimuon": "1.01",
+                "dielec": "-",
+                "singlemu": "1.005",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@photon_efficiency": "1.03",
+        },
+        "Run3": {
+            "@b_efficiency": "1.03",
+            "@b_fake": "1.01",
+            "@e_efficiency": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.06",
+                "singlemu": "-",
+                "singleel": "1.03",
+                "photon": "-",
+            },
+            "@e_reco": {
+                "signal": "-",
+                "dimuon": "-",
+                "dielec": "1.02",
+                "singlemu": "-",
+                "singleel": "1.01",
+                "photon": "-",
+            },
+            "@mu_efficiency": {
+                "signal": "-",
+                "dimuon": "1.01",
+                "dielec": "-",
+                "singlemu": "1.005",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@photon_efficiency": "1.03",
+        },
+    }[year]
+
+
+def get_trigger_uncertainties(year: str) -> dict[str, str]:
+    return {
+        "2017": {
+            "@photon_trigger": "1.01",
+            "@egamma_trigger": "1.01",
+            "@met_trigger_stat": {
+                "signal": "1.02",
+                "dimuon": "1.02",
+                "dielec": "-",
+                "singlemu": "1.02",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@met_trigger_sys": {
+                "signal": "1.01",
+                "dimuon": "0.99",
+                "dielec": "-",
+                "singlemu": "-",
+                "singleel": "-",
+                "photon": "-",
+            },
+        },
+        "2018": {
+            "@photon_trigger": "1.01",
+            "@egamma_trigger": "1.01",
+            "@met_trigger_stat": {
+                "signal": "1.02",
+                "dimuon": "1.02",
+                "dielec": "-",
+                "singlemu": "1.02",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@met_trigger_sys": {
+                "signal": "1.01",
+                "dimuon": "0.99",
+                "dielec": "-",
+                "singlemu": "-",
+                "singleel": "-",
+                "photon": "-",
+            },
+        },
+        "Run3": {
+            "@photon_trigger": "1.01",
+            "@egamma_trigger": "1.01",
+            "@met_trigger_stat": {
+                "signal": "1.02",
+                "dimuon": "1.02",
+                "dielec": "-",
+                "singlemu": "1.02",
+                "singleel": "-",
+                "photon": "-",
+            },
+            "@met_trigger_sys": {
+                "signal": "1.01",
+                "dimuon": "0.99",
+                "dielec": "-",
+                "singlemu": "-",
+                "singleel": "-",
+                "photon": "-",
+            },
+        },
+    }[year]
