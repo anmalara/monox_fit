@@ -10,11 +10,16 @@ def get_flat_uncertainties(process: str) -> dict[str, float]:
 
 
 def get_veto_uncertainties(model: str) -> dict[str, float]:
+    # TODO split or with the same name?
     return {
+        # VBF
         "ewk_wjets": {"t": 0.01, "m": 0.02, "e": 0.03},
         "qcd_wjets": {"t": 0.01, "m": 0.015, "e": 0.03},
         "ewk_zjets": {"t": -0.01, "m": -0.02, "e": -0.03},
         "qcd_zjets": {"t": -0.01, "m": -0.015, "e": -0.03},
+        # Mono
+        "wjets": {"t": 0.01, "m": 0.015, "e": 0.03},
+        "zjets": {"t": -0.01, "m": -0.015, "e": -0.03},
     }[model]
 
 

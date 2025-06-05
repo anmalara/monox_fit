@@ -126,8 +126,10 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
             graphs_sb_all = item.Clone("fit_sb")
 
     for group, label_idx in indices_map.items():
-        canv = get_canvas(category=category, group=group)
         num_nuis = len(label_idx)
+        if not num_nuis:
+            continue
+        canv = get_canvas(category=category, group=group)
         h_axis = rt.TH1F(f"h_axis_{group}", "", num_nuis, 0, num_nuis)
         h_prefit_err = rt.TH1F(f"prefit_{group}", "", num_nuis, 0, num_nuis)
         gr_bonly, gr_sb = rt.TGraphAsymmErrors(), rt.TGraphAsymmErrors()

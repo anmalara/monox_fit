@@ -1,3 +1,4 @@
+#!/bin/bash
 
 ### Asimov limit
 mkdir -p limit
