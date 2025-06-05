@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 import argparse
-from utils.workspace.flat_uncertainties import get_lumi_uncertainties
+from utils.workspace.flat_uncertainties import *
 
 
 class DatacardBuilder:
@@ -94,7 +94,16 @@ class DatacardBuilder:
 
         for nuisance, value in replacements.items():
             if type(value) is dict:
-                pass
+                lnN_fields = [
+                    (
+                        # If the placeholder is not in the line, keep the line as is
+                        line
+                        if nuisance not in line
+                        # Else, replace the placeholder with the corresponding value
+                        else (line[:2] + [field.replace(nuisance, value[ref_proc[i]]) for i, field in enumerate(line[2:])])
+                    )
+                    for line in lnN_fields
+                ]
             else:
                 lnN_fields = [[field.replace(nuisance, value) for field in line] for line in lnN_fields]
 
@@ -179,6 +188,11 @@ def main():
             "@MISTAGLOOSEW": "0.998",
             "@MISTAGLOOSEW": "0.998",
             **get_lumi_uncertainties(year),
+            **get_lepton_efficiency_uncertainties(year),
+            **get_trigger_uncertainties(year),
+            **get_pdf_uncertainties(year),
+            **get_qcd_uncertainties(year),
+            **get_misc_uncertainties(year),
         }
     )
 

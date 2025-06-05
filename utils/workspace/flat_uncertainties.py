@@ -57,64 +57,6 @@ def get_lumi_uncertainties(year: str) -> dict[str, str]:
 
 def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
     return {
-        "2017": {
-            "@b_efficiency": "1.03",
-            "@b_fake": "1.01",
-            "@e_efficiency": {
-                "signal": "-",
-                "dimuon": "-",
-                "dielec": "1.06",
-                "singlemu": "-",
-                "singleel": "1.03",
-                "photon": "-",
-            },
-            "@e_reco": {
-                "signal": "-",
-                "dimuon": "-",
-                "dielec": "1.02",
-                "singlemu": "-",
-                "singleel": "1.01",
-                "photon": "-",
-            },
-            "@mu_efficiency": {
-                "signal": "-",
-                "dimuon": "1.01",
-                "dielec": "-",
-                "singlemu": "1.005",
-                "singleel": "-",
-                "photon": "-",
-            },
-            "@gamma_efficiency": "1.03",
-        },
-        "2018": {
-            "@b_efficiency": "1.03",
-            "@b_fake": "1.01",
-            "@e_efficiency": {
-                "signal": "-",
-                "dimuon": "-",
-                "dielec": "1.06",
-                "singlemu": "-",
-                "singleel": "1.03",
-                "photon": "-",
-            },
-            "@e_reco": {
-                "signal": "-",
-                "dimuon": "-",
-                "dielec": "1.02",
-                "singlemu": "-",
-                "singleel": "1.01",
-                "photon": "-",
-            },
-            "@mu_efficiency": {
-                "signal": "-",
-                "dimuon": "1.01",
-                "dielec": "-",
-                "singlemu": "1.005",
-                "singleel": "-",
-                "photon": "-",
-            },
-            "@gamma_efficiency": "1.03",
-        },
         "Run3": {
             "@b_efficiency": "1.03",
             "@b_fake": "1.01",
@@ -142,53 +84,13 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
                 "singleel": "-",
                 "photon": "-",
             },
-            "@gamma_efficiency": "1.03",
+            "@gamma_efficiency": "1.05",
         },
     }[year]
 
 
 def get_trigger_uncertainties(year: str) -> dict[str, str]:
     return {
-        "2017": {
-            "@photon_trigger": "1.01",
-            "@egamma_trigger": "1.01",
-            "@met_trigger_stat": {
-                "signal": "1.02",
-                "dimuon": "1.02",
-                "dielec": "-",
-                "singlemu": "1.02",
-                "singleel": "-",
-                "photon": "-",
-            },
-            "@met_trigger_sys": {
-                "signal": "1.01",
-                "dimuon": "0.99",
-                "dielec": "-",
-                "singlemu": "-",
-                "singleel": "-",
-                "photon": "-",
-            },
-        },
-        "2018": {
-            "@photon_trigger": "1.01",
-            "@egamma_trigger": "1.01",
-            "@met_trigger_stat": {
-                "signal": "1.02",
-                "dimuon": "1.02",
-                "dielec": "-",
-                "singlemu": "1.02",
-                "singleel": "-",
-                "photon": "-",
-            },
-            "@met_trigger_sys": {
-                "signal": "1.01",
-                "dimuon": "0.99",
-                "dielec": "-",
-                "singlemu": "-",
-                "singleel": "-",
-                "photon": "-",
-            },
-        },
         "Run3": {
             "@photon_trigger": "1.01",
             "@egamma_trigger": "1.01",
@@ -214,71 +116,31 @@ def get_trigger_uncertainties(year: str) -> dict[str, str]:
 
 def get_qcd_uncertainties(year: str) -> dict[str, str]:
     return {
-        "2017": {
-            "@diboson_scale": "1.15",
-            "@diboson_scale_acc": "1.15",
-            "@tt_scale": "1.1",
-            "@tt_scale_acc": "1.1",
-            "@ggH_scale": "1.4",
-            "@vbf_scale_acc": "1.02",
-        },
-        "2018": {
-            "@diboson_scale": "1.15",
-            "@diboson_scale_acc": "1.15",
-            "@tt_scale": "1.1",
-            "@tt_scale_acc": "1.1",
-            "@ggH_scale": "1.4",
-            "@vbf_scale_acc": "1.02",
-        },
         "Run3": {
-            "@diboson_scale": "1.15",
-            "@diboson_scale_acc": "1.15",
-            "@tt_scale": "1.1",
-            "@tt_scale_acc": "1.1",
-            "@ggH_scale": "1.4",
-            "@vbf_scale_acc": "1.02",
+            "@scale_diboson": "1.15",
+            "@scale_acc_diboson": "1.15",
+            "@scale_tt": "1.1",
+            "@scale_acc_tt": "1.1",
+            "@scale_ggH": "1.4",
+            "@scale_acc_vbf": "1.02",
         },
     }[year]
 
 
 def get_pdf_uncertainties(year: str) -> dict[str, str]:
     return {
-        "2017": {
-            "@ggh_pdf": "1.032",
-            "@vbf_pdf": "1.021",
-            "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997/1.044",
-            "@ggh_qcd_scale": "0.933/1.046",
-        },
-        "2018": {
-            "@ggh_pdf": "1.032",
-            "@vbf_pdf": "1.021",
-            "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997/1.044",
-            "@ggh_qcd_scale": "0.933/1.046",
-        },
         "Run3": {
-            "@ggh_pdf": "1.032",
-            "@vbf_pdf": "1.021",
-            "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997/1.044",
-            "@ggh_qcd_scale": "0.933/1.046",
+            "@pdf_ggh": "1.032",
+            "@pdf_vbf": "1.021",
+            "@pdf_acc_vbf": "1.01",
+            "@scale_vbf_qcd": "0.997/1.004",
+            "@scale_ggh_qcd": "0.933/1.046",
         },
     }[year]
 
 
 def get_misc_uncertainties(year: str) -> dict[str, str]:
     return {
-        "2017": {
-            "@top_reweight": "1.1",
-            "@ueps": "1.168",
-            "@zjets_norm": "1.2",
-        },
-        "2018": {
-            "@top_reweight": "1.1",
-            "@ueps": "1.168",
-            "@zjets_norm": "1.2",
-        },
         "Run3": {
             "@top_reweight": "1.1",
             "@ueps": "1.168",
