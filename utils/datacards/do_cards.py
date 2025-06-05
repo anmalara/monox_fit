@@ -12,6 +12,9 @@ class DatacardBuilder:
         self.card_path = f"cards/card_{channel}_{year}.txt"
         self.template_path = f"../../../../utils/datacards/{channel}_template.txt"
 
+        # minimum number of spaces between fields in the datacard
+        self.min_spaces = 2
+
         # Content of the datacard, to be modified later
         self.raw_content = ""
         self.header = ""
@@ -41,19 +44,53 @@ class DatacardBuilder:
 
     def update_raw_content(self):
         """Reconstruct the raw content from the individual parts."""
-        self.raw_content = "---\n".join([self.header, self.shapes, self.channels, self.processes, self.nuisances])
+        self.raw_content = "---".join([self.header, self.shapes, self.channels, self.processes, self.nuisances])
 
     def bulk_replace(self, replacements: dict):
         """Replace multiple placeholders in the raw content."""
-        self.update_raw_content()  # Ensure the raw content is up-to-date
+        # Ensure the raw content is up-to-date
+        self.update_raw_content()
 
         for placeholder, value in replacements.items():
             self.raw_content = self.raw_content.replace(placeholder, value)
 
+        # Propagate changes to the individual parts
         self.update_parts()
 
-    def fix_formating(self):
+    def nuisance_replace(self, replacements: dict):
+        """Replace nuisance parameters in the nuisances section."""
         pass
+        # Ensure the parts are up-to-date
+        # self.update_parts()
+
+        # for nuisance, value in replacements.items():
+
+        # Propagate changes to raw content
+        # self.update_raw_content()
+
+    def fix_formating(self):
+        self.update_parts()
+
+        # channels
+        channel_lines = [l for l in self.channels.splitlines() if l.strip() != ""]
+        # length of the longuest field, accross all lines
+        max_length = max(len(l.strip()) for line in channel_lines for l in line.split())
+
+        # add spaces to the end of each field to make them all the same length
+        channel_fields = [[l.strip() + " " * (max_length - len(l.strip()) + self.min_spaces) for l in line.split()] for line in channel_lines]
+        new_channel_lines = "\n".join(["".join(line_fields) for line_fields in channel_fields])
+        self.channels = f"\n{new_channel_lines}\n"
+
+        # processes
+        process_lines = [l for l in self.processes.splitlines() if l.strip() != ""]
+        # length of the longuest field, accross all lines
+        max_length = max(len(l.strip()) for line in process_lines for l in line.split())
+        # add spaces to the end of each field to make them all the same length
+        process_fields = [[l.strip() + " " * (max_length - len(l.strip()) + self.min_spaces) for l in line.split()] for line in process_lines]
+        new_process_lines = "\n".join(["".join(line_fields) for line_fields in process_fields])
+        self.processes = f"\n{new_process_lines}\n"
+
+        self.update_raw_content()
 
     def write_datacard(self):
         """Write the datacard content to the specified file."""
