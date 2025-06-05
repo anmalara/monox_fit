@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from counting_experiment import Category
 from model_utils import *
 
-model = "wjets"
+model = "qcd_wjets"
 
 
 def cmodel(
@@ -89,5 +89,5 @@ def cmodel(
     )
 
     # Specify this is dependant on QCD (Z->nunu / W->lnu) in SR from corresponding channel in vbf_qcd_z
-    cat.setDependant("zjets", "qcd_wjetssignal")
+    cat.setDependant("qcd_zjets", "qcd_wjetssignal")
     return cat

@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from counting_experiment import Category
 from model_utils import *
 
-model = "zjets"
+model = "qcd_zjets"
 
 
 def cmodel(

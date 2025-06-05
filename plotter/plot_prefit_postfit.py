@@ -97,11 +97,11 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
 
     if "mono" in category:
         mainbkgs = {
-            "singlemuon": ["wjets"],
+            "singlemuon": ["qcd_wjets"],
             "dimuon": ["zll"],
-            "gjets": ["gjets"],
-            "signal": ["zjets"],
-            "singleelectron": ["wjets"],
+            "gjets": ["qcd_gjets"],
+            "signal": ["qcd_zjets"],
+            "singleelectron": ["qcd_wjets"],
             "dielectron": ["zll"],
         }
         processes = [
@@ -114,8 +114,8 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
             # "ww",
             # "wz",
             # "zz",
-            "wjets",
-            "zjets",
+            "qcd_wjets",
+            "qcd_zjets",
             "wgamma",
             "zgamma",
         ]
@@ -161,10 +161,8 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         "qcdzll": "#82ba34",
         "ewk_zll": "#9A9EAB",
         "ewkzll": "#b4c754",
-        "wjets": "#FAAF08",
         "qcd_wjets": "#feb24c",
         "ewk_wjets": "#ffeda0",
-        "zjets": "#258039",
         "ewk_zjets": "#74c476",
         "qcd_zjets": "#00441b",
         "prefit": rt.kRed + 1,
@@ -295,8 +293,8 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     if is_SR:
         legend.AddEntry(h_data, "Pseudo data", "elp")
         if "mono" in category:
-            legend.AddEntry(h_postfit["zjets"], "Z(#nu#nu)+jets", "f")
-            legend.AddEntry(h_postfit["wjets"], "W(l#nu)+jets", "f")
+            legend.AddEntry(h_postfit["qcd_zjets"], "Z(#nu#nu)+jets", "f")
+            legend.AddEntry(h_postfit["qcd_wjets"], "W(l#nu)+jets", "f")
             legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
             legend.AddEntry(h_postfit["top"], "Top quark", "f")
             # legend.AddEntry(h_postfit['gjets'], "Z(ll)+jets, #gamma+jets", "f")
