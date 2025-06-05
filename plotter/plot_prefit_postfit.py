@@ -95,38 +95,45 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     # using this instead of the graph from shapes_fit_b to avoid conversion
     h_data = f_data.Get(f"category_{category}/{datalab[region]}_data")
 
-    if "mono" in category:
+    is_mono = "mono" in category
+
+    if is_mono:
         mainbkgs = {
             "singlemuon": ["qcd_wjets"],
-            "dimuon": ["zll"],
-            "gjets": ["qcd_gjets"],
-            "signal": ["qcd_zjets"],
             "singleelectron": ["qcd_wjets"],
-            "dielectron": ["zll"],
+            "dimuon": ["qcd_zll"],
+            "dielectron": ["qcd_zll"],
+            "gjets": ["qcd_gjets"],
+            "signal": ["qcd_zjets", "qcd_wjets"],
         }
         processes = [
             # "qcd",
-            "zll",
-            "gjets",
+            "qcdzll",
             "top",
             "diboson",
-            "ewk",
+            "ewkwjets",
+            "ewkzll",
+            "ewkgjets",
+            "ewkzjets",
+            "qcdgjets",
+            "qcd_gjets",
+            "qcd_wjets",
+            "qcd_zjets",
+            "qcd_zll",
             # "ww",
             # "wz",
             # "zz",
-            "qcd_wjets",
-            "qcd_zjets",
-            "wgamma",
-            "zgamma",
+            # "wgamma",
+            # "zgamma",
         ]
     else:
         mainbkgs = {
-            "singlemuon": ["ewk_wjets", "qcd_wjets"],
-            "dimuon": ["ewk_zll", "qcd_zll"],
-            "gjets": ["ewk_gjets", "qcd_gjets"],
+            "singlemuon": ["qcd_wjets", "ewk_wjets"],
+            "singleelectron": ["qcd_wjets", "ewk_wjets"],
+            "dimuon": ["qcd_zll", "ewk_zll"],
+            "dielectron": ["qcd_zll", "ewk_zll"],
+            "gjets": ["qcd_gjets", "ewk_gjets"],
             "signal": ["qcd_zjets", "ewk_zjets"],
-            "singleelectron": ["ewk_wjets", "qcd_wjets"],
-            "dielectron": ["ewk_zll", "qcd_zll"],
         }
         processes = [
             "qcd",
@@ -144,26 +151,27 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
             "ewk_zjets",
         ]
     colors = {
-        "diboson": "#4897D8",
-        "ww": "#4897D8",
-        "wz": "#4897D8",
-        "zz": "#4897D8",
-        "wgamma": "#4897D8",
-        "zgamma": "#4897D8",
-        "gjets": "#9A9EAB",
-        "qcd_gjets": "#9A9EAB",
-        "ewk_gjets": "#9A9EAB",
         "qcd": "#F1F1F2",
         "top": "#CF3721",
-        "ewk": "#000000",
-        "zll": "#9A9EAB",
-        "qcd_zll": "#9A9EAB",
+        "diboson": "#4897D8",
+        # "ww": "#4897D8",
+        # "wz": "#4897D8",
+        # "zz": "#4897D8",
+        # "wgamma": "#4897D8",
+        # "zgamma": "#4897D8",
+        "qcd_gjets": "#859ade",
+        "qcdgjets": "#859ade",
+        "ewk_gjets": "#9A9EAB",
+        "ewkgjets": "#9A9EAB",
+        "qcd_zll": "#82ba34",
         "qcdzll": "#82ba34",
-        "ewk_zll": "#9A9EAB",
+        "ewk_zll": "#b4c754",
         "ewkzll": "#b4c754",
         "qcd_wjets": "#feb24c",
         "ewk_wjets": "#ffeda0",
+        "ewkwjets": "#ffeda0",
         "ewk_zjets": "#74c476",
+        "ewkzjets": "#74c476",
         "qcd_zjets": "#00441b",
         "prefit": rt.kRed + 1,
         "postfit": rt.kAzure - 4,
@@ -210,6 +218,7 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
         h_prefit[process].SetLineColor(color)
         h_prefit[process].SetFillColor(color)
         if process not in mainbkgs[region]:
+            logger.info(f"Adding process to other bkg for {region}: {process}")
             if h_other_prefit is None:
                 h_other_prefit = h_prefit[process].Clone("h_other_prefit")
                 h_other_postfit = h_postfit[process].Clone("h_other_postfit")
@@ -237,13 +246,13 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     x_min = h_all_prefit.GetBinLowEdge(1)
     x_max = h_all_prefit.GetBinLowEdge(h_all_prefit.GetNbinsX() + 1)
     is_dnn = x_max < 10
-    nameXaxis = "DNN score" if is_dnn else ("Recoil [GeV]" if "mono" in category else "m_{jj} [GeV]")
+    nameXaxis = "DNN score" if is_dnn else ("Recoil [GeV]" if is_mono else "m_{jj} [GeV]")
     nameYaxis = "Events / bin" if is_dnn else "Events / GeV"
     y_up_min, y_up_max = 10 if is_dnn else 0.002, (1000 if is_dnn else 100) * h_all_prefit.GetMaximum()
     CMS.SetEnergy(13.6)
     CMS.SetLumi(lumi)
     CMS.ResetAdditionalInfo()
-    CMS.AppendAdditionalInfo("mono-V" if "monov" in category else ("monojet" if "mono" in category else "VBF") + " cat.")
+    CMS.AppendAdditionalInfo("mono-V" if "monov" in category else ("monojet" if is_mono else "VBF") + " cat.")
     canv = CMS.cmsTriCanvas(
         canvName="canv",
         x_min=x_min,
@@ -288,29 +297,21 @@ def plot_prefit_postfit(region: str, category: str, ws_filename: str, fitdiag_fi
     if region == "dielectron":
         legname = "Z #rightarrow ee"
 
-    n_leg_entries = (len(h_postfit) - 1) if is_SR else 6
+    n_leg_entries = (len(h_postfit) + 1) if is_SR else 6
     legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.045, x2=0.89, y2=0.89, textSize=0.045)
     if is_SR:
         legend.AddEntry(h_data, "Pseudo data", "elp")
-        if "mono" in category:
-            legend.AddEntry(h_postfit["qcd_zjets"], "Z(#nu#nu)+jets", "f")
-            legend.AddEntry(h_postfit["qcd_wjets"], "W(l#nu)+jets", "f")
-            legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
-            legend.AddEntry(h_postfit["top"], "Top quark", "f")
-            # legend.AddEntry(h_postfit['gjets'], "Z(ll)+jets, #gamma+jets", "f")
-            # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
-        else:
-            # pass
-            legend.AddEntry(h_postfit["qcd_zjets"], "QCD Z(#nu#nu)+jets", "f")
-            legend.AddEntry(h_postfit["qcd_wjets"], "QCD W(l#nu)+jets", "f")
-            legend.AddEntry(h_postfit["ewk_zjets"], "EWK Z(#nu#nu)+jets", "f")
-            legend.AddEntry(h_postfit["ewk_wjets"], "EWK W(l#nu)+jets", "f")
-            legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
-            legend.AddEntry(h_postfit["top"], "Top quark", "f")
-            legend.AddEntry(h_postfit["qcdzll"], "QCD Z(ll)+jets", "f")
+        legend.AddEntry(h_postfit["qcd_zjets"], "QCD Z(#nu#nu)+jets", "f")
+        legend.AddEntry(h_postfit["qcd_wjets"], "QCD W(l#nu)+jets", "f")
+        legend.AddEntry(h_postfit["ewkzjets" if is_mono else "ewk_zjets"], "EWK Z(#nu#nu)+jets", "f")
+        legend.AddEntry(h_postfit["ewkwjets" if is_mono else "ewk_wjets"], "EWK W(l#nu)+jets", "f")
+        legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
+        legend.AddEntry(h_postfit["top"], "Top quark", "f")
+        legend.AddEntry(h_postfit["qcdzll"], "QCD Z(ll)+jets", "f")
+        if not is_mono:
             legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
-            # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO
-            # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
+        # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO
+        # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
         if sb:
             legend.AddEntry(h_postfit_total_sig_bkg, "S+B post-fit", "f")
 
