@@ -81,14 +81,35 @@ class DatacardBuilder:
         new_channel_lines = "\n".join(["".join(line_fields) for line_fields in channel_fields])
         self.channels = f"\n{new_channel_lines}\n"
 
-        # processes
+        # Processes, tied with shape and lnN nuisances
+        # import pdb
+
+        # pdb.set_trace()
         process_lines = [l for l in self.processes.splitlines() if l.strip() != ""]
+        shapes_and_lnN_lines = [
+            l for l in self.nuisances.splitlines() if (l.strip() != "") and ([field for field in l.split(" ") if field.strip() != ""][1] in ["shape", "lnN"])
+        ]
+        other_nuisance_lines = [
+            l
+            for l in self.nuisances.splitlines()
+            if (l.strip() != "") and ([field for field in l.split(" ") if field.strip() != ""][1] not in ["shape", "lnN"])
+        ]
         # length of the longuest field, accross all lines
-        max_length = max(len(l.strip()) for line in process_lines for l in line.split())
+        max_process_length = max(len(l.strip()) for line in process_lines for l in line.split())
+        max_nuisance_length = max(len(l.strip()) for line in shapes_and_lnN_lines for l in line.split())
+        max_length = max(max_process_length, max_nuisance_length)
+
         # add spaces to the end of each field to make them all the same length
         process_fields = [[l.strip() + " " * (max_length - len(l.strip()) + self.min_spaces) for l in line.split()] for line in process_lines]
+        for line_fields in process_fields:
+            line_fields.insert(1, " " * (max_length + self.min_spaces))
+        shapes_and_lnN_fields = [[l.strip() + " " * (max_length - len(l.strip()) + self.min_spaces) for l in line.split()] for line in shapes_and_lnN_lines]
         new_process_lines = "\n".join(["".join(line_fields) for line_fields in process_fields])
         self.processes = f"\n{new_process_lines}\n"
+
+        new_shapes_and_lnN_lines = "\n".join(["".join(line_fields) for line_fields in shapes_and_lnN_fields])
+        other_nuisance_lines = "\n".join(other_nuisance_lines)
+        self.nuisances = f"\n{new_shapes_and_lnN_lines}\n{other_nuisance_lines}"
 
         self.update_raw_content()
 
