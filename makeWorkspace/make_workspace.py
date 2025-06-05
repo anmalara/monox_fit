@@ -248,6 +248,7 @@ def get_mergedMC_stat_variations(to_merge_mc_bkgs: dict[str, list[ROOT.TH1]], ca
     variations: dict[str, ROOT.TH1] = {}
 
     for region, hists in to_merge_mc_bkgs.items():
+        logger.debug(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
         merged_name = f"{region}_mergedMCBkg"
         merged_hist = add_histograms(histograms=hists, new_name=merged_name)
 
