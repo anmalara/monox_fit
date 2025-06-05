@@ -59,14 +59,51 @@ class DatacardBuilder:
 
     def nuisance_replace(self, replacements: dict):
         """Replace nuisance parameters in the nuisances section."""
-        pass
         # Ensure the parts are up-to-date
-        # self.update_parts()
+        self.update_parts()
 
-        # for nuisance, value in replacements.items():
+        # Extract lines
+        shapes_lines = [
+            l
+            for l in self.nuisances.splitlines()
+            # remove empty lines
+            if (l.strip() != "")
+            # is a shape nuisance
+            and ([field for field in l.split(" ") if field.strip() != ""][1] == "shape")
+        ]
+        lnN_lines = [
+            l
+            for l in self.nuisances.splitlines()
+            # remove empty lines
+            if (l.strip() != "")
+            # is a lnN nuisance
+            and ([field for field in l.split(" ") if field.strip() != ""][1] == "lnN")
+        ]
+        other_nuisance_lines = [
+            l
+            for l in self.nuisances.splitlines()
+            # remove empty lines
+            if (l.strip() != "")
+            # is not a shape or lnN nuisance
+            and ([field for field in l.split(" ") if field.strip() != ""][1] not in ["shape", "lnN"])
+        ]
 
+        # Extract each column for the lnN nuisances
+        lnN_fields = [l.split() for l in lnN_lines if l.strip() != ""]
+        ref_proc = [field.split("_")[-1] for field in self.processes.splitlines()[1].split() if field.strip() != ""][1:]
+
+        for nuisance, value in replacements.items():
+            if type(value) is dict:
+                pass
+            else:
+                lnN_fields = [[field.replace(nuisance, value) for field in line] for line in lnN_fields]
+
+        new_lnN_lines = "\n".join([" ".join(line_fields) for line_fields in lnN_fields])
+        shapes_lines = "\n".join(shapes_lines)
+        other_nuisance_lines = "\n".join(other_nuisance_lines)
+        self.nuisances = f"\n{shapes_lines}\n{new_lnN_lines}\n{other_nuisance_lines}"
         # Propagate changes to raw content
-        # self.update_raw_content()
+        self.update_raw_content()
 
     def fix_formating(self):
         self.update_parts()
@@ -82,9 +119,6 @@ class DatacardBuilder:
         self.channels = f"\n{new_channel_lines}\n"
 
         # Processes, tied with shape and lnN nuisances
-        # import pdb
-
-        # pdb.set_trace()
         process_lines = [l for l in self.processes.splitlines() if l.strip() != ""]
         shapes_and_lnN_lines = [
             l for l in self.nuisances.splitlines() if (l.strip() != "") and ([field for field in l.split(" ") if field.strip() != ""][1] in ["shape", "lnN"])
@@ -135,11 +169,15 @@ def main():
             # Replace filenames
             "combined_model.root": f"../root/combined_model_{channel}.root",
             f"{channel}_qcd_nckw_ws_{year}.root": f"../root/{channel}_qcd_nckw_ws_{year}.root",
+        }
+    )
+
+    datacard_builder.nuisance_replace(
+        {
             # affected by mistags in loose region with ratio of -1/20
             "@MISTAGLOOSEW": "0.999",
             "@MISTAGLOOSEW": "0.998",
             "@MISTAGLOOSEW": "0.998",
-            # Lumi uncertainties
             **get_lumi_uncertainties(year),
         }
     )
@@ -167,6 +205,7 @@ def main():
 
     # Write the modified content to the datacard file
     datacard_builder.write_datacard()
+    exit()
 
     # Run external tools
     subprocess.run(["text2workspace.py", datacard_builder.card_path, "--channel-masks"], check=True)

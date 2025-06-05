@@ -247,22 +247,22 @@ def get_pdf_uncertainties(year: str) -> dict[str, str]:
             "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
             "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997 / 1.044",
-            "@ggh_qcd_scale": "0.933 / 1.046",
+            "@vbf_qcd_scale": "0.997/1.044",
+            "@ggh_qcd_scale": "0.933/1.046",
         },
         "2018": {
             "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
             "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997 / 1.044",
-            "@ggh_qcd_scale": "0.933 / 1.046",
+            "@vbf_qcd_scale": "0.997/1.044",
+            "@ggh_qcd_scale": "0.933/1.046",
         },
         "Run3": {
             "@ggh_pdf": "1.032",
             "@vbf_pdf": "1.021",
             "@vbf_pdf_acc": "1.01",
-            "@vbf_qcd_scale": "0.997 / 1.044",
-            "@ggh_qcd_scale": "0.933 / 1.046",
+            "@vbf_qcd_scale": "0.997/1.044",
+            "@ggh_qcd_scale": "0.933/1.046",
         },
     }[year]
 
