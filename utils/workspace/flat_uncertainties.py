@@ -1,3 +1,6 @@
+from typing import Any
+
+
 def get_flat_uncertainties(process: str) -> dict[str, float]:
     return {
         "zmm": {"pu": 0.01, "id": 0.01, "trigger": 0.01},
@@ -55,7 +58,7 @@ def get_lumi_uncertainties(year: str) -> dict[str, str]:
     }[year]
 
 
-def get_lepton_efficiency_uncertainties(year: str) -> dict[str, str]:
+def get_lepton_efficiency_uncertainties(year: str) -> dict[str, Any]:
     return {
         "Run3": {
             "@b_efficiency": "1.03",
