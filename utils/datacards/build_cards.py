@@ -190,24 +190,11 @@ def main():
 
     datacard_builder.add_systematics(get_lumi_uncertainties(year), "lnN")
     datacard_builder.add_systematics(get_lepton_efficiency_uncertainties(year), "lnN")
-    # datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
-    # datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
-    # datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
-    # jer_dict = {
-    #     "jer_$ERA": 1.0,
-    #     "jesAbsolute": 1.0,
-    #     "jesAbsolute_$ERA": 1.0,
-    #     "jesBBEC1": 1.0,
-    #     "jesBBEC1_$ERA": 1.0,
-    #     "jesEC2": 1.0,
-    #     "jesEC2_$ERA": 1.0,
-    #     "jesFlavorQCD": 1.0,
-    #     "jesHF": 1.0,
-    #     "jesHF_$ERA": 1.0,
-    #     "jesRelativeBal": 1.0,
-    #     "jesRelativeSample_$ERA": 1.0,
-    # }
-    # datacard_builder.add_systematics(jer_dict, "shape")
+    datacard_builder.add_systematics(get_trigger_uncertainties(year), "lnN")
+    datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
+    datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
+    datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
+    datacard_builder.add_systematics(get_jer_shape(), "shape")
     datacard_builder.write_datacard()
 
     # TODO: check that this works for monojet

@@ -88,18 +88,37 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, Any]:
 
 
 def get_trigger_uncertainties(year: str) -> dict[str, str]:
+    # All processes
+    proc_list = [
+        "zh",
+        "wh",
+        "vbf",
+        "ggh",
+        "diboson",
+        "top",
+        "qcdzll",
+        "ewkzll",
+        "ewk_wjets",
+        "qcd_wjets",
+        "ewk_zjets",
+        "qcd_zjets",
+        "qcd_zll",
+        "ewk_zll",
+        "ewk_gjets",
+        "qcd_gjets",
+    ]
     return {
         "Run3": {
-            "CMS_trigger$ERA_g": {"value": 1.01, "processes": []},
-            "CMS_trigger$ERA_e": {"value": 1.01, "processes": []},
+            "CMS_trigger$ERA_g": {"photon": {"value": 1.01, "processes": proc_list}},
+            "CMS_trigger$ERA_e": {"dielec": {"value": 1.01, "processes": proc_list}, "singleel": {"value": 1.01, "processes": proc_list}},
             "CMS_trigger$ERA_met_stat": {
-                "signal": {"value": 1.02, "processes": []},
-                "dimuon": {"value": 1.02, "processes": []},
-                "singlemu": {"value": 1.02, "processes": []},
+                "signal": {"value": 1.02, "processes": proc_list},
+                "dimuon": {"value": 1.02, "processes": proc_list},
+                "singlemu": {"value": 1.02, "processes": proc_list},
             },
             "CMS_trigger_met_sys": {
-                "signal": {"value": 1.01, "processes": []},
-                "dimuon": {"value": 0.99, "processes": []},
+                "signal": {"value": 1.01, "processes": proc_list},
+                "dimuon": {"value": 0.99, "processes": proc_list},
             },
         },
     }[year]
@@ -108,12 +127,12 @@ def get_trigger_uncertainties(year: str) -> dict[str, str]:
 def get_qcd_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "QCDscale_VV": {"value": 1.15, "processes": []},
-            "QCDscale_VV_ACCEPT": {"value": 1.15, "processes": []},
-            "QCDscale_tt": {"value": 1.1, "processes": []},
-            "QCDscale_tt_ACCEPT": {"value": 1.1, "processes": []},
-            "QCDscale_ggH2in": {"value": 1.4, "processes": []},
-            "QCDscale_qqH_ACCEPT": {"value": 1.02, "processes": []},
+            "QCDscale_VV": {"value": 1.15, "processes": ["diboson"]},
+            "QCDscale_VV_ACCEPT": {"value": 1.15, "processes": ["diboson"]},
+            "QCDscale_tt": {"value": 1.1, "processes": ["top"]},
+            "QCDscale_tt_ACCEPT": {"value": 1.1, "processes": ["top"]},
+            "QCDscale_ggH2in": {"value": 1.4, "processes": ["ggh"]},
+            "QCDscale_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
         },
     }[year]
 
@@ -121,17 +140,17 @@ def get_qcd_uncertainties(year: str) -> dict[str, str]:
 def get_pdf_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "pdf_Higgs_gg": {"value": 1.032, "processes": []},
-            "pdf_Higgs_qq": {"value": 1.021, "processes": []},
-            "pdf_Higgs_qq_ACCEPT": {"value": 1.01, "processes": []},
+            "pdf_Higgs_gg": {"value": 1.032, "processes": ["ggh"]},
+            "pdf_Higgs_qq": {"value": 1.021, "processes": ["vbf"]},
+            "pdf_Higgs_qq_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
             # TODO: check are these are handled
             # "qqH_QCDscale": {
             #     "value": "0.997/1.004",
-            #     "processes": []
+            #     "processes": ["vbf"]
             # },
             # "ggH_QCDscale": {
             #     "value": "0.933/1.046",
-            #     "processes": []
+            #     "processes": ["ggh"]
             # }
         },
     }[year]
@@ -140,8 +159,28 @@ def get_pdf_uncertainties(year: str) -> dict[str, str]:
 def get_misc_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "Top_Reweight13TeV": {"value": 1.1, "processes": []},
-            "UEPS": {"value": 1.168, "processes": []},
-            "ZJets_Norm13TeV": {"value": 1.2, "processes": []},
+            "Top_Reweight13TeV": {"value": 1.1, "processes": ["top"]},
+            "UEPS": {"value": 1.168, "processes": ["diboson"]},
+            "ZJets_Norm13TeV": {"value": 1.2, "processes": ["qcdzll", "ewkzll"]},
         },
     }[year]
+
+
+def get_jer_shape():
+
+    # All processes (signal + backgrounds), except models
+    proc_list = ["zh", "wh", "vbf", "ggh", "diboson", "top", "qcdzll", "ewkzll"]
+    return {
+        "jer_$ERA": {"value": 1.0, "processes": proc_list},
+        "jesAbsolute": {"value": 1.0, "processes": proc_list},
+        "jesAbsolute_$ERA": {"value": 1.0, "processes": proc_list},
+        "jesBBEC1": {"value": 1.0, "processes": proc_list},
+        "jesBBEC1_$ERA": {"value": 1.0, "processes": proc_list},
+        "jesEC2": {"value": 1.0, "processes": proc_list},
+        "jesEC2_$ERA": {"value": 1.0, "processes": proc_list},
+        "jesFlavorQCD": {"value": 1.0, "processes": proc_list},
+        "jesHF": {"value": 1.0, "processes": proc_list},
+        "jesHF_$ERA": {"value": 1.0, "processes": proc_list},
+        "jesRelativeBal": {"value": 1.0, "processes": proc_list},
+        "jesRelativeSample_$ERA": {"value": 1.0, "processes": proc_list},
+    }
