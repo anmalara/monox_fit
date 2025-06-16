@@ -30,7 +30,7 @@ printcommand-diag: printcommand-diagnostics
 
 # cards:
 cards:
-	python3 $(SCRIPTDIR)/do_cards.py --channel $(CHANNEL) --year $(YEAR)
+	python3 $(SCRIPTDIR)/build_cards.py --channel $(CHANNEL) --year $(YEAR)
 
 # Plotting
 plots:
