@@ -33,66 +33,65 @@ class DatacardBuilder:
             "vbf": {
                 "signal": {
                     "signals": ["zh", "wh", "vbf", "ggh"],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets", "ewk_zjets", "qcd_zjets"],
+                    "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "dimuon": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top"],
                     "models": ["qcd_zll", "ewk_zll"],
+                    "backgrounds": ["top", "diboson"],
                 },
                 "dielec": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top"],
                     "models": ["qcd_zll", "ewk_zll"],
+                    "backgrounds": ["top", "diboson"],
                 },
                 "singlemu": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets"],
+                    "models": ["qcd_wjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "singleel": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets"],
+                    "models": ["qcd_wjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "photon": {
                     "signals": [],
+                    "models": ["qcd_gjets", "ewk_gjets"],
                     "backgrounds": [],
-                    "models": ["ewk_gjets", "qcd_gjets"],
                 },
             },
             "monojet": {
-                # TODO: replace with proper processes. Here: copied from vbf
                 "signal": {
                     "signals": ["zh", "wh", "vbf", "ggh"],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets", "ewk_zjets", "qcd_zjets"],
+                    "models": ["qcd_zjets", "ewk_zjets", "qcd_wjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "dimuon": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top"],
                     "models": ["qcd_zll", "ewk_zll"],
+                    "backgrounds": ["top", "diboson"],
                 },
                 "dielec": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top"],
                     "models": ["qcd_zll", "ewk_zll"],
+                    "backgrounds": ["top", "diboson"],
                 },
                 "singlemu": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets"],
+                    "models": ["qcd_wjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "singleel": {
                     "signals": [],
-                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                    "models": ["ewk_wjets", "qcd_wjets"],
+                    "models": ["qcd_wjets", "ewk_wjets"],
+                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
                 },
                 "photon": {
                     "signals": [],
+                    "models": ["qcd_gjets", "ewk_gjets"],
                     "backgrounds": [],
-                    "models": ["ewk_gjets", "qcd_gjets"],
                 },
             },
         }[self.analysis]
@@ -122,7 +121,7 @@ class DatacardBuilder:
 
             # Backgrounds and models
             self.harvester.AddProcesses(
-                procs=self.processes[proc_label]["backgrounds"] + self.processes[proc_label]["models"],
+                procs=self.processes[proc_label]["models"] + self.processes[proc_label]["backgrounds"],
                 bin=[(region_idx, region_name)],
                 signal=False,
                 **common_args,
