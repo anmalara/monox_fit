@@ -132,9 +132,6 @@ class DatacardBuilder:
         ### Systematics
 
         for syst_name, syst_val in syst_dict.items():
-            # import pdb
-
-            # pdb.set_trace()
             map = self.build_syst_map(syst_val)
 
             self.harvester.AddSyst(
@@ -147,15 +144,25 @@ class DatacardBuilder:
     def build_syst_map(self, syst_val):
 
         lumi_map = ch.SystMap("era", "bin_id", "process")
-        for region_idx, region_name in self.regions:
-            proc_label = region_name.split("_")[-1]
-            lumi_map(
-                ["Run3"],
-                [region_idx],
-                # self.processes[proc_label]["signals"] + self.processes[proc_label]["backgrounds"],
-                syst_val["processes"],
-                syst_val["value"],
-            )
+        if "value" in syst_val:
+            for region_idx, region_name in self.regions:
+                lumi_map(
+                    ["Run3"],
+                    [region_idx],
+                    syst_val["processes"],
+                    syst_val["value"],
+                )
+        else:
+            for region_idx, region_name in self.regions:
+                proc_label = region_name.split("_")[-1]
+                if proc_label in syst_val:
+                    lumi_map(
+                        ["Run3"],
+                        [region_idx],
+                        syst_val[proc_label]["processes"],
+                        syst_val[proc_label]["value"],
+                    )
+
         return lumi_map
 
     def write_datacard(self):
@@ -182,6 +189,7 @@ def main():
     datacard_builder = DatacardBuilder(channel, year)
 
     datacard_builder.add_systematics(get_lumi_uncertainties(year), "lnN")
+    datacard_builder.add_systematics(get_lepton_efficiency_uncertainties(year), "lnN")
     # datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
     # datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
     # datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
