@@ -53,7 +53,7 @@ def get_lumi_uncertainties(year: str) -> dict[str, str]:
             "lumi_13TeV_DB": 1.0,
             "lumi_13TeV_BCC": 1.02,
             "lumi_13TeV_GS": 1.00,
-            "lumi_13TeV_$ERA": 1.015,
+            "lumi_13TeV_XY": 1.015,
         },
     }[year]
 
@@ -61,21 +61,21 @@ def get_lumi_uncertainties(year: str) -> dict[str, str]:
 def get_lepton_efficiency_uncertainties(year: str) -> dict[str, Any]:
     return {
         "Run3": {
-            "@b_efficiency": 1.03,
-            "@b_fake": 1.01,
-            "@e_efficiency": {
+            "CMS_eff$ERA_b": 1.03,
+            "CMS_fake$ERA_b": 1.01,
+            "CMS_eff$ERA_e": {
                 "dielec": 1.06,
                 "singleel": 1.03,
             },
-            "@e_reco": {
+            "CMS_reco$ERA_e": {
                 "dielec": 1.02,
                 "singleel": 1.01,
             },
-            "@mu_efficiency": {
+            "CMS_eff$ERA_m": {
                 "dimuon": 1.01,
                 "singlemu": 1.005,
             },
-            "@gamma_efficiency": 1.05,
+            "CMS_eff$ERA_g": 1.05,
         },
     }[year]
 
@@ -83,14 +83,14 @@ def get_lepton_efficiency_uncertainties(year: str) -> dict[str, Any]:
 def get_trigger_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "@photon_trigger": 1.01,
-            "@egamma_trigger": 1.01,
-            "@met_trigger_stat": {
+            "CMS_trigger$ERA_g": 1.01,
+            "CMS_trigger$ERA_e": 1.01,
+            "CMS_trigger$ERA_met_stat": {
                 "signal": 1.02,
                 "dimuon": 1.02,
                 "singlemu": 1.02,
             },
-            "@met_trigger_sys": {
+            "CMS_trigger_met_sys": {
                 "signal": 1.01,
                 "dimuon": 0.99,
             },
@@ -101,12 +101,12 @@ def get_trigger_uncertainties(year: str) -> dict[str, str]:
 def get_qcd_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "@scale_diboson": 1.15,
-            "@scale_acc_diboson": 1.15,
-            "@scale_tt": 1.1,
-            "@scale_acc_tt": 1.1,
-            "@scale_ggH": 1.4,
-            "@scale_acc_vbf": 1.02,
+            "QCDscale_VV": 1.15,
+            "QCDscale_VV_ACCEPT": 1.15,
+            "QCDscale_tt": 1.1,
+            "QCDscale_tt_ACCEPT": 1.1,
+            "QCDscale_ggH2in": 1.4,
+            "QCDscale_qqH_ACCEPT": 1.02,
         },
     }[year]
 
@@ -114,12 +114,12 @@ def get_qcd_uncertainties(year: str) -> dict[str, str]:
 def get_pdf_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "@pdf_ggh": 1.032,
-            "@pdf_vbf": 1.021,
-            "@pdf_acc_vbf": 1.01,
+            "pdf_Higgs_gg": 1.032,
+            "pdf_Higgs_qq": 1.021,
+            "pdf_Higgs_qq_ACCEPT": 1.01,
             # TODO: check are these are handled
-            # "@scale_vbf_qcd": "0.997/1.004",
-            # "@scale_ggh_qcd": "0.933/1.046",
+            # "qqH_QCDscale": "0.997/1.004",
+            # "ggH_QCDscale": "0.933/1.046",
         },
     }[year]
 
@@ -127,8 +127,8 @@ def get_pdf_uncertainties(year: str) -> dict[str, str]:
 def get_misc_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
-            "@top_reweight": 1.1,
-            "@ueps": 1.168,
-            "@zjets_norm": 1.2,
+            "Top_Reweight13TeV": 1.1,
+            "UEPS": 1.168,
+            "ZJets_Norm13TeV": 1.2,
         },
     }[year]
