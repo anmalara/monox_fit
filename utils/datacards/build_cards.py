@@ -267,13 +267,13 @@ def main():
         for region, region_old in [("dielec", "Zee"), ("dimuon", "Zmm"), ("signal", "signal"), ("singleel", "Wen"), ("singlemu", "Wmn"), ("photon", "gjets")]:
             shapes_list = (
                 [
-                    f"shapes *                 {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_data\n",
+                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
                 ]
                 if region != "photon"
                 else [
-                    f"shapes *                 {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_data\n",
+                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
                 ]
             )
 
@@ -291,7 +291,7 @@ def main():
                 "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
             }[region]
             shapes_list += [
-                f"shapes {model}           {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{model_old}_model\n"
+                f"shapes {model}           {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{model_old}_model\n"
                 for model, model_old in region_models
             ]
 
@@ -324,10 +324,9 @@ def main():
     #         print(f"Warning: removing nuisance {nuis} from {datacard_builder.card_path}, shape not present in ws_{channel}.root")
 
     # Write the modified content to the datacard file
-    exit()
 
     # Run external tools
-    subprocess.run(["text2workspace.py", datacard_builder.card_path, "--channel-masks"], check=True)
+    subprocess.run(["text2workspace.py", f"cards/card_{channel}_{year}.txt", "--channel-masks"], check=True)
     with open(f"cards/systematics_{year}.html", "w") as outfile:
         subprocess.run(
             [
@@ -336,7 +335,7 @@ def main():
                 "--all",
                 "-f",
                 "html",
-                datacard_builder.card_path,
+                f"cards/card_{channel}_{year}.txt",
             ],
             check=True,
             stdout=outfile,
