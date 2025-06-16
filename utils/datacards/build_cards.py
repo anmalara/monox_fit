@@ -132,6 +132,9 @@ class DatacardBuilder:
         ### Systematics
 
         for syst_name, syst_val in syst_dict.items():
+            # import pdb
+
+            # pdb.set_trace()
             map = self.build_syst_map(syst_val)
 
             self.harvester.AddSyst(
@@ -149,8 +152,9 @@ class DatacardBuilder:
             lumi_map(
                 ["Run3"],
                 [region_idx],
-                self.processes[proc_label]["signals"] + self.processes[proc_label]["backgrounds"],
-                syst_val,
+                # self.processes[proc_label]["signals"] + self.processes[proc_label]["backgrounds"],
+                syst_val["processes"],
+                syst_val["value"],
             )
         return lumi_map
 
@@ -178,24 +182,24 @@ def main():
     datacard_builder = DatacardBuilder(channel, year)
 
     datacard_builder.add_systematics(get_lumi_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
-    jer_dict = {
-        "jer_$ERA": 1.0,
-        "jesAbsolute": 1.0,
-        "jesAbsolute_$ERA": 1.0,
-        "jesBBEC1": 1.0,
-        "jesBBEC1_$ERA": 1.0,
-        "jesEC2": 1.0,
-        "jesEC2_$ERA": 1.0,
-        "jesFlavorQCD": 1.0,
-        "jesHF": 1.0,
-        "jesHF_$ERA": 1.0,
-        "jesRelativeBal": 1.0,
-        "jesRelativeSample_$ERA": 1.0,
-    }
-    datacard_builder.add_systematics(jer_dict, "shape")
+    # datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
+    # datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
+    # datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
+    # jer_dict = {
+    #     "jer_$ERA": 1.0,
+    #     "jesAbsolute": 1.0,
+    #     "jesAbsolute_$ERA": 1.0,
+    #     "jesBBEC1": 1.0,
+    #     "jesBBEC1_$ERA": 1.0,
+    #     "jesEC2": 1.0,
+    #     "jesEC2_$ERA": 1.0,
+    #     "jesFlavorQCD": 1.0,
+    #     "jesHF": 1.0,
+    #     "jesHF_$ERA": 1.0,
+    #     "jesRelativeBal": 1.0,
+    #     "jesRelativeSample_$ERA": 1.0,
+    # }
+    # datacard_builder.add_systematics(jer_dict, "shape")
     datacard_builder.write_datacard()
 
     # TODO: check that this works for monojet
