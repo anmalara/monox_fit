@@ -144,14 +144,8 @@ def get_pdf_uncertainties(year: str) -> dict[str, str]:
             "pdf_Higgs_qq": {"value": 1.021, "processes": ["vbf"]},
             "pdf_Higgs_qq_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
             # TODO: check are these are handled
-            # "qqH_QCDscale": {
-            #     "value": "0.997/1.004",
-            #     "processes": ["vbf"]
-            # },
-            # "ggH_QCDscale": {
-            #     "value": "0.933/1.046",
-            #     "processes": ["ggh"]
-            # }
+            "qqH_QCDscale": {"value": (0.997, 1.004), "processes": ["vbf"]},
+            "ggH_QCDscale": {"value": (0.933, 1.046), "processes": ["ggh"]},
         },
     }[year]
 
@@ -160,7 +154,7 @@ def get_misc_uncertainties(year: str) -> dict[str, str]:
     return {
         "Run3": {
             "Top_Reweight13TeV": {"value": 1.1, "processes": ["top"]},
-            "UEPS": {"value": 1.168, "processes": ["diboson"]},
+            "UEPS": {"value": 1.168, "processes": ["ggh"]},
             "ZJets_Norm13TeV": {"value": 1.2, "processes": ["qcdzll", "ewkzll"]},
         },
     }[year]

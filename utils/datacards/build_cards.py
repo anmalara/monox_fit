@@ -129,6 +129,7 @@ class DatacardBuilder:
             )
 
         # Manually fixing rate and observation
+        # rate set to -1 for all processes except models
         self.harvester.ForEachProc(
             lambda x: x.set_rate(
                 -1
@@ -146,12 +147,11 @@ class DatacardBuilder:
                 else 1
             )
         )
+        # observation set to -1 for all regions
         self.harvester.ForEachObs(lambda x: x.set_rate(-1))
 
     def add_systematics(self, syst_dict, syst_type: str):
-
-        ### Systematics
-
+        """Add a shape or lnN systematic uncertainty to the card."""
         for syst_name, syst_val in syst_dict.items():
             map = self.build_syst_map(syst_val)
 
@@ -163,8 +163,10 @@ class DatacardBuilder:
             )
 
     def build_syst_map(self, syst_val):
-
+        """Convert a dictionary containting the value of the systematic for each region and process it applies to into a SystMap."""
         syst_map = ch.SystMap("era", "bin_id", "process")
+
+        # If "value" is present, the same value is applied accross all regions
         if "value" in syst_val:
             for region_idx, region_name in self.regions:
                 syst_map(
@@ -173,6 +175,7 @@ class DatacardBuilder:
                     syst_val["processes"],
                     syst_val["value"],
                 )
+        # Otherwise, value is specified for each region
         else:
             for region_idx, region_name in self.regions:
                 proc_label = region_name.split("_")[-1]
@@ -222,7 +225,7 @@ def main():
     # Could this be done in a cleaner way if changes are made to the workspace building scripts?
     for nuis_name in (
         [f"CMS_veto{year}_{l}" for l in ["t", "m", "e"]]
-        + [jer for jer in get_jer_shape()]
+        + [jer.replace("$ERA", year) for jer in get_jer_shape()]
         + [
             f"{channel}_{year}_stat_error_{region}_bin{i}"
             for region in [
