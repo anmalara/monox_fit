@@ -15,6 +15,7 @@ class DatacardBuilder:
 
         # TODO: make naming of variables consistent
         self.analysis = channel
+        self.year = year
         self.eras = [year]
 
         ## Regions (common for all analyses)
@@ -28,37 +29,72 @@ class DatacardBuilder:
         ## Processes
         # TODO: might vary depending on the analysis
         self.processes = {
-            "signal": {
-                "signals": ["zh", "wh", "vbf", "ggh"],
-                "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                "models": ["ewk_wjets", "qcd_wjets", "ewk_zjets", "qcd_zjets"],
+            "vbf": {
+                "signal": {
+                    "signals": ["zh", "wh", "vbf", "ggh"],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets", "ewk_zjets", "qcd_zjets"],
+                },
+                "dimuon": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top"],
+                    "models": ["qcd_zll", "ewk_zll"],
+                },
+                "dielec": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top"],
+                    "models": ["qcd_zll", "ewk_zll"],
+                },
+                "singlemu": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets"],
+                },
+                "singleel": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets"],
+                },
+                "photon": {
+                    "signals": [],
+                    "backgrounds": [],
+                    "models": ["ewk_gjets", "qcd_gjets"],
+                },
             },
-            "dimuon": {
-                "signals": [],
-                "backgrounds": ["diboson", "top"],
-                "models": ["qcd_zll", "ewk_zll"],
+            "monojet": {
+                # TODO: replace with proper processes. Here: copied from vbf
+                "signal": {
+                    "signals": ["zh", "wh", "vbf", "ggh"],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets", "ewk_zjets", "qcd_zjets"],
+                },
+                "dimuon": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top"],
+                    "models": ["qcd_zll", "ewk_zll"],
+                },
+                "dielec": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top"],
+                    "models": ["qcd_zll", "ewk_zll"],
+                },
+                "singlemu": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets"],
+                },
+                "singleel": {
+                    "signals": [],
+                    "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
+                    "models": ["ewk_wjets", "qcd_wjets"],
+                },
+                "photon": {
+                    "signals": [],
+                    "backgrounds": [],
+                    "models": ["ewk_gjets", "qcd_gjets"],
+                },
             },
-            "dielec": {
-                "signals": [],
-                "backgrounds": ["diboson", "top"],
-                "models": ["qcd_zll", "ewk_zll"],
-            },
-            "singlemu": {
-                "signals": [],
-                "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                "models": ["ewk_wjets", "qcd_wjets"],
-            },
-            "singleel": {
-                "signals": [],
-                "backgrounds": ["diboson", "top", "qcdzll", "ewkzll"],
-                "models": ["ewk_wjets", "qcd_wjets"],
-            },
-            "photon": {
-                "signals": [],
-                "backgrounds": [],
-                "models": ["ewk_gjets", "qcd_gjets"],
-            },
-        }
+        }[self.analysis]
 
         # Common arguments
         common_args = {
@@ -72,29 +108,18 @@ class DatacardBuilder:
         self.harvester.AddObservations(bin=self.regions, **common_args)
 
         ### Defining the processes for each region
-        # TODO: could be refactored?
-        # defining processes as keys, with values being list of regions + if they are signal or background
-
-        ## SR
-        # signal processes
-        self.harvester.AddProcesses(
-            procs=self.processes["signal"]["signals"],
-            bin=[self.regions[0]],
-            signal=True,
-            **common_args,
-        )
-
-        # background processes (MC yields + models)
-        self.harvester.AddProcesses(
-            procs=self.processes["signal"]["backgrounds"] + self.processes["signal"]["models"],
-            bin=[self.regions[0]],
-            signal=False,
-            **common_args,
-        )
-
-        ## CRs, only has background processes (MC yields + models)
-        for region_idx, region_name in self.regions[1:]:
+        for region_idx, region_name in self.regions:
             proc_label = region_name.split("_")[-1]
+
+            # Signals (effectively only for the SR)
+            self.harvester.AddProcesses(
+                procs=self.processes[proc_label]["signals"],
+                bin=[(region_idx, region_name)],
+                signal=True,
+                **common_args,
+            )
+
+            # Backgrounds and models
             self.harvester.AddProcesses(
                 procs=self.processes[proc_label]["backgrounds"] + self.processes[proc_label]["models"],
                 bin=[(region_idx, region_name)],
@@ -102,9 +127,22 @@ class DatacardBuilder:
                 **common_args,
             )
 
-    def add_systematics(self):
+    def add_systematics(self, syst_name: str, syst_type: str):
 
         ### Systematics
+
+        map = self.build_syst_map(syst_name)
+
+        self.harvester.AddSyst(
+            target=self.harvester,
+            name=syst_name,
+            type=syst_type,
+            valmap=map,
+        )
+
+    def build_syst_map(self, syst_name):
+
+        syst_val = get_lumi_uncertainties(self.year)["@LUMI"]
         lumi_map = ch.SystMap("era", "bin_id", "process")
         for region_idx, region_name in self.regions:
             proc_label = region_name.split("_")[-1]
@@ -112,15 +150,9 @@ class DatacardBuilder:
                 ["Run3"],
                 [region_idx],
                 self.processes[proc_label]["signals"] + self.processes[proc_label]["backgrounds"],
-                1.015,
+                float(syst_val),
             )
-
-        self.harvester.AddSyst(
-            target=self.harvester,
-            name="lumi_$ERA",
-            type="lnN",
-            valmap=lumi_map,
-        )
+        return lumi_map
 
     def write_datacard(self):
 
@@ -145,7 +177,7 @@ def main():
     channel, year = args.channel, args.year
     datacard_builder = DatacardBuilder(channel, year)
 
-    datacard_builder.add_systematics()
+    datacard_builder.add_systematics("lumi_$ERA", "lnN")
     datacard_builder.write_datacard()
 
     # TODO: check that this works for monojet
