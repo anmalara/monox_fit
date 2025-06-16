@@ -143,10 +143,10 @@ class DatacardBuilder:
 
     def build_syst_map(self, syst_val):
 
-        lumi_map = ch.SystMap("era", "bin_id", "process")
+        syst_map = ch.SystMap("era", "bin_id", "process")
         if "value" in syst_val:
             for region_idx, region_name in self.regions:
-                lumi_map(
+                syst_map(
                     ["Run3"],
                     [region_idx],
                     syst_val["processes"],
@@ -156,14 +156,14 @@ class DatacardBuilder:
             for region_idx, region_name in self.regions:
                 proc_label = region_name.split("_")[-1]
                 if proc_label in syst_val:
-                    lumi_map(
+                    syst_map(
                         ["Run3"],
                         [region_idx],
                         syst_val[proc_label]["processes"],
                         syst_val[proc_label]["value"],
                     )
 
-        return lumi_map
+        return syst_map
 
     def write_datacard(self):
 
@@ -195,6 +195,42 @@ def main():
     datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
     datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
     datacard_builder.add_systematics(get_jer_shape(), "shape")
+
+    # Add all constrained nuisance parameters
+    # TODO: there does not seem to be a proper way to add these using CombineHarvester
+    # Could this be done in a cleaner way if changes are made to the workspace building scripts?
+    for nuis_name in (
+        [f"CMS_veto{year}_{l}" for l in ["t", "m", "e"]]
+        + [jer for jer in get_jer_shape()]
+        + [
+            f"{channel}_{year}_stat_error_{region}_bin{i}"
+            for region in [
+                "qcd_dimuonCR",
+                "qcd_dielectronCR",
+                "qcd_wzCR",
+                "qcd_photonCR",
+                "ewkqcdzCR",
+                "qcd_singlemuon",
+                "qcd_singleelectron",
+                "ewk_dimuonCR",
+                "ewk_dielectronCR",
+                "ewk_wzCR",
+                "ewk_photonCR",
+                "ewk_singlemuon",
+                "ewk_singleelectron",
+            ]
+            for i in range(12)
+        ]
+        + [f"{ratio}_{channel}_bin{i}" for ratio in ["qcd_ewk", "qcd_photon_ewk", "ewk_ewk", "ewkphoton_ewk"] for i in range(12)]
+        + [
+            f"{ratio}_{production_mode}_{theory_unc}_{channel}"
+            for ratio in ["ZnunuWJets", "Photon"]
+            for production_mode in ["QCD", "EWK"]
+            for theory_unc in ["renscale", "facscale", "pdf"]
+        ]
+    ):
+        datacard_builder.harvester.AddDatacardLineAtEnd(f"{nuis_name} param 0.0 1")
+
     datacard_builder.write_datacard()
 
     # TODO: check that this works for monojet
