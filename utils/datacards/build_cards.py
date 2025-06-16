@@ -150,7 +150,7 @@ class DatacardBuilder:
                 ["Run3"],
                 [region_idx],
                 self.processes[proc_label]["signals"] + self.processes[proc_label]["backgrounds"],
-                float(syst_val),
+                syst_val,
             )
         return lumi_map
 
