@@ -127,22 +127,22 @@ class DatacardBuilder:
                 **common_args,
             )
 
-    def add_systematics(self, syst_name: str, syst_type: str):
+    def add_systematics(self, syst_dict, syst_type: str):
 
         ### Systematics
 
-        map = self.build_syst_map(syst_name)
+        for syst_name, syst_val in syst_dict.items():
+            map = self.build_syst_map(syst_val)
 
-        self.harvester.AddSyst(
-            target=self.harvester,
-            name=syst_name,
-            type=syst_type,
-            valmap=map,
-        )
+            self.harvester.AddSyst(
+                target=self.harvester,
+                name=syst_name,
+                type=syst_type,
+                valmap=map,
+            )
 
-    def build_syst_map(self, syst_name):
+    def build_syst_map(self, syst_val):
 
-        syst_val = get_lumi_uncertainties(self.year)["@LUMI"]
         lumi_map = ch.SystMap("era", "bin_id", "process")
         for region_idx, region_name in self.regions:
             proc_label = region_name.split("_")[-1]
@@ -177,7 +177,7 @@ def main():
     channel, year = args.channel, args.year
     datacard_builder = DatacardBuilder(channel, year)
 
-    datacard_builder.add_systematics("lumi_$ERA", "lnN")
+    datacard_builder.add_systematics(get_lumi_uncertainties(year), "lnN")
     datacard_builder.write_datacard()
 
     # TODO: check that this works for monojet
