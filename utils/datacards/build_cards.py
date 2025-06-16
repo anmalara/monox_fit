@@ -7,6 +7,7 @@ import CombineHarvester.CombineTools.ch as ch
 
 class DatacardBuilder:
     def __init__(self, channel: str, year: str):
+        os.makedirs("cards", exist_ok=True)
         self.ws_path = "root/combined_model_vbf.root"  # TODO: unused at the moment, needed to extract the shapes
 
         self.harvester = ch.CombineHarvester()
@@ -196,7 +197,7 @@ class DatacardBuilder:
         # self.harvester.cp().backgrounds().ExtractShapes(self.ws_path, "category_vbf_Run3/$BIN/$PROCESS", "$BIN/$PROCESS_$SYSTEMATIC")
 
         # self.harvester.WriteDatacard("test.txt", "test.root")
-        self.harvester.WriteDatacard("test.txt")
+        self.harvester.WriteDatacard(f"cards/card_{self.analysis}_{self.year}.txt")
 
 
 def main():
@@ -252,6 +253,54 @@ def main():
         datacard_builder.harvester.AddDatacardLineAtEnd(f"{nuis_name} param 0.0 1")
 
     datacard_builder.write_datacard()
+
+    # Manually fix path of shapes
+    with open(f"cards/card_{channel}_{year}.txt") as f:
+        content = f.readlines()
+        idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
+
+        for idx in idx_list[::-1]:  # Reverse order to avoid index issues
+            content.pop(idx)  # Remove the line
+
+        current_idx = idx_list[0]
+
+        for region, region_old in [("dielec", "Zee"), ("dimuon", "Zmm"), ("signal", "signal"), ("singleel", "Wen"), ("singlemu", "Wmn"), ("photon", "gjets")]:
+            shapes_list = (
+                [
+                    f"shapes *                 {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_data\n",
+                ]
+                if region != "photon"
+                else [
+                    f"shapes *                 {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{region_old}_data\n",
+                ]
+            )
+
+            region_models = {
+                "dielec": [("ewk_zll", "ewk_dielectron_ewk_zjets"), ("qcd_zll", "qcd_dielectron_qcd_zjets")],
+                "dimuon": [("ewk_zll", "ewk_dimuon_ewk_zjets"), ("qcd_zll", "qcd_dimuon_qcd_zjets")],
+                "signal": [
+                    ("ewk_wjets", "ewk_wjetssignal_ewk_zjets"),
+                    ("ewk_zjets", "ewkqcd_signal_qcd_zjets"),
+                    ("qcd_wjets", "qcd_wjetssignal_qcd_zjets"),
+                    ("qcd_zjets", "signal_qcd_zjets"),
+                ],
+                "singleel": [("ewk_wjets", "ewk_singleelectron_ewk_wjets"), ("qcd_wjets", "qcd_singleelectron_qcd_wjets")],
+                "singlemu": [("ewk_wjets", "ewk_singlemuon_ewk_wjets"), ("qcd_wjets", "qcd_singlemuon_qcd_wjets")],
+                "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
+            }[region]
+            shapes_list += [
+                f"shapes {model}           {channel}_{year}_{region}    combined_model.root combinedws:{channel}_{year}_{model_old}_model\n"
+                for model, model_old in region_models
+            ]
+
+            for l in shapes_list:
+                content.insert(current_idx, l)
+                current_idx += 1
+
+    with open(f"cards/card_{channel}_{year}.txt", "w") as f:
+        f.write("".join(content))
 
     # TODO: check that this works for monojet
     # Remove useless stat uncertainties
