@@ -127,6 +127,26 @@ class DatacardBuilder:
                 **common_args,
             )
 
+        # Manually fixing rate and observation
+        self.harvester.ForEachProc(
+            lambda x: x.set_rate(
+                -1
+                if x.process()
+                not in [
+                    "ewk_zll",
+                    "qcd_zll",
+                    "ewk_zjets",
+                    "qcd_zjets",
+                    "ewk_wjets",
+                    "qcd_wjets",
+                    "ewk_gjets",
+                    "qcd_gjets",
+                ]
+                else 1
+            )
+        )
+        self.harvester.ForEachObs(lambda x: x.set_rate(-1))
+
     def add_systematics(self, syst_dict, syst_type: str):
 
         ### Systematics
