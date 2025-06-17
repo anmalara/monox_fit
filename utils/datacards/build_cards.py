@@ -12,7 +12,7 @@ class DatacardBuilder:
         self.analysis = channel
         self.year = year
         self.eras = [year]
-        self.ws_path = "root/combined_model_vbf.root"  # TODO: unused at the moment, needed to extract the shapes
+        self.ws_path = f"../root/combined_model_{self.analysis}.root"  # TODO: unused at the moment, needed to extract the shapes
         self.card_path = f"cards/card_{self.analysis}_{self.year}.txt"
 
         self.harvester = ch.CombineHarvester()
@@ -114,79 +114,118 @@ class DatacardBuilder:
 
         self.harvester.WriteDatacard(self.card_path)
 
+    def insert_shape_lines(self):
+        # Manually fix path of shapes
+        # as the correct path of the shapes cannot currently be read by CombineHarvester
+        with open(self.card_path) as f:
+            content = f.readlines()
 
-def insert_shape_lines(card_path: str, channel: str, year: str):
-    # Manually fix path of shapes
-    # as the correct path of the shapes cannot currently be read by CombineHarvester
-    with open(card_path) as f:
-        content = f.readlines()
+            # Find the index of the lines containing the placeholder path of the shapes, remove them
+            idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
+            for idx in reversed(idx_list):  # Reverse order to avoid index issues
+                content.pop(idx)  # Remove the line
 
-        # Find the index of the lines containing the placeholder path of the shapes, remove them
-        idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
-        for idx in reversed(idx_list):  # Reverse order to avoid index issues
-            content.pop(idx)  # Remove the line
+            # Start inserting new lines from where the first shape line was found
+            current_idx = idx_list[0] if idx_list else len(content)
 
-        # Start inserting new lines from where the first shape line was found
-        current_idx = idx_list[0] if idx_list else len(content)
+            region_label_map = get_region_label_map()
 
-        region_label_map = [
-            ("dielec", "Zee"),
-            ("dimuon", "Zmm"),
-            ("signal", "signal"),
-            ("singleel", "Wen"),
-            ("singlemu", "Wmn"),
-            ("photon", "gjets"),
-        ]
+            region_model_map = get_region_model_map()
 
-        region_model_map = {
-            "dielec": [("ewk_zll", "ewk_dielectron_ewk_zjets"), ("qcd_zll", "qcd_dielectron_qcd_zjets")],
-            "dimuon": [("ewk_zll", "ewk_dimuon_ewk_zjets"), ("qcd_zll", "qcd_dimuon_qcd_zjets")],
-            "signal": [
-                ("ewk_wjets", "ewk_wjetssignal_ewk_zjets"),
-                ("ewk_zjets", "ewkqcd_signal_qcd_zjets"),
-                ("qcd_wjets", "qcd_wjetssignal_qcd_zjets"),
-                ("qcd_zjets", "signal_qcd_zjets"),
-            ],
-            "singleel": [("ewk_wjets", "ewk_singleelectron_ewk_wjets"), ("qcd_wjets", "qcd_singleelectron_qcd_wjets")],
-            "singlemu": [("ewk_wjets", "ewk_singlemuon_ewk_wjets"), ("qcd_wjets", "qcd_singlemuon_qcd_wjets")],
-            "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
-        }
+            for region, region_old in region_label_map:
+                shapes_list = (
+                    [
+                        f"shapes *                 {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS combinedws:vbf_{self.year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
+                        f"shapes data_obs          {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_data\n",
+                    ]
+                    if region != "photon"
+                    else [
+                        f"shapes *                 {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS\n",
+                        f"shapes data_obs          {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_data\n",
+                    ]
+                )
 
-        for region, region_old in region_label_map:
-            shapes_list = (
-                [
-                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
+                region_models = region_model_map[region]
+                shapes_list += [
+                    f"shapes {model}           {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{model_old}_model\n"
+                    for model, model_old in region_models
                 ]
-                if region != "photon"
-                else [
-                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
-                ]
-            )
 
-            region_models = region_model_map[region]
-            shapes_list += [
-                f"shapes {model}           {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{model_old}_model\n"
-                for model, model_old in region_models
-            ]
+                for l in shapes_list:
+                    content.insert(current_idx, l)
+                    current_idx += 1
 
-            for l in shapes_list:
-                content.insert(current_idx, l)
-                current_idx += 1
+            # Starting to think about formating properly the shapes lines
+            # shapes_list: list[tuple[str, str, str, str, str, str]] = []
+            # for region, region_old in region_label_map:
+            #     shapes_list += (
+            #         [
+            #             (
+            #                 "shapes",
+            #                 "*",
+            #                 f"{self.analysis}_{self.year}_{region}",
+            #                 f"../root/combined_model_{self.analysis}.root",
+            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS",
+            #                 f"combinedws:vbf_{self.year}_{region_old}_$PROCESS_$SYSTEMATIC",
+            #             ),
+            #             (
+            #                 "shapes",
+            #                 "data_obs",
+            #                 f"{self.analysis}_{self.year}_{region}",
+            #                 f"../root/combined_model_{self.analysis}.root",
+            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_data",
+            #                 "",
+            #             ),
+            #         ]
+            #         if region != "photon"
+            #         else [
+            #             (
+            #                 "shapes",
+            #                 "*",
+            #                 f"{self.analysis}_{self.year}_{region}",
+            #                 f"../root/combined_model_{self.analysis}.root",
+            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS",
+            #                 "",
+            #             ),
+            #             (
+            #                 "shapes",
+            #                 "data_obs",
+            #                 f"{self.analysis}_{self.year}_{region}",
+            #                 f"../root/combined_model_{self.analysis}.root",
+            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_data",
+            #                 "",
+            #             ),
+            #         ]
+            #     )
 
-    # Write modified content to the datacard
-    open(card_path, "w").writelines(content)
+            #     shapes_list += [
+            #         (
+            #             "shapes",
+            #             f"{model}",
+            #             f"{self.analysis}",
+            #             f"{self.year}_{region}",
+            #             f"../root/combined_model_{self.analysis}.root",
+            #             f"combinedws:{self.analysis}_{self.year}_{model_old}_model",
+            #             "",
+            #         )
+            #         for model, model_old in region_model_map[region]
+            #     ]
 
+            # for l in shapes_list:
+            #     content.insert(current_idx, l)
+            #     current_idx += 1
 
-def add_comments_to_datacard(input_file, output_file, comments):
-    with open(input_file, "r") as f:
-        lines = f.readlines()
+        # Write modified content to the datacard
+        open(self.card_path, "w").writelines(content)
 
-    with open(output_file, "w") as f:
-        for comment in comments:
-            f.write(f"# {comment}\n")
-        f.writelines(lines)
+    def add_comments_to_datacard(self, comments):
+        with open(self.card_path, "r") as f:
+            lines = f.readlines()
+
+        with open(self.card_path, "w") as f:
+            for comment in comments:
+                f.write(f"# {comment}\n")
+            f.writelines(lines)
 
 
 def main():
@@ -196,15 +235,15 @@ def main():
     args = parser.parse_args()
 
     channel, year = args.channel, args.year
-    builder = DatacardBuilder(channel, year)
+    builder = DatacardBuilder(channel=channel, year=year)
 
-    builder.add_systematics(get_lumi_uncertainties(year), "lnN")
-    builder.add_systematics(get_lepton_efficiency_uncertainties(year), "lnN")
-    builder.add_systematics(get_trigger_uncertainties(year), "lnN")
-    builder.add_systematics(get_qcd_uncertainties(year), "lnN")
-    builder.add_systematics(get_pdf_uncertainties(year), "lnN")
-    builder.add_systematics(get_misc_uncertainties(year), "lnN")
-    builder.add_systematics(get_jer_shape(), "shape")
+    builder.add_systematics(syst_dict=get_lumi_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_lepton_efficiency_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_trigger_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_qcd_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_pdf_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_misc_uncertainties(year=year), syst_type="lnN")
+    builder.add_systematics(syst_dict=get_jer_shape(), syst_type="shape")
 
     # Add all constrained nuisance parameters
     # TODO: there does not seem to be a proper way to add these using CombineHarvester
@@ -240,17 +279,17 @@ def main():
         ]
     )
 
-    builder.add_nuisances(nuis_list)
+    builder.add_nuisances(nuisances=nuis_list)
 
     builder.write_datacard()
 
-    insert_shape_lines(builder.card_path, channel, year)
+    builder.insert_shape_lines()
 
     comments = [
         "This datacard was generated using CombineHarvester",
         f"Analysis: {channel}, era: {year}",
     ]
-    add_comments_to_datacard(builder.card_path, builder.card_path, comments)
+    builder.add_comments_to_datacard(comments=comments)
 
     # TODO: check that this works for monojet
     # Remove useless stat uncertainties

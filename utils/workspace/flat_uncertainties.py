@@ -2,7 +2,7 @@ from typing import Any
 
 
 def get_processes(analysis: str) -> dict[str, dict[str, list[str]]]:
-    # TODO: might vary depending on the analysis
+    """Get the regions and their associated processes for a given analysis."""
     return {
         "vbf": {
             "signal": {
@@ -70,6 +70,33 @@ def get_processes(analysis: str) -> dict[str, dict[str, list[str]]]:
             },
         },
     }[analysis]
+
+
+def get_region_label_map() -> list[tuple[str, str]]:
+    return [
+        ("dielec", "Zee"),
+        ("dimuon", "Zmm"),
+        ("signal", "signal"),
+        ("singleel", "Wen"),
+        ("singlemu", "Wmn"),
+        ("photon", "gjets"),
+    ]
+
+
+def get_region_model_map() -> dict[str, list[tuple[str, str]]]:
+    return {
+        "dielec": [("ewk_zll", "ewk_dielectron_ewk_zjets"), ("qcd_zll", "qcd_dielectron_qcd_zjets")],
+        "dimuon": [("ewk_zll", "ewk_dimuon_ewk_zjets"), ("qcd_zll", "qcd_dimuon_qcd_zjets")],
+        "signal": [
+            ("ewk_wjets", "ewk_wjetssignal_ewk_zjets"),
+            ("ewk_zjets", "ewkqcd_signal_qcd_zjets"),
+            ("qcd_wjets", "qcd_wjetssignal_qcd_zjets"),
+            ("qcd_zjets", "signal_qcd_zjets"),
+        ],
+        "singleel": [("ewk_wjets", "ewk_singleelectron_ewk_wjets"), ("qcd_wjets", "qcd_singleelectron_qcd_wjets")],
+        "singlemu": [("ewk_wjets", "ewk_singlemuon_ewk_wjets"), ("qcd_wjets", "qcd_singlemuon_qcd_wjets")],
+        "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
+    }
 
 
 def get_flat_uncertainties(process: str) -> dict[str, float]:
