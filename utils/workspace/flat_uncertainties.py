@@ -1,6 +1,77 @@
 from typing import Any
 
 
+def get_processes(analysis: str) -> dict[str, dict[str, list[str]]]:
+    # TODO: might vary depending on the analysis
+    return {
+        "vbf": {
+            "signal": {
+                "signals": ["zh", "wh", "vbf", "ggh"],
+                "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "dimuon": {
+                "signals": [],
+                "models": ["qcd_zll", "ewk_zll"],
+                "backgrounds": ["top", "diboson"],
+            },
+            "dielec": {
+                "signals": [],
+                "models": ["qcd_zll", "ewk_zll"],
+                "backgrounds": ["top", "diboson"],
+            },
+            "singlemu": {
+                "signals": [],
+                "models": ["qcd_wjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "singleel": {
+                "signals": [],
+                "models": ["qcd_wjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "photon": {
+                "signals": [],
+                "models": ["qcd_gjets", "ewk_gjets"],
+                "backgrounds": [],
+            },
+        },
+        "monojet": {
+            # TODO: port propper processes for monojet
+            "signal": {
+                "signals": ["zh", "wh", "vbf", "ggh"],
+                "models": ["qcd_zjets", "ewk_zjets", "qcd_wjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "dimuon": {
+                "signals": [],
+                "models": ["qcd_zll", "ewk_zll"],
+                "backgrounds": ["top", "diboson"],
+            },
+            "dielec": {
+                "signals": [],
+                "models": ["qcd_zll", "ewk_zll"],
+                "backgrounds": ["top", "diboson"],
+            },
+            "singlemu": {
+                "signals": [],
+                "models": ["qcd_wjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "singleel": {
+                "signals": [],
+                "models": ["qcd_wjets", "ewk_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+            },
+            "photon": {
+                "signals": [],
+                "models": ["qcd_gjets", "ewk_gjets"],
+                "backgrounds": [],
+            },
+        },
+    }[analysis]
+
+
 def get_flat_uncertainties(process: str) -> dict[str, float]:
     return {
         "zmm": {"pu": 0.01, "id": 0.01, "trigger": 0.01},
@@ -143,7 +214,6 @@ def get_pdf_uncertainties(year: str) -> dict[str, str]:
             "pdf_Higgs_gg": {"value": 1.032, "processes": ["ggh"]},
             "pdf_Higgs_qq": {"value": 1.021, "processes": ["vbf"]},
             "pdf_Higgs_qq_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
-            # TODO: check are these are handled
             "qqH_QCDscale": {"value": (0.997, 1.004), "processes": ["vbf"]},
             "ggH_QCDscale": {"value": (0.933, 1.046), "processes": ["ggh"]},
         },

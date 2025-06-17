@@ -1,100 +1,30 @@
+#!/usr/bin/env python3
 import os
 import subprocess
 import argparse
 from utils.workspace.flat_uncertainties import *
-import CombineHarvester.CombineTools.ch as ch
+import CombineHarvester.CombineTools.ch as ch  # type: ignore
 
 
 class DatacardBuilder:
     def __init__(self, channel: str, year: str):
-        os.makedirs("cards", exist_ok=True)
+        ### Settings
+        self.analysis = channel
+        self.year = year
+        self.eras = [year]
         self.ws_path = "root/combined_model_vbf.root"  # TODO: unused at the moment, needed to extract the shapes
 
         self.harvester = ch.CombineHarvester()
 
-        ### Settings
-
-        # TODO: make naming of variables consistent
-        self.analysis = channel
-        self.year = year
-        self.eras = [year]
+        os.makedirs("cards", exist_ok=True)
 
         ## Regions (common for all analyses)
         self.region_names = ["signal", "dimuon", "dielec", "singlemu", "singleel", "photon"]
         # put in the form (index, name) for CombineHarvester
-        self.regions = [(i, f"{region}") for i, region in enumerate(self.region_names)]
+        self.regions = [(idx, region) for idx, region in enumerate(self.region_names)]
 
-        self.init_processes()
-
-    def init_processes(self):
-        ## Processes
-        # TODO: might vary depending on the analysis
-        self.processes = {
-            "vbf": {
-                "signal": {
-                    "signals": ["zh", "wh", "vbf", "ggh"],
-                    "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "dimuon": {
-                    "signals": [],
-                    "models": ["qcd_zll", "ewk_zll"],
-                    "backgrounds": ["top", "diboson"],
-                },
-                "dielec": {
-                    "signals": [],
-                    "models": ["qcd_zll", "ewk_zll"],
-                    "backgrounds": ["top", "diboson"],
-                },
-                "singlemu": {
-                    "signals": [],
-                    "models": ["qcd_wjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "singleel": {
-                    "signals": [],
-                    "models": ["qcd_wjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "photon": {
-                    "signals": [],
-                    "models": ["qcd_gjets", "ewk_gjets"],
-                    "backgrounds": [],
-                },
-            },
-            "monojet": {
-                "signal": {
-                    "signals": ["zh", "wh", "vbf", "ggh"],
-                    "models": ["qcd_zjets", "ewk_zjets", "qcd_wjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "dimuon": {
-                    "signals": [],
-                    "models": ["qcd_zll", "ewk_zll"],
-                    "backgrounds": ["top", "diboson"],
-                },
-                "dielec": {
-                    "signals": [],
-                    "models": ["qcd_zll", "ewk_zll"],
-                    "backgrounds": ["top", "diboson"],
-                },
-                "singlemu": {
-                    "signals": [],
-                    "models": ["qcd_wjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "singleel": {
-                    "signals": [],
-                    "models": ["qcd_wjets", "ewk_wjets"],
-                    "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
-                },
-                "photon": {
-                    "signals": [],
-                    "models": ["qcd_gjets", "ewk_gjets"],
-                    "backgrounds": [],
-                },
-            },
-        }[self.analysis]
+        self.processes = get_processes(self.analysis)
+        self.model_names = list(set([model for region in self.region_names for model in self.processes[region]["models"]]))
 
         # Common arguments
         common_args = {
@@ -106,14 +36,15 @@ class DatacardBuilder:
 
         ### Add the "Observation" entry for each region
         self.harvester.AddObservations(bin=self.regions, **common_args)
+        # Manually fixing observation to -1 for all regions
+        self.harvester.ForEachObs(lambda x: x.set_rate(-1))
 
         ### Defining the processes for each region
         for region_idx, region_name in self.regions:
-            proc_label = region_name.split("_")[-1]
 
             # Signals (effectively only for the SR)
             self.harvester.AddProcesses(
-                procs=self.processes[proc_label]["signals"],
+                procs=self.processes[region_name]["signals"],
                 bin=[(region_idx, region_name)],
                 signal=True,
                 **common_args,
@@ -121,44 +52,25 @@ class DatacardBuilder:
 
             # Backgrounds and models
             self.harvester.AddProcesses(
-                procs=self.processes[proc_label]["models"] + self.processes[proc_label]["backgrounds"],
+                procs=self.processes[region_name]["models"] + self.processes[region_name]["backgrounds"],
                 bin=[(region_idx, region_name)],
                 signal=False,
                 **common_args,
             )
 
-        # Manually fixing rate and observation
-        # rate set to -1 for all processes except models
-        self.harvester.ForEachProc(
-            lambda x: x.set_rate(
-                -1
-                if x.process()
-                not in [
-                    "ewk_zll",
-                    "qcd_zll",
-                    "ewk_zjets",
-                    "qcd_zjets",
-                    "ewk_wjets",
-                    "qcd_wjets",
-                    "ewk_gjets",
-                    "qcd_gjets",
-                ]
-                else 1
-            )
-        )
-        # observation set to -1 for all regions
-        self.harvester.ForEachObs(lambda x: x.set_rate(-1))
+        # Manually fixing rate te set to -1 for all processes except models
+        self.harvester.ForEachProc(lambda x: x.set_rate(1 if x.process() in self.model_names else -1))
 
     def add_systematics(self, syst_dict, syst_type: str):
         """Add a shape or lnN systematic uncertainty to the card."""
         for syst_name, syst_val in syst_dict.items():
-            map = self.build_syst_map(syst_val)
+            valmap = self.build_syst_map(syst_val)
 
             self.harvester.AddSyst(
                 target=self.harvester,
                 name=syst_name,
                 type=syst_type,
-                valmap=map,
+                valmap=valmap,
             )
 
     def build_syst_map(self, syst_val):
@@ -169,7 +81,7 @@ class DatacardBuilder:
         if "value" in syst_val:
             for region_idx, region_name in self.regions:
                 syst_map(
-                    ["Run3"],
+                    [self.year],
                     [region_idx],
                     syst_val["processes"],
                     syst_val["value"],
@@ -177,13 +89,12 @@ class DatacardBuilder:
         # Otherwise, value is specified for each region
         else:
             for region_idx, region_name in self.regions:
-                proc_label = region_name.split("_")[-1]
-                if proc_label in syst_val:
+                if region_name in syst_val:
                     syst_map(
-                        ["Run3"],
+                        [self.year],
                         [region_idx],
-                        syst_val[proc_label]["processes"],
-                        syst_val[proc_label]["value"],
+                        syst_val[region_name]["processes"],
+                        syst_val[region_name]["value"],
                     )
 
         return syst_map
