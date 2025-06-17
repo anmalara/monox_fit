@@ -12,7 +12,7 @@ class DatacardBuilder:
         self.analysis = channel
         self.year = year
         self.eras = [year]
-        self.ws_path = f"../root/combined_model_{self.analysis}.root"  # TODO: unused at the moment, needed to extract the shapes
+        self.ws_path = f"../root/combined_model_{self.analysis}.root"
         self.card_path = f"cards/card_{self.analysis}_{self.year}.txt"
 
         self.harvester = ch.CombineHarvester()
@@ -26,7 +26,9 @@ class DatacardBuilder:
 
         self.processes = get_processes(self.analysis)
         self.model_names = list(set([model for region in self.region_names for model in self.processes[region]["models"]]))
+        self.init_processes()
 
+    def init_processes(self):
         # Common arguments
         common_args = {
             "mass": ["*"],
@@ -37,7 +39,7 @@ class DatacardBuilder:
 
         ### Add the "Observation" entry for each region
         self.harvester.AddObservations(bin=self.regions, **common_args)
-        # Manually fixing observation to -1 for all regions
+        # Set observation to -1 for all regions
         self.harvester.ForEachObs(lambda x: x.set_rate(-1))
 
         ### Defining the processes for each region
@@ -59,7 +61,7 @@ class DatacardBuilder:
                 **common_args,
             )
 
-        # Manually fixing rate te set to -1 for all processes except models
+        # Set rates to -1 for all processes except models
         self.harvester.ForEachProc(lambda x: x.set_rate(1 if x.process() in self.model_names else -1))
 
     def add_systematics(self, syst_dict, syst_type: str):
@@ -118,105 +120,52 @@ class DatacardBuilder:
         # Manually fix path of shapes
         # as the correct path of the shapes cannot currently be read by CombineHarvester
         with open(self.card_path) as f:
-            content = f.readlines()
+            card_lines = f.readlines()
 
-            # Find the index of the lines containing the placeholder path of the shapes, remove them
-            idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
-            for idx in reversed(idx_list):  # Reverse order to avoid index issues
-                content.pop(idx)  # Remove the line
+        # Find the index of the lines containing the placeholder path of the shapes, remove them
+        idx_list = [i for i, line in enumerate(card_lines) if line.startswith("shapes")]
 
-            # Start inserting new lines from where the first shape line was found
-            current_idx = idx_list[0] if idx_list else len(content)
+        for idx in reversed(idx_list):  # Reverse order to avoid index issues
+            card_lines.pop(idx)
 
-            region_label_map = get_region_label_map()
+        # Start inserting new lines from where the first shape line was found
+        current_idx = idx_list[0] if idx_list else len(card_lines)
 
-            region_model_map = get_region_model_map()
+        region_label_map = get_region_label_map()
 
-            for region, region_old in region_label_map:
-                shapes_list = (
-                    [
-                        f"shapes *                 {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS combinedws:vbf_{self.year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
-                        f"shapes data_obs          {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_data\n",
-                    ]
-                    if region != "photon"
-                    else [
-                        f"shapes *                 {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS\n",
-                        f"shapes data_obs          {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{region_old}_data\n",
-                    ]
-                )
+        region_model_map = get_region_model_map()
 
-                region_models = region_model_map[region]
-                shapes_list += [
-                    f"shapes {model}           {self.analysis}_{self.year}_{region}    ../root/combined_model_{self.analysis}.root combinedws:{self.analysis}_{self.year}_{model_old}_model\n"
-                    for model, model_old in region_models
-                ]
+        def format_line(process: str, region: str, hname: str, workspace: str = "combinedws", systematics: bool = False) -> str:
+            """Format a line for the datacard shapes block."""
 
-                for l in shapes_list:
-                    content.insert(current_idx, l)
-                    current_idx += 1
+            def pad(word: str, width: int = 15) -> str:
+                return word + " " * max(1, width - len(word))
 
-            # Starting to think about formating properly the shapes lines
-            # shapes_list: list[tuple[str, str, str, str, str, str]] = []
-            # for region, region_old in region_label_map:
-            #     shapes_list += (
-            #         [
-            #             (
-            #                 "shapes",
-            #                 "*",
-            #                 f"{self.analysis}_{self.year}_{region}",
-            #                 f"../root/combined_model_{self.analysis}.root",
-            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS",
-            #                 f"combinedws:vbf_{self.year}_{region_old}_$PROCESS_$SYSTEMATIC",
-            #             ),
-            #             (
-            #                 "shapes",
-            #                 "data_obs",
-            #                 f"{self.analysis}_{self.year}_{region}",
-            #                 f"../root/combined_model_{self.analysis}.root",
-            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_data",
-            #                 "",
-            #             ),
-            #         ]
-            #         if region != "photon"
-            #         else [
-            #             (
-            #                 "shapes",
-            #                 "*",
-            #                 f"{self.analysis}_{self.year}_{region}",
-            #                 f"../root/combined_model_{self.analysis}.root",
-            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_$PROCESS",
-            #                 "",
-            #             ),
-            #             (
-            #                 "shapes",
-            #                 "data_obs",
-            #                 f"{self.analysis}_{self.year}_{region}",
-            #                 f"../root/combined_model_{self.analysis}.root",
-            #                 f"combinedws:{self.analysis}_{self.year}_{region_old}_data",
-            #                 "",
-            #             ),
-            #         ]
-            #     )
+            shape_expr = f"{self.analysis}_{self.year}_{hname}"
+            if not "data" in hname and not "model" in hname:
+                shape_expr += "_$PROCESS"
+            channel = f"{self.analysis}_{self.year}_{region}"
+            line = f"shapes {pad(word=process, width=10)} {pad(word=channel, width=20)} {self.ws_path} {workspace}:{shape_expr}"
+            if systematics:
+                line += f" {workspace}:{shape_expr}_$SYSTEMATIC"
+            line += "\n"
+            return line
 
-            #     shapes_list += [
-            #         (
-            #             "shapes",
-            #             f"{model}",
-            #             f"{self.analysis}",
-            #             f"{self.year}_{region}",
-            #             f"../root/combined_model_{self.analysis}.root",
-            #             f"combinedws:{self.analysis}_{self.year}_{model_old}_model",
-            #             "",
-            #         )
-            #         for model, model_old in region_model_map[region]
-            #     ]
+        for region, region_old in region_label_map:
+            shapes_list = [
+                format_line(process="*", region=region, hname=region_old, systematics=True),
+                format_line(process="data_obs", region=region, hname=f"{region_old}_data"),
+            ]
 
-            # for l in shapes_list:
-            #     content.insert(current_idx, l)
-            #     current_idx += 1
+            shapes_list += [format_line(process=model, region=region, hname=f"{model_old}_model") for model, model_old in region_model_map[region]]
+
+            for l in shapes_list:
+                card_lines.insert(current_idx, l)
+                current_idx += 1
 
         # Write modified content to the datacard
-        open(self.card_path, "w").writelines(content)
+        with open(self.card_path, "w") as f:
+            f.writelines(card_lines)
 
     def add_comments_to_datacard(self, comments):
         with open(self.card_path, "r") as f:
@@ -245,7 +194,7 @@ def main():
     builder.add_systematics(syst_dict=get_misc_uncertainties(year=year), syst_type="lnN")
     builder.add_systematics(syst_dict=get_jer_shape(), syst_type="shape")
 
-    # Add all constrained nuisance parameters
+    # Add constrained nuisance parameters
     # TODO: there does not seem to be a proper way to add these using CombineHarvester
     # Could this be done in a cleaner way if changes are made to the workspace building scripts?
     nuis_list = (
