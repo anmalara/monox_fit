@@ -127,7 +127,7 @@ def insert_shape_lines(card_path: str, channel: str, year: str):
             content.pop(idx)  # Remove the line
 
         # Start inserting new lines from where the first shape line was found
-        current_idx = idx_list[0]
+        current_idx = idx_list[0] if idx_list else len(content)
 
         region_label_map = [
             ("dielec", "Zee"),
@@ -175,8 +175,8 @@ def insert_shape_lines(card_path: str, channel: str, year: str):
                 content.insert(current_idx, l)
                 current_idx += 1
 
-    with open(card_path, "w") as f:
-        f.write("".join(content))
+    # Write modified content to the datacard
+    open(card_path, "w").writelines(content)
 
 
 def add_comments_to_datacard(input_file, output_file, comments):
