@@ -179,6 +179,16 @@ def insert_shape_lines(card_path: str, channel: str, year: str):
         f.write("".join(content))
 
 
+def add_comments_to_datacard(input_file, output_file, comments):
+    with open(input_file, "r") as f:
+        lines = f.readlines()
+
+    with open(output_file, "w") as f:
+        for comment in comments:
+            f.write(f"# {comment}\n")
+        f.writelines(lines)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Arguments for workspace creation.")
     parser.add_argument("-y", "--year", type=str, default="Run3", help="Data-taking year (e.g., '2017', '2018', 'Run3').")
@@ -235,6 +245,13 @@ def main():
     builder.write_datacard()
 
     insert_shape_lines(builder.card_path, channel, year)
+
+    comments = [
+        "This datacard was generated using CombineHarvester",
+        f"Analysis: {channel}, era: {year}",
+    ]
+    add_comments_to_datacard(builder.card_path, builder.card_path, comments)
+
     # TODO: check that this works for monojet
     # Remove useless stat uncertainties
     # Uncertainties are removed if they do not have a variation histogram available
