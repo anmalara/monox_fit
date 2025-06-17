@@ -13,6 +13,7 @@ class DatacardBuilder:
         self.year = year
         self.eras = [year]
         self.ws_path = "root/combined_model_vbf.root"  # TODO: unused at the moment, needed to extract the shapes
+        self.card_path = f"cards/card_{self.analysis}_{self.year}.txt"
 
         self.harvester = ch.CombineHarvester()
 
@@ -77,27 +78,29 @@ class DatacardBuilder:
         """Convert a dictionary containting the value of the systematic for each region and process it applies to into a SystMap."""
         syst_map = ch.SystMap("era", "bin_id", "process")
 
-        # If "value" is present, the same value is applied accross all regions
-        if "value" in syst_val:
-            for region_idx, region_name in self.regions:
+        for region_idx, region_name in self.regions:
+            # If "value" is present, the same value is applied accross all regions
+            if "value" in syst_val:
                 syst_map(
                     [self.year],
                     [region_idx],
                     syst_val["processes"],
                     syst_val["value"],
                 )
-        # Otherwise, value is specified for each region
-        else:
-            for region_idx, region_name in self.regions:
-                if region_name in syst_val:
-                    syst_map(
-                        [self.year],
-                        [region_idx],
-                        syst_val[region_name]["processes"],
-                        syst_val[region_name]["value"],
-                    )
+            # Otherwise, value is specified for each region
+            elif region_name in syst_val:
+                syst_map(
+                    [self.year],
+                    [region_idx],
+                    syst_val[region_name]["processes"],
+                    syst_val[region_name]["value"],
+                )
 
         return syst_map
+
+    def add_nuisances(self, nuisances: list[str]) -> None:
+        for nuisance in nuisances:
+            self.harvester.AddDatacardLineAtEnd(f"{nuisance} param 0.0 1")
 
     def write_datacard(self):
 
@@ -109,8 +112,71 @@ class DatacardBuilder:
         # self.harvester.cp().signals().ExtractShapes(self.ws_path, "category_vbf_$ERA:$CHANNEL_$ERA_$BIN_$PROCESS", "category_vbf_$ERA:$CHANNEL_$ERA_$BIN_$PROCESS_$SYSTEMATIC")
         # self.harvester.cp().backgrounds().ExtractShapes(self.ws_path, "category_vbf_Run3/$BIN/$PROCESS", "$BIN/$PROCESS_$SYSTEMATIC")
 
-        # self.harvester.WriteDatacard("test.txt", "test.root")
-        self.harvester.WriteDatacard(f"cards/card_{self.analysis}_{self.year}.txt")
+        self.harvester.WriteDatacard(self.card_path)
+
+
+def insert_shape_lines(card_path: str, channel: str, year: str):
+    # Manually fix path of shapes
+    # as the correct path of the shapes cannot currently be read by CombineHarvester
+    with open(card_path) as f:
+        content = f.readlines()
+
+        # Find the index of the lines containing the placeholder path of the shapes, remove them
+        idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
+        for idx in reversed(idx_list):  # Reverse order to avoid index issues
+            content.pop(idx)  # Remove the line
+
+        # Start inserting new lines from where the first shape line was found
+        current_idx = idx_list[0]
+
+        region_label_map = [
+            ("dielec", "Zee"),
+            ("dimuon", "Zmm"),
+            ("signal", "signal"),
+            ("singleel", "Wen"),
+            ("singlemu", "Wmn"),
+            ("photon", "gjets"),
+        ]
+
+        region_model_map = {
+            "dielec": [("ewk_zll", "ewk_dielectron_ewk_zjets"), ("qcd_zll", "qcd_dielectron_qcd_zjets")],
+            "dimuon": [("ewk_zll", "ewk_dimuon_ewk_zjets"), ("qcd_zll", "qcd_dimuon_qcd_zjets")],
+            "signal": [
+                ("ewk_wjets", "ewk_wjetssignal_ewk_zjets"),
+                ("ewk_zjets", "ewkqcd_signal_qcd_zjets"),
+                ("qcd_wjets", "qcd_wjetssignal_qcd_zjets"),
+                ("qcd_zjets", "signal_qcd_zjets"),
+            ],
+            "singleel": [("ewk_wjets", "ewk_singleelectron_ewk_wjets"), ("qcd_wjets", "qcd_singleelectron_qcd_wjets")],
+            "singlemu": [("ewk_wjets", "ewk_singlemuon_ewk_wjets"), ("qcd_wjets", "qcd_singlemuon_qcd_wjets")],
+            "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
+        }
+
+        for region, region_old in region_label_map:
+            shapes_list = (
+                [
+                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
+                ]
+                if region != "photon"
+                else [
+                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
+                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
+                ]
+            )
+
+            region_models = region_model_map[region]
+            shapes_list += [
+                f"shapes {model}           {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{model_old}_model\n"
+                for model, model_old in region_models
+            ]
+
+            for l in shapes_list:
+                content.insert(current_idx, l)
+                current_idx += 1
+
+    with open(card_path, "w") as f:
+        f.write("".join(content))
 
 
 def main():
@@ -120,20 +186,20 @@ def main():
     args = parser.parse_args()
 
     channel, year = args.channel, args.year
-    datacard_builder = DatacardBuilder(channel, year)
+    builder = DatacardBuilder(channel, year)
 
-    datacard_builder.add_systematics(get_lumi_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_lepton_efficiency_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_trigger_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_qcd_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_pdf_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_misc_uncertainties(year), "lnN")
-    datacard_builder.add_systematics(get_jer_shape(), "shape")
+    builder.add_systematics(get_lumi_uncertainties(year), "lnN")
+    builder.add_systematics(get_lepton_efficiency_uncertainties(year), "lnN")
+    builder.add_systematics(get_trigger_uncertainties(year), "lnN")
+    builder.add_systematics(get_qcd_uncertainties(year), "lnN")
+    builder.add_systematics(get_pdf_uncertainties(year), "lnN")
+    builder.add_systematics(get_misc_uncertainties(year), "lnN")
+    builder.add_systematics(get_jer_shape(), "shape")
 
     # Add all constrained nuisance parameters
     # TODO: there does not seem to be a proper way to add these using CombineHarvester
     # Could this be done in a cleaner way if changes are made to the workspace building scripts?
-    for nuis_name in (
+    nuis_list = (
         [f"CMS_veto{year}_{l}" for l in ["t", "m", "e"]]
         + [jer.replace("$ERA", year) for jer in get_jer_shape()]
         + [
@@ -162,59 +228,13 @@ def main():
             for production_mode in ["QCD", "EWK"]
             for theory_unc in ["renscale", "facscale", "pdf"]
         ]
-    ):
-        datacard_builder.harvester.AddDatacardLineAtEnd(f"{nuis_name} param 0.0 1")
+    )
 
-    datacard_builder.write_datacard()
+    builder.add_nuisances(nuis_list)
 
-    # Manually fix path of shapes
-    with open(f"cards/card_{channel}_{year}.txt") as f:
-        content = f.readlines()
-        idx_list = [i for i, line in enumerate(content) if line.startswith("shapes")]
+    builder.write_datacard()
 
-        for idx in idx_list[::-1]:  # Reverse order to avoid index issues
-            content.pop(idx)  # Remove the line
-
-        current_idx = idx_list[0]
-
-        for region, region_old in [("dielec", "Zee"), ("dimuon", "Zmm"), ("signal", "signal"), ("singleel", "Wen"), ("singlemu", "Wmn"), ("photon", "gjets")]:
-            shapes_list = (
-                [
-                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS combinedws:vbf_{year}_{region_old}_$PROCESS_$SYSTEMATIC\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
-                ]
-                if region != "photon"
-                else [
-                    f"shapes *                 {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_$PROCESS\n",
-                    f"shapes data_obs          {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{region_old}_data\n",
-                ]
-            )
-
-            region_models = {
-                "dielec": [("ewk_zll", "ewk_dielectron_ewk_zjets"), ("qcd_zll", "qcd_dielectron_qcd_zjets")],
-                "dimuon": [("ewk_zll", "ewk_dimuon_ewk_zjets"), ("qcd_zll", "qcd_dimuon_qcd_zjets")],
-                "signal": [
-                    ("ewk_wjets", "ewk_wjetssignal_ewk_zjets"),
-                    ("ewk_zjets", "ewkqcd_signal_qcd_zjets"),
-                    ("qcd_wjets", "qcd_wjetssignal_qcd_zjets"),
-                    ("qcd_zjets", "signal_qcd_zjets"),
-                ],
-                "singleel": [("ewk_wjets", "ewk_singleelectron_ewk_wjets"), ("qcd_wjets", "qcd_singleelectron_qcd_wjets")],
-                "singlemu": [("ewk_wjets", "ewk_singlemuon_ewk_wjets"), ("qcd_wjets", "qcd_singlemuon_qcd_wjets")],
-                "photon": [("ewk_gjets", "ewk_photon_ewk_zjets"), ("qcd_gjets", "qcd_photon_qcd_zjets")],
-            }[region]
-            shapes_list += [
-                f"shapes {model}           {channel}_{year}_{region}    ../root/combined_model_{channel}.root combinedws:{channel}_{year}_{model_old}_model\n"
-                for model, model_old in region_models
-            ]
-
-            for l in shapes_list:
-                content.insert(current_idx, l)
-                current_idx += 1
-
-    with open(f"cards/card_{channel}_{year}.txt", "w") as f:
-        f.write("".join(content))
-
+    insert_shape_lines(builder.card_path, channel, year)
     # TODO: check that this works for monojet
     # Remove useless stat uncertainties
     # Uncertainties are removed if they do not have a variation histogram available
@@ -226,7 +246,7 @@ def main():
     # workspace_nuis = rootls_out.stdout.decode("utf-8").splitlines()
 
     # # Getting stat nuisances present in the datacard
-    # with open(datacard_builder.card_path, "r") as file:
+    # with open(builder.card_path, "r") as file:
     #     datacard_nuis = [l.split(" ")[0] for l in file.readlines() if "shape" in l and "stat" in l.split(" ")[0]]
 
     # # Check if the nuisances are present in the ROOT file
@@ -234,12 +254,12 @@ def main():
     #     if f"{nuis}Up" not in workspace_nuis:
     #         # If the nuisance is not present, remove it from the datacard
     #         content = "\n".join(line for line in content.splitlines() if not line.startswith(nuis))
-    #         print(f"Warning: removing nuisance {nuis} from {datacard_builder.card_path}, shape not present in ws_{channel}.root")
+    #         print(f"Warning: removing nuisance {nuis} from {builder.card_path}, shape not present in ws_{channel}.root")
 
     # Write the modified content to the datacard file
 
     # Run external tools
-    subprocess.run(["text2workspace.py", f"cards/card_{channel}_{year}.txt", "--channel-masks"], check=True)
+    subprocess.run(["text2workspace.py", builder.card_path, "--channel-masks"], check=True)
     with open(f"cards/systematics_{year}.html", "w") as outfile:
         subprocess.run(
             [
@@ -248,7 +268,7 @@ def main():
                 "--all",
                 "-f",
                 "html",
-                f"cards/card_{channel}_{year}.txt",
+                builder.card_path,
             ],
             check=True,
             stdout=outfile,
