@@ -7,6 +7,7 @@ import ROOT  # type: ignore
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
 from utils.generic.logger import initialize_colorized_logger
+from utils.workspace.model import get_year_from_category, get_control_region_models
 from utils.workspace.generic import safe_import
 from utils.workspace.convert_to_combine_workspace import convert_to_combine_workspace
 
@@ -53,21 +54,7 @@ def generate_combine_model(
     rename: str = "",
 ) -> None:
     """Generate a Combine RooWorkspace with control region models."""
-    # Determine CR configurations based on category
-    if "mono" in category:
-        controlregions_def = [
-            "mono_qcd_z",
-            "mono_qcd_w",
-        ]
-    elif "vbf" in category:
-        controlregions_def = [
-            "vbf_qcd_z",
-            "vbf_qcd_w",
-            "vbf_ewk_z",
-            "vbf_ewk_w",
-        ]
-    else:
-        logger.critical("Could not infer control region definitions from category.", exception_cls=RuntimeError)
+    model_list = get_control_region_models(category=category)
 
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
     input_file = ROOT.TFile.Open(input_filename)
@@ -85,14 +72,10 @@ def generate_combine_model(
     # Loop over control region definitions, and load their model definitions
     diag = diagonalizer(workspace)
     cmb_categories = []
-    for cr_name in controlregions_def:
-        module = __import__(cr_name)
-
-        cat, year = category.split("_")
-        if year not in ["2017", "2018", "Run3"]:
-            logger.critical(f"Cannot determine year from category: {category}", exception_cls=RuntimeError)
-
-        cr_dir = output_file.mkdir(f"{cr_name}_category_{category}")
+    year = get_year_from_category(category=category)
+    for model_name in model_list:
+        module = __import__(model_name)
+        cr_dir = output_file.mkdir(f"{model_name}_category_{category}")
         # The `cmodel` function is where models are created. This function does two things:
         # 1) Compute transfer factors
         #   Processes are express different processes as a ratio with of QCD Znunu in SR
@@ -103,10 +86,10 @@ def generate_combine_model(
         #   for veto, JES/JER, theory and statistical uncertainties
         #   for each transfer factor in the model
         convention = "IC" if "MTR" in rename else "BU"
-        logger.info(f"Running on {cr_name}")
+        logger.info(f"Running on {model_name}")
         model = module.cmodel(
             category_id=category,
-            category_name=cr_name,
+            category_name=model_name,
             input_file=input_file,
             output_file=cr_dir,
             output_workspace=workspace,
@@ -142,7 +125,7 @@ def generate_combine_model(
         f_simple_hists=input_file,
         category=category,
         cmb_categories=cmb_categories,
-        controlregions_def=controlregions_def,
+        controlregions_def=model_list,
         variable=variable,
         rename_variable=rename,
     )

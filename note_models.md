@@ -1,63 +1,142 @@
-- [1. Overview of what is done when running `generate_combine_model.py`:](#1-overview-of-what-is-done-when-running-generate_combine_modelpy)
-  - [1.1. Addition of nuisances in `cmodel`](#11-addition-of-nuisances-in-cmodel)
-    - [1.1.1. List of nuisances](#111-list-of-nuisances)
-    - [1.1.2. Difference with monojet models](#112-difference-with-monojet-models)
-  - [1.2. Overview of `init_channels`](#12-overview-of-init_channels)
-  - [1.3. Overview of `convert_to_combine_workspace`](#13-overview-of-convert_to_combine_workspace)
-- [2. Overview of the old model construction scripts](#2-overview-of-the-old-model-construction-scripts)
-  - [2.1. General overview](#21-general-overview)
-    - [2.1.1. Beginning of script](#211-beginning-of-script)
-    - [2.1.2. inside `my_function` (applying theory variations):](#212-inside-my_function-applying-theory-variations)
-    - [2.1.3. back to `cmodel`](#213-back-to-cmodel)
-  - [2.2. Recap of `Z_constraints_qcd_withphoton.py`:](#22-recap-of-z_constraints_qcd_withphotonpy)
-  - [2.3. Recap of `W_constraints.py`:](#23-recap-of-w_constraintspy)
-  - [2.4. Recap of `Z_constraints_ewk_withphoton.py`:](#24-recap-of-z_constraints_ewk_withphotonpy)
-  - [2.5. Recap of `W_constraints.py`:](#25-recap-of-w_constraintspy)
-- [3. Overview of `Category`, `Channel` and `Bin` classes](#3-overview-of-category-channel-and-bin-classes)
-  - [3.2. `Channel`](#32-channel)
-  - [3.1. `Category`](#31-category)
-  - [3.3. `Bin`](#33-bin)
-- [4. Stepping through `init_channels` in more details](#4-stepping-through-init_channels-in-more-details)
-- [5. Stepping through `convert_to_combine_workspace` in more details](#5-stepping-through-convert_to_combine_workspace-in-more-details)
-- [6. What is a `RooParametricHist` ?](#6-what-is-a-rooparametrichist-)
-  - [6.1. Member Variables:](#61-member-variables)
-  - [6.2. Constructor Behavior](#62-constructor-behavior)
-  - [6.3. Main Methods](#63-main-methods)
-    - [6.3.1. `evaluate()`:](#631-evaluate)
-    - [6.3.2. `evaluatePartial()`:](#632-evaluatepartial)
-      - [6.3.2.1. Code:](#6321-code)
-      - [6.3.2.2. Step-by-step:](#6322-step-by-step)
-    - [6.3.3. `evaluateFull()`:](#633-evaluatefull)
-      - [6.3.3.1. Code:](#6331-code)
-      - [6.3.3.2. Step-by-step:](#6332-step-by-step)
-    - [6.3.4. `evaluateMorphFunction(int bin)`:](#634-evaluatemorphfunctionint-bin)
-      - [6.3.4.1. Code:](#6341-code)
-      - [6.3.4.2. Step-by-step:](#6342-step-by-step)
+- [0. How to run the code](#0-how-to-run-the-code)
+- [1. How to build the workspace: `make_workspace`](#1-how-to-build-the-workspace-make_workspace)
+- [2. How to create the physics model: `generate_combine_model`](#2-how-to-create-the-physics-model-generate_combine_model)
+  - [2.1. Addition of nuisances in `cmodel`](#21-addition-of-nuisances-in-cmodel)
+    - [2.1.1. List of nuisances](#211-list-of-nuisances)
+    - [2.1.2. Difference with monojet models](#212-difference-with-monojet-models)
+  - [2.2. Overview of `init_channels`](#22-overview-of-init_channels)
+  - [2.3. Overview of `convert_to_combine_workspace`](#23-overview-of-convert_to_combine_workspace)
+- [3. Overview of the old model construction scripts](#3-overview-of-the-old-model-construction-scripts)
+  - [3.1. General overview](#31-general-overview)
+    - [3.1.1. Beginning of script](#311-beginning-of-script)
+    - [3.1.2. inside `my_function` (applying theory variations):](#312-inside-my_function-applying-theory-variations)
+    - [3.1.3. back to `cmodel`](#313-back-to-cmodel)
+  - [3.2. Recap of `Z_constraints_qcd_withphoton.py`:](#32-recap-of-z_constraints_qcd_withphotonpy)
+  - [3.3. Recap of `W_constraints.py`:](#33-recap-of-w_constraintspy)
+  - [3.4. Recap of `Z_constraints_ewk_withphoton.py`:](#34-recap-of-z_constraints_ewk_withphotonpy)
+  - [3.5. Recap of `W_constraints.py`:](#35-recap-of-w_constraintspy)
+- [4. Overview of `Category`, `Channel` and `Bin` classes](#4-overview-of-category-channel-and-bin-classes)
+  - [4.1. `Channel`](#41-channel)
+  - [4.2. `Category`](#42-category)
+  - [4.3. `Bin`](#43-bin)
+- [5. Stepping through `init_channels` in more details](#5-stepping-through-init_channels-in-more-details)
+- [6. Stepping through `convert_to_combine_workspace` in more details](#6-stepping-through-convert_to_combine_workspace-in-more-details)
+- [7. What is a `RooParametricHist`?](#7-what-is-a-rooparametrichist)
+  - [7.1. Member Variables:](#71-member-variables)
+  - [7.2. Constructor Behavior](#72-constructor-behavior)
+  - [7.3. Main Methods](#73-main-methods)
+    - [7.3.1. `evaluate()`:](#731-evaluate)
+    - [7.3.2. `evaluatePartial()`:](#732-evaluatepartial)
+      - [7.3.2.1. Code:](#7321-code)
+      - [7.3.2.2. Step-by-step:](#7322-step-by-step)
+    - [7.3.3. `evaluateFull()`:](#733-evaluatefull)
+      - [7.3.3.1. Code:](#7331-code)
+      - [7.3.3.2. Step-by-step:](#7332-step-by-step)
+    - [7.3.4. `evaluateMorphFunction(int bin)`:](#734-evaluatemorphfunctionint-bin)
+      - [7.3.4.1. Code:](#7341-code)
+      - [7.3.4.2. Step-by-step:](#7342-step-by-step)
 
-# 1. Overview of what is done when running `generate_combine_model.py`:
+# 0. how to run the code
 
-This script defines all processes as products of transfer factors and nuisance parameters, all parametrized in terms of a common target process:
-$Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$.
+Before running the workspace generation scripts, make sure to set up the environment:
+```bash
+source setup_env.sh
+```
 
-There are three main function calls:
-   1. `cmodel`, The model construction scripts
-      - This function is executed for each "model" (e.g. `Z_constraints`), which includes:
-        - a "target process" (e.g. $Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$ or $W^{\text{EWK}}_{\text{SR}} \to \ell\nu$)
-        - a list of "control processes"
-      - For each control process, it:
+The main driver script for creating the workspace and transfer factors is:
+```bash
+python makeWorkspace/build_workspace.py --analysis monojet --year Run3 --variable recoil
+```
+
+To enable debug-level logging across all submodules, set `log_level = "DEBUG"` within the script. This setting is propagated to all imported utilities.
+
+The script takes the following command-line arguments:
+
+- `--analysis`: Name of the analysis. Options: `monojet`, `monov`, `vbf`, etc.
+- `--variable`: Observable to be fitted. Examples: `recoil`, `mjj`, `met`
+- `--year`: Data-taking period. Options: `2017`, `2018`, `Run3`, etc.
+- `--dir`: Input histogram directory. Default: `inputs/histograms/<variable>/<analysis>_<year>/`
+- `--folder`: Subfolder inside ROOT file containing histograms. Default: `category_<analysis>_<year>`
+- `--tag`: Custom output directory tag. Default: today’s date in `YYYY_MM_DD` format.
+
+The script runs the full pipeline for a single fit category:
+
+- **Runs `create_workspace`:**
+   - Input: `input_filename = histograms_<analysis>.root`
+   - Output: `workspace_file = ws_<analysis>.root`
+
+- **Runs `generate_combine_model`:**
+   - Input: `workspace_file`
+   - Output: `combined_model_file = combined_model_<analysis>.root`
+
+- **Additional steps:**
+   - MD5 checksums and Git metadata are recorded in `INFO.txt`.
+   - A symbolic link to `utils/datacards/Makefile` is created in the output directory.
+
+# 1. How to build the workspace: `make_workspace`
+
+This script, located at `makeWorkspace/make_workspace.py`, converts histograms into a RooWorkspace.
+Although it can be run independently, it is typically called via `build_workspace.py`.
+
+The macro takes the following arguments:
+
+- `--input_filename`: Path to input ROOT file containing histograms.
+- `--output_filename`: Output path for the RooWorkspace file (`workspace_file`).
+- `--category`: Category, used to name the workspace and output directory (e.g., `monojet_2018`).
+- `--variable`: observable (e.g., `recoil`, `mjj`, `met`) used as RooRealVar in the workspace.
+- `--root_folder`: (Optional) Subdirectory inside the input ROOT file.
+
+The code executes the following steps:
+
+- Create a `RooWorkspace` named `wspace_<category>`, and a directory `category_<category>`.
+- Define the observable as a `RooRealVar` using the provided `variable` name.
+- Loop through histograms in the input file and:
+  - Ensure non-zero integral (Combine requirement).
+  - Merge overflow into the last visible bin.
+  - Import each histogram into the workspace as `RooDataHist`.
+  - Save original histograms in the ROOT file for debugging or transfer factor checks.
+  - Collect MC background histograms for later use in autoMCStats-like per-bin variations.
+  - **Note:** Ther are other steps currently inactive. Consider enabling or removing them.
+- Generate and write per-bin MC statistical variations.
+  - **Note:** This step is currently inactive for the VBF case. Consider enabling or removing it.
+
+# 2. How to create the physics model: `generate_combine_model`:
+
+The script is located at: `makeWorkspace/generate_combine_model.py`.
+Although it can be run independently, it is typically called via `build_workspace.py`.
+
+The macro takes the following arguments:
+- `--input_filename`: input ROOT file with histograms and workspace (`workspace_file`).
+- `--output_filename`: output ROOT file (default: `combined_model_file`).
+- `--category`: analysis category
+- `--variable`: observable used to bin the templates
+- `--rename`: optional renaming of the variable (used when switching naming conventions).
+
+This script constructs a physics model in the Combine framework by:
+- importing transfer factors and uncertainties from external modules,
+- building control region models,
+- creating a `RooWorkspace` with parametric PDFs for each process,
+- and converting the model into a Combine-compatible format using `RooParametricHist`.
+
+For each model (e.g. `vbf_qcd_z`):
+    
+1. The `cmodel` function is called, which:
+    - define a "target process" (e.g. $Z^{\text{QCD}}_{\text{SR}} \to \nu\nu$ or $W^{\text{EWK}}_{\text{SR}} \to \ell\nu$)
+    - define a list of "control processes"
+    - For each control process, it:
         - computes a transfer factor, defined as the ratio of the target process yield to the control process yield.
-        - creates the parameters for the relevant nuisances for each transfer factor 
-         (veto eff., JES/JER, theory, and statistical uncertainties) in the workspace.
-   2. `init_channels`:
-      - constructs the yield in each bin as a function of the target process $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu)$:
+        - creates the parameters for the relevant nuisances (stat, JES/JER, veto, theory, ...) for each transfer factor in the workspace.
+        - writes formulas to the workspace using the `diagonalizer`.
+2. `init_channels`:
+    - constructs the yield in each bin as a function of the target process $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu)$:
         - for each channel (CR) in `qcd_zjets` model:
             - $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{CR}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{CR}{(1+nuis)}$ 
         - for each channel (CR) in `ewk_zjets` `qcd_wjets` and `ewk_wjets` models:
             - $(Z^{\text{QCD}}_{\text{SR}} \to \nu\nu) \times \frac{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{Z^{\text{QCD}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu}{(1+nuis)} \times \frac{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{Z^{\text{EWK}}_{\text{SR}} \to \nu\nu} \times \Pi^{nuis}_{Z^{\text{EWK}}_{\text{diMuon CR}} \to ll}{(1+nuis)}$ 
-   3. `convert_tocombine_workspace`:
-      - stores the distribution of yields above in `RooParametricHist` and saves them to the workspace
+3. `convert_tocombine_workspace`:
+    - stores the distribution of yields above in `RooParametricHist` and saves them to the workspace
 
-## 1.1. Addition of nuisances in `cmodel`
+## 2.1. Addition of nuisances in `cmodel`
 
 These are the steps performed when adding a nuisances `nuis` for a given transfer factor:
    - We check if a parameter for this nuisance already exist in the workspace. If not, we create and import the following:
@@ -76,7 +155,7 @@ These are the steps performed when adding a nuisances `nuis` for a given transfe
       - The exponant is $+nuisance$ if $\Delta(\text{variation up}, \text{variation down}) > 0$,
          $-nuisance$ if $\Delta(\text{variation up}, \text{variation down}) < 0$,
 
-### 1.1.1. List of nuisances 
+### 2.1.1. List of nuisances 
 
 The following nuisances are created for each model (for the vbf case):
    - veto:
@@ -105,7 +184,7 @@ The following nuisances are created for each model (for the vbf case):
          - `ewk_label` is in `["qcd_ewk", "qcd_photon_ewk", "ewk_ewk", "ewkphoton_ewk"]`
    - Stastistical (shape): `"vbf_2018_stat_error_{region}_bin{b}"`
 
-### 1.1.2. Difference with monojet models
+### 2.1.2. Difference with monojet models
 
 In the monojet script, things are a little different
    - vetos uncertainties are a shape nuisance (read from some systematics file templats)
@@ -114,7 +193,7 @@ In the monojet script, things are a little different
    - there are photon scale shape nuisances
    - there are prefiring shape nuisances
 
-## 1.2. Overview of `init_channels`
+## 2.2. Overview of `init_channels`
 
 Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ewk w), `init_channels` is ran on each model:
 
@@ -159,7 +238,7 @@ Once all of theses nuisances are created for all models (qcd z, ewk z, qcd w, ew
                It is uncleared where `observed` comes from
          - Once this modelling is done for all bins, save all prefit distributions
          - The last step is unclear, maybe a check that all expected distribution exist.
-## 1.3. Overview of `convert_to_combine_workspace`
+## 2.3. Overview of `convert_to_combine_workspace`
 This is where the all distribution used for combine are saved to the workspace.
 
    - We extract one (any) histogram, whose shape will be used as a reference (`samplehist`)
@@ -181,7 +260,7 @@ This is where the all distribution used for combine are saved to the workspace.
    - Get all parameters in the workspace
    - for all background nuisances: print the line to add in the datacard template, `{param.GetName()} param {param.getVal()} 1`
 
-# 2. Overview of the old model construction scripts
+# 3. Overview of the old model construction scripts
 
  some notes of what is being done in each model construction script for vbf:
    - Z_constraints_qcd_withphoton.py
@@ -189,9 +268,9 @@ This is where the all distribution used for combine are saved to the workspace.
    - Z_constraints_ewk_withphoton.py
    - W_constraints_ewk.py
 
-## 2.1. General overview
+## 3.1. General overview
 
-### 2.1.1. Beginning of script
+### 3.1.1. Beginning of script
 
 Initializing the inputs:
    - Target process, the one that is used to parametrize the control samples
@@ -199,7 +278,7 @@ Initializing the inputs:
 
 Compute all transfer factors: for each control sample, compute target divided by control
 
-### 2.1.2. inside `my_function` (applying theory variations):
+### 3.1.2. inside `my_function` (applying theory variations):
 This is only done for the Z models (EWK and QCD).
 
    - Getting theory uncertainties from file `sys/vbf_z_w_gjets_theory_unc_ratio_unc.root`
@@ -215,7 +294,7 @@ This is only done for the Z models (EWK and QCD).
       - PDF
       - EWK, decorrelated among bins
 
-### 2.1.3. back to `cmodel`
+### 3.1.3. back to `cmodel`
 
    - extract binning of mjj
 
@@ -240,7 +319,7 @@ This is only done for the Z models (EWK and QCD).
 
    - Return everything as `Category` 
 
-## 2.2. Recap of `Z_constraints_qcd_withphoton.py`:
+## 3.2. Recap of `Z_constraints_qcd_withphoton.py`:
 
 | Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
 | ----------- | ----------------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
@@ -252,7 +331,7 @@ This is only done for the Z models (EWK and QCD).
 
 Return everything as `Category` called `qcd_zjets`
 
-## 2.3. Recap of `W_constraints.py`:
+## 3.3. Recap of `W_constraints.py`:
 
 | Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
 | ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
@@ -264,7 +343,7 @@ Return everything as `Category` called `qcd_wjets`,  specifying it is dependant 
 Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{W^\text{QCD}_{SR} \to \ell\nu}$
 to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
-## 2.4. Recap of `Z_constraints_ewk_withphoton.py`:
+## 3.4. Recap of `Z_constraints_ewk_withphoton.py`:
 
 
 | Sample name | transfer factor                                                               | Veto | JES/JER | Theory | Stat |
@@ -279,7 +358,7 @@ Return everything as `Category` called `ewk_zjets`, specifying it is dependant o
 Later on, both transfer factor above will be multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{SR} \to \nu\nu}$
 to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
-## 2.5. Recap of `W_constraints.py`:
+## 3.5. Recap of `W_constraints.py`:
 
 | Sample name | transfer factor                                                      | Veto | JES/JER | Theory | Stat |
 | ----------- | -------------------------------------------------------------------- | ---- | ------- | ------ | ---- |
@@ -292,13 +371,13 @@ Later on, both transfer factor above will be multiplied by $\frac{Z^\text{EWK}_\
 which is itself multiplied by $\frac{Z^\text{QCD}_\text{SR} \to \nu\nu}{Z^\text{EWK}_{SR} \to \nu\nu}$
 to parametrize it to $Z^\text{QCD}_\text{SR} \to \nu\nu$
 
-# 3. Overview of `Category`, `Channel` and `Bin` classes
+# 4. Overview of `Category`, `Channel` and `Bin` classes
 
 These classes are used at the different stages of `generate_combine_model.py`
 to store transfer factors, nuisances, and build the distributions
 of the different process parametrized by the $Z^\text{QCD}_\text{SR} \to \nu\nu$ yield.
 
-## 3.2. `Channel`
+## 4.1. `Channel`
 
 A `Channel` object holds:
    - A transfer factor (ratio of yields from two different processes)
@@ -315,7 +394,7 @@ All channels are created in the different model construction scripts,
 which also add the relevent nuisances to them 
 (for veto, JES/JER, theory systematics as well as statistical uncertainties).
 
-## 3.1. `Category`
+## 4.2. `Category`
 
 A `Category` object holds:
    - A collection of `Channel`s
@@ -328,7 +407,7 @@ parametrized by the $Z^\text{QCD}_\text{SR} \to \nu\nu$ yield and all nuisances 
 This is done by first creating a collection of `Bin` objects that handle parametrizing the number of events for each bin separately.
 
 
-## 3.3. `Bin`
+## 4.3. `Bin`
 
 A `Bin` object holds:
    - A name, and some IDs to link to `Category` and `Bin`
@@ -336,7 +415,7 @@ A `Bin` object holds:
 This is the class that handles, inside the `setup_expect_var` method, fetching the transfer factor, yield of $Z^\text{QCD}_\text{SR} \to \nu\nu$,
 and nuisances for a given process and make their product to make a parametrized distribution.
 
-# 4. Stepping through `init_channels` in more details
+# 5. Stepping through `init_channels` in more details
 
 Loop over categories, do `Category.init_channels()`
 
@@ -419,7 +498,7 @@ Loop over each bin:
 - Save prefit distributions
 - TODO: Last step is unclear, is it a check that all expected distribution exist?
 
-# 5. Stepping through `convert_to_combine_workspace` in more details
+# 6. Stepping through `convert_to_combine_workspace` in more details
 
    - open the workspace, 
    - For every "category" (as in the year, here `vbf_2018`)
@@ -459,7 +538,7 @@ Loop over each bin:
    - for all background nuisances: print the line to add in the datacard template, `{param.GetName()} param {param.getVal()} 1`
 
       
-# 6. What is a `RooParametricHist` ?
+# 7. What is a `RooParametricHist` ?
 
 The `RooParametricHist` class is a **custom RooFit probability density function (PDF)**. It models a **binned histogram-like PDF**, where the bin contents are **free parameters**.
 
@@ -473,7 +552,7 @@ The class defines a PDF where:
 
 ---
 
-## 6.1. Member Variables:
+## 7.1. Member Variables:
 - `x`: The observable (in our case, $m_{jj}$).
 - `pars`: A list of parameters, each representing the bin content (as a `RooAbsReal`).
 - `bins`, `widths`: Vectors holding the bin edges and widths from the input histogram.
@@ -484,7 +563,7 @@ The class defines a PDF where:
 
 ---
 
-## 6.2. Constructor Behavior
+## 7.2. Constructor Behavior
 ```cpp
 RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbsReal& _x, RooArgList& _pars, const TH1 &_shape)
 ```
@@ -494,9 +573,9 @@ RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbs
 
 ---
 
-## 6.3. Main Methods
+## 7.3. Main Methods
 
-### 6.3.1. `evaluate()`:
+### 7.3.1. `evaluate()`:
 - Main function called by RooFit to evaluate the PDF.
 - Calls either:
   - `evaluateFull()` if morphing is enabled.
@@ -506,12 +585,12 @@ RooParametricHist::RooParametricHist(const char *name, const char *title, RooAbs
 
 ---
 
-### 6.3.2. `evaluatePartial()`:
+### 7.3.2. `evaluatePartial()`:
 This function is used when **morphing is not enabled**.
 It finds the bin where the current observable value `x` lies, retrieves the corresponding bin parameter (from `pars`),
 and returns the normalized value for that bin.
 
-#### 6.3.2.1. Code:
+#### 7.3.2.1. Code:
 ```cpp
 double RooParametricHist::evaluatePartial() const
 {
@@ -533,7 +612,7 @@ double RooParametricHist::evaluatePartial() const
 }
 ```
 
-#### 6.3.2.2. Step-by-step:
+#### 7.3.2.2. Step-by-step:
 1. **Find bin:** Uses `std::upper_bound` to find the first bin edge that is *greater than* the current value of `x`. This tells us which bin `x` falls into.
 2. **Check edge cases:**
    - If `x` is less than the first bin edge → return 0 (underflow).
@@ -545,10 +624,10 @@ double RooParametricHist::evaluatePartial() const
 
 ---
 
-### 6.3.3. `evaluateFull()`:
+### 7.3.3. `evaluateFull()`:
 Used when **morphing is enabled**. This is similar to `evaluatePartial`, but it applies a **morphing correction factor** to the bin content.
 
-#### 6.3.3.1. Code:
+#### 7.3.3.1. Code:
 ```cpp
 double RooParametricHist::evaluateFull() const
 {
@@ -570,7 +649,7 @@ double RooParametricHist::evaluateFull() const
 }
 ```
 
-#### 6.3.3.2. Step-by-step:
+#### 7.3.3.2. Step-by-step:
 1. **Check range:**
    - If `x` is before the first bin → return 0.
    - If `x` is past the last bin → return 0.
@@ -582,11 +661,11 @@ double RooParametricHist::evaluateFull() const
 
 ---
 
-### 6.3.4. `evaluateMorphFunction(int bin)`:
+### 7.3.4. `evaluateMorphFunction(int bin)`:
 - Computes a scale factor to apply to a bin’s parameter based on current values of morph parameters (`_coeffList`).
 - Uses `_diffs` and `_sums` to smoothly morph the bin content.
 
-#### 6.3.4.1. Code:
+#### 7.3.4.1. Code:
 ```cpp
 double RooParametricHist::evaluateMorphFunction(int j) const
 {
@@ -607,7 +686,7 @@ double RooParametricHist::evaluateMorphFunction(int j) const
 }
 ```
 
-#### 6.3.4.2. Step-by-step:
+#### 7.3.4.2. Step-by-step:
 1. **Skip if no morphing:** If morphing isn’t enabled, return scale = 1 (no effect).
 2. **Loop over morphing parameters (`_coeffList`):**
    - Get the current value of each nuisance parameter `x`.
