@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import os
+import ROOT  # type: ignore
 import subprocess
 import argparse
 from typing import Any
 from collections.abc import Callable
 
 import CombineHarvester.CombineTools.ch as ch  # type: ignore
-from utils.workspace.flat_uncertainties import *
+from utils.workspace.flat_uncertainties import get_processes, get_region_label_map, get_process_model_map
+from utils.workspace.flat_uncertainties import get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_pdf_unc, get_misc_unc, get_jec_shape
 
 
 class DatacardBuilder:
@@ -15,6 +17,7 @@ class DatacardBuilder:
     def __init__(self, channel: str, year: str):
         self.analysis: str = channel
         self.year: str = year
+        self.workspace_name: str = "combinedws"
         self.ws_path: str = f"../root/combined_model_{self.analysis}.root"
         self.card_path: str = f"cards/card_{self.analysis}_{self.year}.txt"
 
@@ -51,26 +54,33 @@ class DatacardBuilder:
     def add_all_systematics(self) -> None:
         """Add lnN and shape systematics and custom nuisance parameters."""
         lnN_funcs: list[Callable[[str, str], dict[str, Any]]] = [
-            get_lumi_uncertainties,
-            get_lepton_efficiency_uncertainties,
-            get_trigger_uncertainties,
-            get_qcd_uncertainties,
-            get_pdf_uncertainties,
-            get_misc_uncertainties,
+            get_lumi_unc,
+            get_lepton_eff_unc,
+            get_trigger_unc,
+            get_qcd_unc,
+            get_pdf_unc,
+            get_misc_unc,
         ]
         for func in lnN_funcs:
             self.add_systematics(syst_func=func, syst_type="lnN")
 
         self.add_systematics(syst_func=get_jec_shape, syst_type="shape")
+        self.add_workspace_nuisances()
 
-        # Add constrained nuisance parameters
-        nbins = 12  # TODO
-        nuisances = get_lepton_veto_list(year=self.year, analysis=self.analysis)
-        nuisances += list(get_jec_shape(year=self.year, analysis=self.analysis).keys())
-        nuisances += get_stat_unc_list(year=self.year, analysis=self.analysis, nbins=nbins)
-        nuisances += get_theory_unc_list(year=self.year, analysis=self.analysis)
+    def add_workspace_nuisances(self) -> None:
+        """Extract constrained nuisance parameters from the RooWorkspace and add them to datacard."""
+        file_ = ROOT.TFile(self.ws_path.replace("../", ""), "READ")
+        workspace = file_.Get(self.workspace_name)
+        all_vars = ROOT.RooArgList(workspace.allVars())
 
-        self.add_nuisances(nuisances=nuisances)
+        nuisances: list[str] = []
+        for i in range(all_vars.getSize()):
+            var = all_vars.at(i)
+            if var.getAttribute("NuisanceParameter_EXTERNAL") and not var.getAttribute("BACKGROUND_NUISANCE"):
+                nuisances.append(var.GetName())
+
+        self.add_nuisances(nuisances=sorted(nuisances))
+        file_.Close()
 
     def add_systematics(self, syst_func: Callable[[str, str], dict[str, Any]], syst_type: str) -> None:
         """Add a lnN or shape systematic uncertainty to the card."""
@@ -153,9 +163,8 @@ class DatacardBuilder:
             lines.pop(idx)
 
         region_label_map = get_region_label_map()
-        region_model_map = get_region_model_map()
 
-        def format_line(process: str, region: str, hname: str, systematics: bool = False, workspace: str = "combinedws") -> str:
+        def format_line(process: str, region: str, hname: str, systematics: bool = False) -> str:
             """Format a line for the datacard shapes block."""
 
             def pad(word: str, width: int = 15) -> str:
@@ -165,9 +174,9 @@ class DatacardBuilder:
             if "data" not in hname and "model" not in hname:
                 shape_expr += "_$PROCESS"
             channel = f"{self.analysis}_{self.year}_{region}"
-            line = f"shapes {pad(word=process, width=10)} {pad(word=channel, width=20)} {self.ws_path} {workspace}:{shape_expr}"
+            line = f"shapes {pad(word=process, width=10)} {pad(word=channel, width=20)} {self.ws_path} {self.workspace_name}:{shape_expr}"
             if systematics:
-                line += f" {workspace}:{shape_expr}_$SYSTEMATIC"
+                line += f" {self.workspace_name}:{shape_expr}_$SYSTEMATIC"
             line += "\n"
             return line
 
@@ -179,7 +188,7 @@ class DatacardBuilder:
                 format_line(process="data_obs", region=region, hname=f"{region_old}_data"),
             ]
 
-            shapes_list += [format_line(process=model, region=region, hname=f"{model_old}_model") for model, model_old in region_model_map[region]]
+            shapes_list += [format_line(process=proc, region=region, hname=f"{model}_model") for proc, model in get_process_model_map(region=region).items()]
 
             for shape in shapes_list:
                 lines.insert(insert_at, shape)

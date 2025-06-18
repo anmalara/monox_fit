@@ -231,7 +231,7 @@ def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[s
         channel_list (list[str]): List of control regions to apply veto uncertainties.
         veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
     """
-
+    # TODO use f"CMS_veto_{key}_{year}"
     veto_dict = {f"CMS_veto{year}_{key}": value for key, value in get_veto_uncertainties(model=model_name).items()}
     for channel in channel_list:
         for veto_name, veto_value in veto_dict.items():
