@@ -7,6 +7,7 @@ from typing import Any
 from collections.abc import Callable
 
 import CombineHarvester.CombineTools.ch as ch  # type: ignore
+from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.flat_uncertainties import get_processes, get_region_label_map, get_process_model_map
 from utils.workspace.flat_uncertainties import get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_pdf_unc, get_misc_unc, get_jec_shape
 
@@ -41,6 +42,7 @@ class DatacardBuilder:
         self.harvester.ForEachObs(lambda x: x.set_rate(-1))
 
         for region_idx, region_name in self.regions:
+            logger.info(f"Extracting processed in {region_name} region")
             signal_procs = get_processes(analysis=self.analysis, region=region_name, type="signals")
             self.harvester.AddProcesses(procs=signal_procs, bin=[(region_idx, region_name)], signal=True, **common_args)
 
@@ -121,7 +123,7 @@ class DatacardBuilder:
         def should_align_line(line: str) -> bool:
             return any(key in line for key in ["bin ", "observation ", "process ", "rate ", "lnN ", "shape "])
 
-        def format_line(line: str) -> str:
+        def format_line(line: str, next_line: str) -> str:
             tokens = line.strip().split()
             if len(tokens) <= 1:
                 raise ValueError(f"Found poorly formatted line: {line!r}")
@@ -133,7 +135,7 @@ class DatacardBuilder:
             if "lnN" in line or "shape" in line:
                 formatted += header.ljust(35) + tokens[1].ljust(6)
                 rest = tokens[2:]
-            elif "observation" == header or ("bin" == header and not "bin             " in line):
+            elif "observation" == header or ("bin" == header and "observation" in next_line):
                 formatted += header.ljust(15)
                 rest = tokens[1:]
             else:
@@ -141,11 +143,11 @@ class DatacardBuilder:
                 rest = tokens[1:]
 
             for token in rest:
-                formatted += token.ljust(20)
+                formatted += token.ljust(25)
 
             return formatted.rstrip() + "\n"
 
-        aligned_lines = [format_line(line) if should_align_line(line) else line for line in lines]
+        aligned_lines = [format_line(line, lines[idx + 1]) if should_align_line(line) else line for idx, line in enumerate(lines)]
 
         with open(self.card_path, "w") as f:
             f.writelines(aligned_lines)
@@ -188,7 +190,11 @@ class DatacardBuilder:
                 format_line(process="data_obs", region=region, hname=f"{region_old}_data"),
             ]
 
-            shapes_list += [format_line(process=proc, region=region, hname=f"{model}_model") for proc, model in get_process_model_map(region=region).items()]
+            shapes_list += [
+                format_line(process=proc, region=region, hname=f"{model}_model")
+                for proc, model in get_process_model_map(region=region).items()
+                if proc in get_processes(analysis=self.analysis, region=region, type="models")
+            ]
 
             for shape in shapes_list:
                 lines.insert(insert_at, shape)
@@ -231,4 +237,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    log_level = "INFO"
+    # log_level = "DEBUG"
+    logger = initialize_colorized_logger(log_level=log_level)
     main()
