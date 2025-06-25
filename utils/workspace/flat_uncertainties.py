@@ -24,7 +24,7 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
             },
             "singleel": {
                 "models": ["qcd_wjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "top", "diboson"],
             },
             "photon": {
                 "models": ["qcd_gjets", "ewk_gjets"],
@@ -190,14 +190,14 @@ def get_qcd_unc(year: str, analysis: str) -> dict[str, Any]:
     _ = analysis  # Currently unused
     return {
         "Run3": {
-            "qcd_scale_VV": {"value": 1.15, "processes": ["diboson"]},
-            "qcd_scale_VV_ACCEPT": {"value": 1.15, "processes": ["diboson"]},
-            "qcd_scale_ttbar": {"value": 1.1, "processes": ["top"]},
-            "qcd_scale_ttbar_ACCEPT": {"value": 1.1, "processes": ["top"]},
-            "qcd_scale_ggH2in": {"value": (0.933, 1.046), "processes": ["ggh"]},
-            "qcd_scale_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
-            "qcd_scale_qqH": {"value": (0.997, 1.004), "processes": ["vbf"]},
-            "qcd_scale_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
+            "QCDscale_VV": {"value": 1.15, "processes": ["diboson"]},
+            "QCDscale_VV_ACCEPT": {"value": 1.15, "processes": ["diboson"]},
+            "QCDscale_ttbar": {"value": 1.1, "processes": ["top"]},
+            "QCDscale_ttbar_ACCEPT": {"value": 1.1, "processes": ["top"]},
+            "QCDscale_ggH2in": {"value": (0.933, 1.046), "processes": ["ggh"]},
+            "QCDscale_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
+            "QCDscale_qqH": {"value": (0.997, 1.004), "processes": ["vbf"]},
+            "QCDscale_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
         },
     }[year]
 

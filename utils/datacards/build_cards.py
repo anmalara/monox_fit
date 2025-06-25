@@ -157,7 +157,7 @@ class DatacardBuilder:
             lines = f.readlines()
 
         # Find the index of the lines containing the placeholder path of the shapes, remove them
-        shape_idx = [i for i, l in enumerate(lines) if l.startswith("shapes")]
+        shape_idx = [idx for idx, line in enumerate(lines) if line.startswith("shapes")]
 
         for idx in reversed(shape_idx):  # Reverse order to avoid index issues
             lines.pop(idx)
