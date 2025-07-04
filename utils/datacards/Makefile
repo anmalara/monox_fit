@@ -6,7 +6,7 @@ CHANNEL := $(notdir $(abspath $(CURDIR)/../../../))
 SCRIPTDIR := $(TOPDIR)/datacards
 
 # List of supported script targets
-SCRIPTS := cards diagnostics impacts impacts_condor limits gof
+SCRIPTS := diagnostics impacts impacts_condor limits gof
 
 # Declare all phony targets
 .PHONY: $(SCRIPTS) plots printcommand-%
@@ -27,6 +27,11 @@ printcommand-%:
 .PHONY: diag printcommand-diag
 diag: diagnostics
 printcommand-diag: printcommand-diagnostics
+
+# Create datacards
+cards:
+	@echo "Generating cards for channel=$(CHANNEL) year=$(YEAR)"
+	python3 $(SCRIPTDIR)/build_cards.py --channel $(CHANNEL) --year $(YEAR)
 
 # Plotting
 plots:
