@@ -30,7 +30,33 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
                 "models": ["qcd_gjets", "ewk_gjets"],
             },
         },
-        # TODO: "monojet": {...}
+        "monojet": {
+            "signal": {
+                "signals": ["zh", "wh", "vbf", "ggh"],
+                "models": ["qcd_zjets", "qcd_wjets"],
+                "backgrounds": ["qcdzll", "ewkzjets", "ewkzll", "ewkwjets", "top", "diboson"],
+            },
+            "dimuon": {
+                "models": ["qcd_zll"],
+                "backgrounds": ["ewkzll", "top", "diboson"],
+            },
+            "dielec": {
+                "models": ["qcd_zll"],
+                "backgrounds": ["ewkzll", "top", "diboson"],
+            },
+            "singlemu": {
+                "models": ["qcd_wjets"],
+                "backgrounds": ["qcdzll", "ewkzll", "ewkwjets", "top", "diboson"],
+            },
+            "singleel": {
+                "models": ["qcd_wjets"],
+                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "ewkwjets", "top", "diboson"],
+            },
+            "photon": {
+                "models": ["qcd_gjets"],
+                "backgrounds": ["ewkgjets"],
+            },
+        },
     }
 
     return processes.get(analysis, {}).get(region, {}).get(type, [])
@@ -194,10 +220,12 @@ def get_qcd_unc(year: str, analysis: str) -> dict[str, Any]:
             "QCDscale_VV_ACCEPT": {"value": 1.15, "processes": ["diboson"]},
             "QCDscale_ttbar": {"value": 1.1, "processes": ["top"]},
             "QCDscale_ttbar_ACCEPT": {"value": 1.1, "processes": ["top"]},
-            "QCDscale_ggH2in": {"value": (0.933, 1.046), "processes": ["ggh"]},
-            "QCDscale_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
-            "QCDscale_qqH": {"value": (0.997, 1.004), "processes": ["vbf"]},
-            "QCDscale_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
+            "QCDscale_Higgs_ggH2in": {"value": (0.933, 1.046), "processes": ["ggh"]},
+            "QCDscale_Higgs_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
+            "QCDscale_Higgs_qqH": {"value": (0.997, 1.004), "processes": ["vbf"]},
+            "QCDscale_Higgs_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
+            "QCDscale_Higgs_zh": {"value": (1.03, 0.969), "processes": ["zh"]},
+            "QCDscale_Higgs_wh": {"value": (1.005, 0.993), "processes": ["wh"]},
         },
     }[year]
 
@@ -208,8 +236,10 @@ def get_pdf_unc(year: str, analysis: str) -> dict[str, Any]:
     return {
         "Run3": {
             "pdf_Higgs_gg": {"value": 1.032, "processes": ["ggh"]},
-            "pdf_Higgs_qq": {"value": 1.021, "processes": ["vbf"]},
-            "pdf_Higgs_qq_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
+            "pdf_Higgs_qqH": {"value": 1.021, "processes": ["vbf"]},
+            "pdf_Higgs_qqH_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
+            "pdf_Higgs_zh": {"value": 1.016, "processes": ["zh"]},
+            "pdf_Higgs_wh": {"value": 1.019, "processes": ["wh"]},
         },
     }[year]
 
@@ -222,6 +252,7 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
             "Top_Reweight13TeV": {"value": 1.1, "processes": ["top"]},
             "UEPS": {"value": 1.168, "processes": ["ggh"]},
             "ZJets_Norm13TeV": {"value": 1.2, "processes": ["qcdzll", "ewkzll"]},
+            "GJets_Norm13TeV": {"value": 1.2, "processes": ["qcdgjets"]},
         },
     }[year]
 
