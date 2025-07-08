@@ -62,6 +62,8 @@ def cmodel(
         },
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_w"],
+        # Channels where trigger uncertainties are applied.
+        "trigger_channel_dict": {"qcd_zmm": "met"},
         # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
         "jes_jer_process": "znunu",
