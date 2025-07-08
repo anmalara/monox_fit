@@ -61,6 +61,8 @@ def cmodel(
         # TODO: pdf uncertainties (both wmn and wen)
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_wmn", "qcd_wen"],
+        # Channels where trigger uncertainties are applied.
+        "trigger_channel_dict": {"qcd_wmn": "met"},
         # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_wmn", "qcd_wen"],
         "jes_jer_process": "wlnu",
