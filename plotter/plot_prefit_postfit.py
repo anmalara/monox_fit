@@ -286,15 +286,22 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
 
     n_leg_entries = (len(h_postfit) + 1) if is_SR else 6
     legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.045, x2=0.89, y2=0.89, textSize=0.045)
+
+    def add_entry(name, leg):
+        if name in h_postfit:
+            legend.AddEntry(h_postfit[name], leg, "f")
+
     if is_SR:
         legend.AddEntry(h_data, "Pseudo data", "elp")
-        legend.AddEntry(h_postfit["qcd_zjets"], "QCD Z(#nu#nu)+jets", "f")
-        legend.AddEntry(h_postfit["qcd_wjets"], "QCD W(l#nu)+jets", "f")
-        legend.AddEntry(h_postfit["ewkzjets" if is_mono else "ewk_zjets"], "EWK Z(#nu#nu)+jets", "f")
-        legend.AddEntry(h_postfit["ewkwjets" if is_mono else "ewk_wjets"], "EWK W(l#nu)+jets", "f")
-        legend.AddEntry(h_postfit["diboson"], "WW/ZZ/WZ", "f")
-        legend.AddEntry(h_postfit["top"], "Top quark", "f")
-        legend.AddEntry(h_postfit["qcdzll"], "QCD Z(ll)+jets", "f")
+        add_entry(name="qcd_zjets", leg="QCD Z(#nu#nu)+jets")
+        add_entry(name="qcd_wjets", leg="QCD W(l#nu)+jets")
+        add_entry(name="ewkzjets", leg="EWK Z(#nu#nu)+jets")
+        add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)+jets")
+        add_entry(name="ewkwjets", leg="EWK W(l#nu)+jets")
+        add_entry(name="ewk_wjets", leg="EWK W(l#nu)+jets")
+        add_entry(name="diboson", leg="WW/ZZ/WZ")
+        add_entry(name="top", leg="Top quark")
+        add_entry(name="qcdzll", leg="QCD Z(ll)+jets")
         if not is_mono:
             legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
         # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO

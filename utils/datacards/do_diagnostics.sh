@@ -14,6 +14,8 @@ EXTRA_OPTS=()
 EXTRA_OPTS+=(--saveShapes)
 EXTRA_OPTS+=(--saveWithUncertainties)
 EXTRA_OPTS+=(--cminDefaultMinimizerStrategy 0)
+EXTRA_OPTS+=(--robustHesse 1)
+# EXTRA_OPTS+=(--skipSBFit)
 
 for YEAR in "${YEARS[@]}"; do
     TAG="${CHANNEL}_${YEAR}"

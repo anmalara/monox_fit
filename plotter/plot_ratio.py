@@ -3,42 +3,63 @@ import ROOT as rt  # type: ignore
 from collections import defaultdict
 import plotter.cmsstyle as CMS
 from utils.generic.general import oplus
-from utils.workspace.flat_uncertainties import get_flat_unc
+from utils.workspace.uncertainties import get_all_flat_systematics_functions
 from utils.generic.logger import initialize_colorized_logger
 
 logger = initialize_colorized_logger(log_level="INFO")
 
 
-def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lumi: float, year: str) -> None:
+def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lumi: float, year: str) -> None:
     """Plot transfer factors and their systematic uncertainties as ratio plots."""
     logger.debug(f"Input parameters: {locals()}")
 
     os.makedirs(outdir, exist_ok=True)
 
+    analysis = category.replace(f"_{year}", "")
     is_mono_category = "mono" in category
-    production_modes = [""] if is_mono_category else ["qcd", "ewk"]
-    tag = "monojet" if is_mono_category else "vbf"
+    production_modes = ["qcd"] if is_mono_category else ["qcd", "ewk"]
+    tag = "mono" if is_mono_category else "vbf"
 
     model_file = rt.TFile.Open(model_filename, "READ")
 
-    process_config = {
-        "zmm": {"model": "z", "label": "Z(#mu#mu)"},
-        "zee": {"model": "z", "label": "Z(ee)"},
-        "photon": {"model": "z", "label": "#gamma"},
-        "w": {"model": "z", "label": "Z/W"},
-        "wen": {"model": "w", "label": "W(e#nu)"},
-        "wmn": {"model": "w", "label": "W(#mu#nu)"},
+    region_config = {
+        "dimuon": {"sample": "zll", "process": "zmm", "model": "z", "label": "Z(#mu#mu)"},
+        "dielec": {"sample": "zll", "process": "zee", "model": "z", "label": "Z(ee)"},
+        "photon": {"sample": "gjets", "process": "photon", "model": "z", "label": "#gamma"},
+        "signal": {"sample": "zjets", "process": "w", "model": "z", "label": "Z/W"},
+        "singleel": {"sample": "wjets", "process": "wen", "model": "w", "label": "W(e#nu)"},
+        "singlemu": {"sample": "wjets", "process": "wmn", "model": "w", "label": "W(#mu#nu)"},
     }
-    config = process_config[process]
-    flat_uncertainties = list(get_flat_unc(process=process).values())
+    config = region_config[region]
 
     for mode in production_modes:
         # TODO: fix these names for monojet
-        dirname = f"{tag}_{mode}_{config['model']}_category_{category}".replace("monojet__", "mono_qcd_")
-        base_name = ("qcd" if "mono" in category else "") + f"{mode}_{process}_weights_{category}"
+        dirname = f"{tag}_{mode}_{config['model']}_category_{category}"
+        base_name = f"{mode}_{config['process']}_weights_{category}"
         label = f"R_{{{mode}}}^{{{config['label']}}}"
         ratio = model_file.Get(f"{dirname}/{base_name}")
         subdir = model_file.Get(dirname)
+
+        flat_uncertainties = []
+        for syst_func in get_all_flat_systematics_functions():
+            systematics = syst_func(year=year, analysis=analysis)
+            for name, region_map in systematics.items():
+                region_entry = region_map.get(region, {})
+                signal_entry = region_map.get("signal", {})
+                if not ("value" in region_entry or "value" in signal_entry):
+                    continue
+                in_region = f"{mode}_{config['sample']}" in region_entry.get("processes", [])
+                in_signal = f"{mode}_zjets" in signal_entry.get("processes", [])
+                unc = None
+                if in_region and in_signal:
+                    unc = region_entry["value"] / signal_entry["value"]
+                elif in_signal:
+                    unc = signal_entry["value"]
+                elif in_region:
+                    unc = region_entry["value"]
+                if unc is not None:
+                    flat_uncertainties.append(unc)
+                    logger.info(f"Adding to exp: {name} for {region} with value = {unc}")
 
         # Collect systematics
         unc_dict = defaultdict(lambda: defaultdict(float))
@@ -54,13 +75,13 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
                 syst = "stat"
             elif any(word in name for word in ["trig", "prefiring", "veto", "eff", "jes", "jer", "photon_scale"]):
                 syst = "exp"
-            elif any(word in name for word in ["cross", "QCD_pdf", "QCD_renscale", "QCD_facscale"]):
-                syst = "qcd"
-            elif any(word in name for word in ["ewk", "EWK_renscale", "EWK_facscale", "EWK_pdf"]):
+            elif any(word in name for word in ["theory_sudakov", "theory_nnlo", "ewk", "EWK_ren_scale", "EWK_fac_scale", "EWK_pdf"]):
                 syst = "ewk"
+            elif any(word in name for word in ["theory", "pdf", "QCD_ren_scale", "QCD_fac_scale"]):
+                syst = "qcd"
             else:
                 logger.critical(f"Unrecognized variation: {name}", exception_cls=ValueError)
-
+            logger.debug(f"Adding to {syst}: {name}")
             logger.debug(f"Processing systematic '{syst}' for histogram '{name}'")
 
             for b in range(1, ratio.GetNbinsX() + 1):
@@ -123,6 +144,6 @@ def plot_ratio(process: str, category: str, model_filename: str, outdir: str, lu
 
         # for extension in ["png", "pdf", "C","root"]:
         for extension in ["pdf"]:
-            canv.SaveAs(f"{outdir}/rfactor_{category}_{mode}_{process}_{year}.{extension}")
+            canv.SaveAs(f"{outdir}/rfactor_{category}_{mode}_{config['process']}_{year}.{extension}")
         canv.Close()
     model_file.Close()

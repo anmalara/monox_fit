@@ -5,11 +5,13 @@ import subprocess
 import argparse
 from typing import Any
 from collections.abc import Callable
+from functools import partial
 
 import CombineHarvester.CombineTools.ch as ch  # type: ignore
 from utils.generic.logger import initialize_colorized_logger
-from utils.workspace.flat_uncertainties import get_processes, get_region_label_map, get_process_model_map
-from utils.workspace.flat_uncertainties import get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_pdf_unc, get_misc_unc, get_jec_shape
+from utils.workspace.processes import get_processes, get_region_label_map, get_process_model_map
+from utils.workspace.uncertainties import get_all_flat_systematics_functions
+from utils.workspace.uncertainties import get_jec_shape, get_automc_stat
 
 
 class DatacardBuilder:
@@ -30,6 +32,7 @@ class DatacardBuilder:
         # put in the form (index, name) for CombineHarvester
         self.regions = [(idx, region) for idx, region in enumerate(self.region_names)]
         self.model_names = list(set([model for region in self.region_names for model in get_processes(analysis=self.analysis, region=region, type="models")]))
+        self.n_bins = 0  # this will be automatically filled later in the code
 
         self.init_processes()
 
@@ -55,19 +58,13 @@ class DatacardBuilder:
 
     def add_all_systematics(self) -> None:
         """Add lnN and shape systematics and custom nuisance parameters."""
-        lnN_funcs: list[Callable[[str, str], dict[str, Any]]] = [
-            get_lumi_unc,
-            get_lepton_eff_unc,
-            get_trigger_unc,
-            get_qcd_unc,
-            get_pdf_unc,
-            get_misc_unc,
-        ]
+        self.add_workspace_nuisances()
+        lnN_funcs = get_all_flat_systematics_functions()
         for func in lnN_funcs:
             self.add_systematics(syst_func=func, syst_type="lnN")
 
         self.add_systematics(syst_func=get_jec_shape, syst_type="shape")
-        self.add_workspace_nuisances()
+        self.add_systematics(syst_func=partial(get_automc_stat, n_bins=self.n_bins), syst_type="shape")
 
     def add_workspace_nuisances(self) -> None:
         """Extract constrained nuisance parameters from the RooWorkspace and add them to datacard."""
@@ -80,6 +77,8 @@ class DatacardBuilder:
             var = all_vars.at(i)
             if var.getAttribute("NuisanceParameter_EXTERNAL") and not var.getAttribute("BACKGROUND_NUISANCE"):
                 nuisances.append(var.GetName())
+            if "model_mu_cat" in var.GetName():
+                self.n_bins += 1
 
         self.add_nuisances(nuisances=sorted(nuisances))
         file_.Close()
@@ -133,13 +132,13 @@ class DatacardBuilder:
             formatted = ""
 
             if "lnN" in line or "shape" in line:
-                formatted += header.ljust(35) + tokens[1].ljust(6)
+                formatted += header.ljust(45) + tokens[1].ljust(6)
                 rest = tokens[2:]
             elif "observation" == header or ("bin" == header and "observation" in next_line):
                 formatted += header.ljust(15)
                 rest = tokens[1:]
             else:
-                formatted += header.ljust(41)
+                formatted += header.ljust(51)
                 rest = tokens[1:]
 
             for token in rest:

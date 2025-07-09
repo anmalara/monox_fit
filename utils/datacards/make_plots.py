@@ -24,7 +24,6 @@ def main() -> None:
     }
 
     regions = ["singlemu", "dimuon", "photon", "singleel", "dielec", "signal"]
-    procs = ["zmm", "zee", "w", "photon", "wen", "wmn"]
     region_pairs = [
         # Flavor integrated
         ("combined", "photon"),
@@ -51,9 +50,7 @@ def main() -> None:
 
     for region in regions:
         plot_prefit_postfit(region=region, shapes_filename=shapes_filename, **common_args)
-
-    for proc in procs:
-        plot_ratio(process=proc, model_filename=model_filename, **common_args)
+        plot_ratio(region=region, model_filename=model_filename, **common_args)
 
     for region1, region2 in region_pairs:
         plot_data_validation(region1=region1, region2=region2, shapes_filename=shapes_filename, **common_args)

@@ -96,15 +96,16 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
     nuisances = canvas.GetListOfPrimitives().FindObject("prefit_nuisancs")
 
     categories = {
-        "exp": lambda l: l.startswith(("CMS", "jer", "jes", "lumi")),
-        "theory": lambda l: any(k in l for k in ("scale", "pdf", "Top_Reweight", "UEPS", "ZJets_Norm")),
+        "exp": lambda l: l.startswith(("CMS", "jer", "jes", "lumi", "trigger", "prefiring")),
+        "theory": lambda l: any(k in l for k in ("scale", "pdf", "Top_Reweight", "UEPS", "Norm", "theory")),
+        "nlo": lambda l: "ewk_vbf" in l,
         "singlemuon": lambda l: "stat_error" in l and "singlemuon" in l,
         "singleelectron": lambda l: "stat_error" in l and "singleelectron" in l,
         "photonCR": lambda l: "stat_error" in l and "photonCR" in l,
         "dimuonCR": lambda l: "stat_error" in l and "dimuonCR" in l,
         "dielectronCR": lambda l: "stat_error" in l and "dielectronCR" in l,
         "zCR": lambda l: "stat_error" in l and "zCR" in l,
-        "nlo": lambda l: "ewk_vbf" in l,
+        "mcstat": lambda l: "mergedMCBkg" in l,
     }
 
     indices_map = {name: {} for name in categories}
