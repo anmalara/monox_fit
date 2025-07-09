@@ -479,21 +479,11 @@ def add_monojet_Z_theory_uncertainties(
     syst_folder: str,
 ) -> None:
     """
-    Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
-
-    This function:
-    - Saves copies of control samples used to derive theory variations.
-    - Retrieves theoretical uncertainty histograms from an external file.
-    - Computes and stores up/down variations for QCD scale, PDF, and EWK uncertainties.
-    - Applies bin-by-bin decorrelated EWK uncertainties.
-    - Adds nuisance parameters for theoretical uncertainties to the corresponding channels.
+    Adds theoretical uncertainties to transfer factors for monojet/monov Z model.
 
     Args:
-        control_samples (dict[str, Any]): Dictionary of control region histograms.
-        target_sample (Any): Histogram of the target process.
+        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
         channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
-        channel_list (list[str]): List of control regions to apply theoretical uncertainties.
-        year (str): Data-taking year.
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
     """
@@ -511,8 +501,6 @@ def add_monojet_Z_theory_uncertainties(
         ("d3kappa_z", "sudakovZ"),
         ("mix", "cross"),
     ]:
-        # vbf_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
-        # ftheo = ROOT.TFile("sys/vjets_reco_theory_unc.root")
         invert = var[0] in ["d2kappa", "d3kappa"]
         for var_direction in ["Up", "Down"]:
             add_variation(
@@ -523,12 +511,6 @@ def add_monojet_Z_theory_uncertainties(
                 outfile=output_file,
                 invert=invert,
             )
-
-        # photon_weights_monojet_Run3_qcd_down;1
-        # qcd_photon_weights_monojet_Run3_qcd
-
-        # qcd_photon_weights_monojet_Run3_qcd
-        # qcd_photon_weights_monojet_Run3_qcd_up;1
 
         # Add function (quadratic) to model the nuisance
         channel_objects["qcd_photon"].add_nuisance_shape(var[1], output_file, functype="quadratic")
@@ -554,9 +536,8 @@ def add_monojet_Z_theory_uncertainties(
                 new_name=f"qcd_w_weights_{category_id}_{var[1]}_{var_direction}",
                 outfile=output_file,
                 invert=invert,
-                # debug=True,
             )
-        # # todo on CRs[3], "wjetssignal"
+
         channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
     ftheo.Close()
 
@@ -601,7 +582,6 @@ def add_variation(
     new_name: str,
     outfile: ROOT.TFile,
     invert: bool = False,
-    debug: bool = False,
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
@@ -631,10 +611,6 @@ def add_variation(
     unc_name = unc_name.replace("signal_qcdwjets_over_Wen_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
     factor = unc_file.Get(unc_name)
     variation = nominal.Clone(new_name)
-    if debug:
-        import pdb
-
-        pdb.set_trace()
     if factor.GetNbinsX() == 1:
         factor_value = factor.GetBinContent(1)
 

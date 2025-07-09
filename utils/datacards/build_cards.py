@@ -121,7 +121,7 @@ class DatacardBuilder:
             lines = f.readlines()
 
         def should_align_line(line: str) -> bool:
-            return any(key in line for key in ["bin ", "observation ", "process ", "rate ", "lnN ", "shape "])
+            return any(key in line.split(" ") for key in ["bin", "observation", "process", "rate", "lnN", "shape"])
 
         def format_line(line: str, next_line: str) -> str:
             tokens = line.strip().split()
