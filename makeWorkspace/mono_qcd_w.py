@@ -72,7 +72,6 @@ def cmodel(
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
-        "do_monojet_Z_theory": False,
     }
 
     cat = define_model(

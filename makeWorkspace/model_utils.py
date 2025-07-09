@@ -28,7 +28,7 @@ def define_model(
     jes_jer_process: str,
     theory_channel_list: list[str],
     region_names: dict[str, str],
-    do_monojet_Z_theory: bool,
+    do_monojet_Z_theory: bool = False,
 ):
     """
     Defines a statistical model for a given category using transfer factors.
@@ -489,19 +489,19 @@ def add_monojet_Z_theory_uncertainties(
     """
 
     channel = "monojet" if "monojet" in category_id else "monov"
-    ftheo = ROOT.TFile(f"{syst_folder}/{category_id}/vjets_reco_theory_unc.root")
+    ftheo = ROOT.TFile(f"{syst_folder}/{category_id}/vjets_theory_unc.root")
+    # TODO: change the naming convention
     for var in [
-        ("d1k", "qcd"),
-        ("d2k", "qcdshape"),
-        ("d3k", "qcdprocess"),
-        ("d1kappa", "ewk"),
-        ("d2kappa_g", "nnlomissG"),
-        ("d2kappa_z", "nnlomissZ"),
-        ("d3kappa_g", "sudakovG"),
-        ("d3kappa_z", "sudakovZ"),
-        ("mix", "cross"),
+        ("d1k", "theory_qcd"),
+        ("d2k", "theory_qcdshape"),
+        ("d3k", "theory_qcdprocess"),
+        ("d1kappa", "theory_ewk"),
+        ("d2kappa_g", "theory_nnlomissG"),
+        ("d2kappa_z", "theory_nnlomissZ"),
+        ("d3kappa_g", "theory_sudakovG"),
+        ("d3kappa_z", "theory_sudakovZ"),
+        ("mix", "theory_cross"),
     ]:
-        invert = var[0] in ["d2kappa", "d3kappa"]
         for var_direction in ["Up", "Down"]:
             add_variation(
                 nominal=transfer_factors["qcd_photon"],
@@ -509,25 +509,23 @@ def add_monojet_Z_theory_uncertainties(
                 unc_name=f"{channel}_z_over_g_{var[0]}_{var_direction}",
                 new_name=f"qcd_photon_weights_{category_id}_{var[1]}_{var_direction}",
                 outfile=output_file,
-                invert=invert,
             )
 
         # Add function (quadratic) to model the nuisance
         channel_objects["qcd_photon"].add_nuisance_shape(var[1], output_file, functype="quadratic")
 
+    # TODO: change the naming convention
     for var in [
-        ("d1k", "wqcd"),
-        ("d2k", "wqcdshape"),
-        ("d3k", "wqcdprocess"),
-        ("d1kappa", "wewk"),
-        ("d2kappa_w", "nnlomissW"),
-        ("d2kappa_z", "nnlomissZ"),
-        ("d3kappa_w", "sudakovW"),
-        ("d3kappa_z", "sudakovZ"),
-        ("mix", "wcross"),
+        ("d1k", "theory_wqcd"),
+        ("d2k", "theory_wqcdshape"),
+        ("d3k", "theory_wqcdprocess"),
+        ("d1kappa", "theory_wewk"),
+        ("d2kappa_w", "theory_nnlomissW"),
+        ("d2kappa_z", "theory_nnlomissZ"),
+        ("d3kappa_w", "theory_sudakovW"),
+        ("d3kappa_z", "theory_sudakovZ"),
+        ("mix", "theory_wcross"),
     ]:
-        # Flip nuisance directions for compatibility with 2016
-        invert = var[0] in ["d1k", "d3k", "d1kappa", "d2kappa_w", "d3kappa_w"]
         for var_direction in ["Up", "Down"]:
             add_variation(
                 nominal=transfer_factors["qcd_w"],
@@ -535,7 +533,6 @@ def add_monojet_Z_theory_uncertainties(
                 unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
                 new_name=f"qcd_w_weights_{category_id}_{var[1]}_{var_direction}",
                 outfile=output_file,
-                invert=invert,
             )
 
         channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
@@ -581,7 +578,6 @@ def add_variation(
     unc_name: str,
     new_name: str,
     outfile: ROOT.TFile,
-    invert: bool = False,
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
@@ -613,11 +609,7 @@ def add_variation(
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:
         factor_value = factor.GetBinContent(1)
-
-        if invert:
-            variation.Scale(1 / factor_value)
-        else:
-            variation.Scale(factor_value)
+        variation.Scale(factor_value)
     else:
         assert variation.Multiply(factor)
         # TODO

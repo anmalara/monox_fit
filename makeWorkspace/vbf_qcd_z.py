@@ -77,7 +77,6 @@ def cmodel(
             "qcd_photon": "qcd_photonCR",
             "ewkqcd": "ewkqcdzCR",
         },
-        "do_monojet_Z_theory": False,
     }
 
     cat = define_model(
