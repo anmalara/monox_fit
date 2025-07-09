@@ -68,6 +68,7 @@ def cmodel(
             "ewk_wmn": "ewk_singlemuon",
             "ewk_wen": "ewk_singleelectron",
         },
+        "do_monojet_Z_theory": False,
     }
 
     cat = define_model(

@@ -74,6 +74,7 @@ def cmodel(
             "ewk_w": "ewk_wzCR",
             "ewk_photon": "ewk_photonCR",
         },
+        "do_monojet_Z_theory": False,
     }
 
     cat = define_model(

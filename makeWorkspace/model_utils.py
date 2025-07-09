@@ -28,6 +28,7 @@ def define_model(
     jes_jer_process: str,
     theory_channel_list: list[str],
     region_names: dict[str, str],
+    do_monojet_Z_theory: bool,
 ):
     """
     Defines a statistical model for a given category using transfer factors.
@@ -132,6 +133,15 @@ def define_model(
         production_mode=model_name.split("_")[0],
         syst_folder=f"inputs/sys/{variable}",
     )
+
+    if do_monojet_Z_theory:
+        add_monojet_Z_theory_uncertainties(
+            transfer_factors=transfer_factors,
+            channel_objects=CRs,
+            category_id=category_id,
+            output_file=output_file,
+            syst_folder=f"inputs/sys/{variable}",
+        )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
     for sample, transfer_factor in transfer_factors.items():
@@ -461,6 +471,96 @@ def add_theory_uncertainties(
                 channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
+def add_monojet_Z_theory_uncertainties(
+    transfer_factors: dict[str, ROOT.TH1],
+    channel_objects: dict[str, Channel],
+    category_id: str,
+    output_file: ROOT.TFile,
+    syst_folder: str,
+) -> None:
+    """
+    Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
+
+    This function:
+    - Saves copies of control samples used to derive theory variations.
+    - Retrieves theoretical uncertainty histograms from an external file.
+    - Computes and stores up/down variations for QCD scale, PDF, and EWK uncertainties.
+    - Applies bin-by-bin decorrelated EWK uncertainties.
+    - Adds nuisance parameters for theoretical uncertainties to the corresponding channels.
+
+    Args:
+        control_samples (dict[str, Any]): Dictionary of control region histograms.
+        target_sample (Any): Histogram of the target process.
+        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
+        channel_list (list[str]): List of control regions to apply theoretical uncertainties.
+        year (str): Data-taking year.
+        category_id (str): Unique identifier for the category.
+        output_file (ROOT.TFile): Output ROOT file for storing variations.
+    """
+
+    channel = "monojet" if "monojet" in category_id else "monov"
+    ftheo = ROOT.TFile(f"{syst_folder}/{category_id}/vjets_reco_theory_unc.root")
+    for var in [
+        ("d1k", "qcd"),
+        ("d2k", "qcdshape"),
+        ("d3k", "qcdprocess"),
+        ("d1kappa", "ewk"),
+        ("d2kappa_g", "nnlomissG"),
+        ("d2kappa_z", "nnlomissZ"),
+        ("d3kappa_g", "sudakovG"),
+        ("d3kappa_z", "sudakovZ"),
+        ("mix", "cross"),
+    ]:
+        # vbf_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
+        # ftheo = ROOT.TFile("sys/vjets_reco_theory_unc.root")
+        invert = var[0] in ["d2kappa", "d3kappa"]
+        for var_direction in ["Up", "Down"]:
+            add_variation(
+                nominal=transfer_factors["qcd_photon"],
+                unc_file=ftheo,
+                unc_name=f"{channel}_z_over_g_{var[0]}_{var_direction}",
+                new_name=f"qcd_photon_weights_{category_id}_{var[1]}_{var_direction}",
+                outfile=output_file,
+                invert=invert,
+            )
+
+        # photon_weights_monojet_Run3_qcd_down;1
+        # qcd_photon_weights_monojet_Run3_qcd
+
+        # qcd_photon_weights_monojet_Run3_qcd
+        # qcd_photon_weights_monojet_Run3_qcd_up;1
+
+        # Add function (quadratic) to model the nuisance
+        channel_objects["qcd_photon"].add_nuisance_shape(var[1], output_file, functype="quadratic")
+
+    for var in [
+        ("d1k", "wqcd"),
+        ("d2k", "wqcdshape"),
+        ("d3k", "wqcdprocess"),
+        ("d1kappa", "wewk"),
+        ("d2kappa_w", "nnlomissW"),
+        ("d2kappa_z", "nnlomissZ"),
+        ("d3kappa_w", "sudakovW"),
+        ("d3kappa_z", "sudakovZ"),
+        ("mix", "wcross"),
+    ]:
+        # Flip nuisance directions for compatibility with 2016
+        invert = var[0] in ["d1k", "d3k", "d1kappa", "d2kappa_w", "d3kappa_w"]
+        for var_direction in ["Up", "Down"]:
+            add_variation(
+                nominal=transfer_factors["qcd_w"],
+                unc_file=ftheo,
+                unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
+                new_name=f"qcd_w_weights_{category_id}_{var[1]}_{var_direction}",
+                outfile=output_file,
+                invert=invert,
+                # debug=True,
+            )
+        # # todo on CRs[3], "wjetssignal"
+        channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
+    ftheo.Close()
+
+
 # Ported from W_constraints, WIP
 def do_stat_unc(
     histogram,
@@ -500,6 +600,8 @@ def add_variation(
     unc_name: str,
     new_name: str,
     outfile: ROOT.TFile,
+    invert: bool = False,
+    debug: bool = False,
 ) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
@@ -529,9 +631,17 @@ def add_variation(
     unc_name = unc_name.replace("signal_qcdwjets_over_Wen_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
     factor = unc_file.Get(unc_name)
     variation = nominal.Clone(new_name)
+    if debug:
+        import pdb
+
+        pdb.set_trace()
     if factor.GetNbinsX() == 1:
         factor_value = factor.GetBinContent(1)
-        variation.Scale(factor_value)
+
+        if invert:
+            variation.Scale(1 / factor_value)
+        else:
+            variation.Scale(factor_value)
     else:
         assert variation.Multiply(factor)
         # TODO

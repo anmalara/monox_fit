@@ -54,7 +54,6 @@ def cmodel(
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
-        # TODO: trigger uncertainties (met, wmn only)
         # TODO: lepton veto uncertainties from sys file (ele id, ele reco, mu id, mu iso, tau id; both wmn and wen)
         # TODO: electron id and iso uncertainties from sys file (wen region only)
         # TODO: prefiring uncertainties (both wmn and wen)
@@ -73,6 +72,7 @@ def cmodel(
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
+        "do_monojet_Z_theory": False,
     }
 
     cat = define_model(
