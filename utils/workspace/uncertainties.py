@@ -9,17 +9,6 @@ def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, 
     return [get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_Higgs_pdf_unc, get_misc_unc]
 
 
-# def get_flat_unc(process: str) -> dict[str, float]:
-#     return {
-#         "zmm": {"pu": 0.01, "id": 0.01, "trigger": 0.01},
-#         "zee": {"pu": 0.01, "id": 0.03, "trigger": 0.005},
-#         "photon": {"pu": 0.01, "id": 0.015, "trigger": 0.01},
-#         "w": {"pu": 0.01},
-#         "wen": {"pu": 0.01, "id": 0.015, "trigger": 0.01},
-#         "wmn": {"pu": 0.01, "id": 0.005, "trigger": 0.01},
-#     }[process]
-
-
 def get_veto_unc(model: str) -> dict[str, float]:
     # TODO split or with the same name?
     return {
