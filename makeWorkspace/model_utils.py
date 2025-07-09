@@ -28,6 +28,7 @@ def define_model(
     jes_jer_process: str,
     theory_channel_list: list[str],
     region_names: dict[str, str],
+    do_monojet_Z_theory: bool = False,
 ):
     """
     Defines a statistical model for a given category using transfer factors.
@@ -132,6 +133,15 @@ def define_model(
         production_mode=model_name.split("_")[0],
         syst_folder=f"inputs/sys/{variable}",
     )
+
+    if do_monojet_Z_theory:
+        add_monojet_Z_theory_uncertainties(
+            transfer_factors=transfer_factors,
+            channel_objects=CRs,
+            category_id=category_id,
+            output_file=output_file,
+            syst_folder=f"inputs/sys/{variable}",
+        )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
     for sample, transfer_factor in transfer_factors.items():
@@ -459,6 +469,74 @@ def add_theory_uncertainties(
             for b in range(nbins):
                 # Add function (quadratic) to model the nuisance
                 channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
+
+
+def add_monojet_Z_theory_uncertainties(
+    transfer_factors: dict[str, ROOT.TH1],
+    channel_objects: dict[str, Channel],
+    category_id: str,
+    output_file: ROOT.TFile,
+    syst_folder: str,
+) -> None:
+    """
+    Adds theoretical uncertainties to transfer factors for monojet/monov Z model.
+
+    Args:
+        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
+        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
+        category_id (str): Unique identifier for the category.
+        output_file (ROOT.TFile): Output ROOT file for storing variations.
+    """
+
+    channel = "monojet" if "monojet" in category_id else "monov"
+    ftheo = ROOT.TFile(f"{syst_folder}/{category_id}/vjets_theory_unc.root")
+    # TODO: change the naming convention
+    for var in [
+        ("d1k", "theory_qcd"),
+        ("d2k", "theory_qcdshape"),
+        ("d3k", "theory_qcdprocess"),
+        ("d1kappa", "theory_ewk"),
+        ("d2kappa_g", "theory_nnlomissG"),
+        ("d2kappa_z", "theory_nnlomissZ"),
+        ("d3kappa_g", "theory_sudakovG"),
+        ("d3kappa_z", "theory_sudakovZ"),
+        ("mix", "theory_cross"),
+    ]:
+        for var_direction in ["Up", "Down"]:
+            add_variation(
+                nominal=transfer_factors["qcd_photon"],
+                unc_file=ftheo,
+                unc_name=f"{channel}_z_over_g_{var[0]}_{var_direction}",
+                new_name=f"qcd_photon_weights_{category_id}_{var[1]}_{var_direction}",
+                outfile=output_file,
+            )
+
+        # Add function (quadratic) to model the nuisance
+        channel_objects["qcd_photon"].add_nuisance_shape(var[1], output_file, functype="quadratic")
+
+    # TODO: change the naming convention
+    for var in [
+        ("d1k", "theory_wqcd"),
+        ("d2k", "theory_wqcdshape"),
+        ("d3k", "theory_wqcdprocess"),
+        ("d1kappa", "theory_wewk"),
+        ("d2kappa_w", "theory_nnlomissW"),
+        ("d2kappa_z", "theory_nnlomissZ"),
+        ("d3kappa_w", "theory_sudakovW"),
+        ("d3kappa_z", "theory_sudakovZ"),
+        ("mix", "theory_wcross"),
+    ]:
+        for var_direction in ["Up", "Down"]:
+            add_variation(
+                nominal=transfer_factors["qcd_w"],
+                unc_file=ftheo,
+                unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
+                new_name=f"qcd_w_weights_{category_id}_{var[1]}_{var_direction}",
+                outfile=output_file,
+            )
+
+        channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
+    ftheo.Close()
 
 
 # Ported from W_constraints, WIP

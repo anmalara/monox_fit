@@ -58,7 +58,6 @@ def cmodel(
             "qcd_w": "qcd_wjetssignal",
             "qcd_photon": "qcd_photon",
         },
-        # TODO: trigger uncertainties (met, zmm only)
         # TODO: theory uncertainties for Z/Gamma, Z/W
         # TODO: mistag nuisances (photon: gamma and Z, w: Z and W)
         # TODO: pdf uncertainties (zmm, zee, w, photon)
@@ -83,6 +82,7 @@ def cmodel(
             "qcd_w": "qcd_wzCR",
             "qcd_photon": "qcd_photonCR",
         },
+        "do_monojet_Z_theory": True,
     }
 
     cat = define_model(
