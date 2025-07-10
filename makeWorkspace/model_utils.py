@@ -3,7 +3,7 @@ from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.jes_utils import get_jes_variations_names, get_jes_file
-from utils.workspace.flat_uncertainties import get_veto_unc
+from utils.workspace.uncertainties import get_veto_unc
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -403,7 +403,6 @@ def add_theory_uncertainties(
         category_id (str): Unique identifier for the category.
         output_file (ROOT.TFile): Output ROOT file for storing variations.
     """
-
     # Save a (renamed) copy of samples used to derive theory variations
     # Done to perfectly mirrors what is done in Z_constraints_qcd_withphoton
     spectrum_label = {
@@ -422,8 +421,8 @@ def add_theory_uncertainties(
 
     # different labels to convert naming scheme between the different histogram and nuisances to read and write
     label_dict = {
-        "qcd_w": ("zoverw", "ZnunuWJets_QCD", "qcd_ewk"),
-        "qcd_photon": ("goverz", "Photon_QCD", "qcd_photon_ewk"),
+        "qcd_w": ("zoverw", "ZnunuWJets", "qcd_ewk"),
+        "qcd_photon": ("goverz", "Photon", "qcd_photon_ewk"),
     }
     if "vbf" in category_id:
         label_dict["ewk_w"] = ("zoverw", "ZnunuWJets_EWK", "ewk_ewk")
@@ -435,21 +434,22 @@ def add_theory_uncertainties(
         # Add QCD and PDF uncertainties
         # TODO follow https://cms-analysis.docs.cern.ch/guidelines/systematics/systematics/#pdf-uncertainties
         # QCD_ren_scale_<process> QCD_fac_scale_<process>
-        for var in [("mur", "renscale"), ("muf", "facscale"), ("pdf", "pdf")]:
-            vbf_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
+        for var in [("mur", "QCD_ren_scale"), ("muf", "QCD_fac_scale"), ("pdf", "pdf")]:
+            param_name = f"CMS_{category_id}_{var[1]}_{qcd_label}"
+            f_theory = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
             for var_direction in ["Up", "Down"]:
                 add_variation(
                     nominal=transfer_factors[region],
-                    unc_file=vbf_sys,
+                    unc_file=f_theory,
                     # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}",
                     unc_name=f"{ratio}_over_{region}_{production_mode}_{var[0]}{var_direction}",
-                    new_name=f"{region}_weights_{category_id}_{qcd_label}_{var[1]}_vbf_{var_direction}",
+                    new_name=f"{region}_weights_{category_id}_{param_name}_{var_direction}",
                     outfile=output_file,
                 )
-            vbf_sys.Close()
+            f_theory.Close()
 
             # Add function (quadratic) to model the nuisance
-            channel_objects[region].add_nuisance_shape(f"{qcd_label}_{var[1]}_vbf", output_file)
+            channel_objects[region].add_nuisance_shape(param_name, output_file)
 
         if "vbf" in category_id:
             # EWK uncertainty (decorrelated among bins)

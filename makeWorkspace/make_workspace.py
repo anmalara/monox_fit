@@ -11,7 +11,7 @@ from collections.abc import Callable
 import ROOT  # type: ignore
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
 
-from utils.generic.general import is_MC_bkg
+from utils.generic.general import rename_region, is_minor_bkg
 from utils.generic.logger import initialize_colorized_logger
 from utils.generic.colors import green
 from utils.workspace.generic import safe_import
@@ -234,12 +234,12 @@ def add_histograms(histograms: list[ROOT.TH1], new_name: str) -> ROOT.TH1:
     return summed_hist
 
 
-def get_mergedMC_stat_variations(to_merge_mc_bkgs: dict[str, list[ROOT.TH1]], category: str) -> dict[str, ROOT.TH1]:
+def get_mergedMC_stat_variations(per_region_minor_backgrounds: dict[str, list[ROOT.TH1]], category: str) -> dict[str, ROOT.TH1]:
     """Create autoMCstats-like per-bin statistical variation histograms for merged MC backgrounds.
 
     TODO: method not understood yet.
     Args:
-        to_merge_mc_bkgs (dict): A mapping of region name to a list of MC background histograms.
+        per_region_minor_backgrounds (dict): A mapping of region name to a list of MC background histograms.
         category (str): Analysis category name (used for naming).
 
     Returns:
@@ -247,9 +247,9 @@ def get_mergedMC_stat_variations(to_merge_mc_bkgs: dict[str, list[ROOT.TH1]], ca
     """
     variations: dict[str, ROOT.TH1] = {}
 
-    for region, hists in to_merge_mc_bkgs.items():
-        logger.debug(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
-        merged_name = f"{region}_mergedMCBkg"
+    for region, hists in per_region_minor_backgrounds.items():
+        logger.info(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
+        merged_name = f"{rename_region(region)}_mergedMCBkg"
         merged_hist = add_histograms(histograms=hists, new_name=merged_name)
 
         for bin_idx in range(1, merged_hist.GetNbinsX() + 1):
@@ -264,7 +264,7 @@ def get_mergedMC_stat_variations(to_merge_mc_bkgs: dict[str, list[ROOT.TH1]], ca
             ratio_up = 1.0 + bin_error / bin_content
             ratio_dn = max(0.0, 1.0 - bin_error / bin_content)
 
-            variation_base = f"{merged_name}_{category}_stat_bin{bin_idx}"
+            variation_base = f"{merged_name}_{category}_stat_bin{bin_idx-1}"
 
             for hist in hists:
                 base_name = hist.GetName()
@@ -329,7 +329,7 @@ def process_histogram(
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
-    to_merge_mc_bkgs: dict[str, list[ROOT.TH1]],
+    per_region_minor_backgrounds: dict[str, list[ROOT.TH1]],
 ) -> None:
     """Process a single histogram by applying systematic variations and importing it into the workspace."""
     name = hist.GetName()
@@ -344,10 +344,11 @@ def process_histogram(
         return
 
     # MC stat
-    if is_MC_bkg(name) and not any(x in name.lower() for x in ["up", "down"]):
+    if is_minor_bkg(category=category, hname=name):
         # for MC-based background, merge the stat unc into single nuisance
-        region = name.split("_")[0]
-        to_merge_mc_bkgs[region].append(hist)
+        region, background = name.split("_")
+        logger.debug(f"Adding {background} as minor background for {region} region.")
+        per_region_minor_backgrounds[region].append(hist)
 
     return
     # TODO: import shapes for photon id
@@ -406,15 +407,22 @@ def create_workspace(
 
     # Loop through all histograms in the input file and add them to the work space.
     logger.info(green("Adding histograms to workspace..."))
-    to_merge_mc_bkgs: dict[str, list[ROOT.TH1]] = defaultdict(list)
+    per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
         if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
             continue
-        process_histogram(hist=obj, category=category, workspace=workspace, output_dir=output_dir, observable=observable, to_merge_mc_bkgs=to_merge_mc_bkgs)
+        process_histogram(
+            hist=obj,
+            category=category,
+            workspace=workspace,
+            output_dir=output_dir,
+            observable=observable,
+            per_region_minor_backgrounds=per_region_minor_backgrounds,
+        )
 
     # now do the merging of MC-based bkg
-    stat_variations = get_mergedMC_stat_variations(to_merge_mc_bkgs, category)
+    stat_variations = get_mergedMC_stat_variations(per_region_minor_backgrounds, category)
     write_variations_to_workspace(
         variations=stat_variations,
         category=category,
