@@ -72,6 +72,7 @@ def cmodel(
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
+        "prefiring_channel_list": ["qcd_wmn", "qcd_wen"],
     }
 
     cat = define_model(

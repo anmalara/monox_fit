@@ -58,8 +58,8 @@ def cmodel(
             "qcd_w": "qcd_wjetssignal",
             "qcd_photon": "qcd_photon",
         },
-        # TODO: theory uncertainties for Z/Gamma, Z/W
-        # TODO: mistag nuisances (photon: gamma and Z, w: Z and W)
+        # TODO: vmistag nuisances (photon: gamma and Z, w: Z and W)
+        #   This is for mono-v, which are not orthogonal to at the moment
         # TODO: pdf uncertainties (zmm, zee, w, photon)
         # TODO: lepton veto uncertainties (ele id, ele reco, mu id, mu iso, tau id; w only)
         # TODO: prefiring uncertainties (zee, zmm)
@@ -83,6 +83,7 @@ def cmodel(
             "qcd_photon": "qcd_photonCR",
         },
         "do_monojet_Z_theory": True,
+        "prefiring_channel_list": ["qcd_zmm", "qcd_zee"],
     }
 
     cat = define_model(

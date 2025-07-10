@@ -29,6 +29,7 @@ def define_model(
     theory_channel_list: list[str],
     region_names: dict[str, str],
     do_monojet_Z_theory: bool = False,
+    prefiring_channel_list: list[str] = [],
 ):
     """
     Defines a statistical model for a given category using transfer factors.
@@ -140,6 +141,18 @@ def define_model(
             channel_objects=CRs,
             category_id=category_id,
             output_file=output_file,
+            syst_folder=f"inputs/sys/{variable}",
+        )
+
+    if prefiring_channel_list:
+        add_prefiring_uncertainties(
+            transfer_factors=transfer_factors,
+            channel_objects=CRs,
+            channel_list=prefiring_channel_list,
+            target_name=target_name,
+            category_id=category_id,
+            output_file=output_file,
+            samples_map=samples_map,
             syst_folder=f"inputs/sys/{variable}",
         )
 
@@ -537,6 +550,43 @@ def add_monojet_Z_theory_uncertainties(
 
         channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
     ftheo.Close()
+
+
+def add_prefiring_uncertainties(
+    transfer_factors: dict[str, Any],
+    channel_objects: dict[str, Channel],
+    channel_list: list[str],
+    target_name: str,
+    category_id: str,
+    output_file: ROOT.TFile,
+    samples_map: dict[str, str],
+    syst_folder: str,
+):
+    """
+    Adds prefiring uncertainties to transfer factors.
+
+    Args:
+        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
+        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
+        channel_list (list[str]): List of control regions to apply prefiring uncertainties.
+        target_name (str): Name of the target process.
+        category_id (str): Unique identifier for the category.
+        output_file (ROOT.TFile): Output ROOT file for storing variations.
+        samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
+    """
+    f_prefiring = ROOT.TFile(f"{syst_folder}/{category_id}/systematics_prefiring_jet.root")
+    for region in channel_list:
+
+        for var_direction in ["Up", "Down"]:
+            add_variation(
+                nominal=transfer_factors[region],
+                unc_file=f_prefiring,
+                unc_name=f"{target_name}_over_{samples_map[region]}_prefiring_jet{var_direction}",
+                new_name=f"{region}_weights_{category_id}_prefiring_jet_{var_direction}",
+                outfile=output_file,
+            )
+
+        channel_objects[region].add_nuisance_shape("prefiring_jet", output_file, functype="quadratic")
 
 
 # Ported from W_constraints, WIP
