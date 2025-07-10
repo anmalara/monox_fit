@@ -41,6 +41,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
         subdir = model_file.Get(dirname)
 
         flat_uncertainties = []
+        # TODO: get_veto_unc
         for syst_func in get_all_flat_systematics_functions():
             systematics = syst_func(year=year, analysis=analysis)
             for name, region_map in systematics.items():
@@ -99,7 +100,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
             stat = unc_dict["stat"][b]
             ewk = oplus(stat, unc_dict["ewk"][b])
             qcd = oplus(ewk, unc_dict["qcd"][b])
-            tot = oplus(qcd, unc_dict["exp"][b], oplus(*flat_uncertainties) * ratio.GetBinContent(b))
+            tot = oplus(qcd, unc_dict["exp"][b], (oplus(*[x - 1 for x in flat_uncertainties])) * ratio.GetBinContent(b))
             bands["ewk"].SetBinError(b, ewk)
             bands["ewk_qcd"].SetBinError(b, qcd)
             bands["total"].SetBinError(b, tot)

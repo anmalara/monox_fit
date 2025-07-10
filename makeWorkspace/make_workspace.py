@@ -246,11 +246,9 @@ def get_mergedMC_stat_variations(per_region_minor_backgrounds: dict[str, list[RO
         dict: A dictionary mapping histogram names to ROOT.TH1 up/down variation histograms.
     """
     variations: dict[str, ROOT.TH1] = {}
-    for region, hists in per_region_minor_backgrounds.items():
-        logger.info(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
 
     for region, hists in per_region_minor_backgrounds.items():
-        logger.debug(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
+        logger.info(f"Creating MCstat histograms for region = {region}, with histograms = {[h.GetName() for h in hists]}")
         merged_name = f"{rename_region(region)}_mergedMCBkg"
         merged_hist = add_histograms(histograms=hists, new_name=merged_name)
 

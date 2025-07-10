@@ -10,8 +10,7 @@ from functools import partial
 import CombineHarvester.CombineTools.ch as ch  # type: ignore
 from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.processes import get_processes, get_region_label_map, get_process_model_map
-from utils.workspace.uncertainties import get_all_flat_systematics_functions
-from utils.workspace.uncertainties import get_jec_shape, get_automc_stat
+from utils.workspace.uncertainties import get_all_flat_systematics_functions, get_jec_shape, get_automc_stat
 
 
 class DatacardBuilder:
