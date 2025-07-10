@@ -146,14 +146,14 @@ def define_model(
 
     if prefiring_channel_list:
         add_prefiring_uncertainties(
-            syst_folder=f"inputs/sys/{variable}",
-            category_id=category_id,
             transfer_factors=transfer_factors,
-            target_name=target_name,
-            output_file=output_file,
             channel_objects=CRs,
-            sample_map=samples_map,
-            prefiring_channel_list=prefiring_channel_list,
+            channel_list=prefiring_channel_list,
+            target_name=target_name,
+            category_id=category_id,
+            output_file=output_file,
+            samples_map=samples_map,
+            syst_folder=f"inputs/sys/{variable}",
         )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
@@ -553,58 +553,40 @@ def add_monojet_Z_theory_uncertainties(
 
 
 def add_prefiring_uncertainties(
-    syst_folder,
-    category_id,
-    transfer_factors,
-    target_name,
-    output_file,
-    channel_objects,
-    sample_map,
-    prefiring_channel_list,
+    transfer_factors: dict[str, Any],
+    channel_objects: dict[str, Channel],
+    channel_list: list[str],
+    target_name: str,
+    category_id: str,
+    output_file: ROOT.TFile,
+    samples_map: dict[str, str],
+    syst_folder: str,
 ):
-    # Prefiring uncertainty
-    # The shape in the input file is just one histogram to be used for up/down
-    # -> need to invert for one variation
-    # Note that the "invert" argument is the other way round for electrons and muons
-    # To take into account the anticorrelation between them
+    """
+    Adds prefiring uncertainties to transfer factors.
 
+    Args:
+        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
+        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
+        channel_list (list[str]): List of control regions to apply prefiring uncertainties.
+        target_name (str): Name of the target process.
+        category_id (str): Unique identifier for the category.
+        output_file (ROOT.TFile): Output ROOT file for storing variations.
+        samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
+    """
     f_prefiring = ROOT.TFile(f"{syst_folder}/{category_id}/systematics_prefiring_jet.root")
-    for region in prefiring_channel_list:
+    for region in channel_list:
 
         for var_direction in ["Up", "Down"]:
             add_variation(
                 nominal=transfer_factors[region],
                 unc_file=f_prefiring,
-                # unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
-                unc_name=f"{target_name}_over_{sample_map[region]}_prefiring_jet{var_direction}",
+                unc_name=f"{target_name}_over_{samples_map[region]}_prefiring_jet{var_direction}",
                 new_name=f"{region}_weights_{category_id}_prefiring_jet_{var_direction}",
                 outfile=output_file,
             )
 
         channel_objects[region].add_nuisance_shape("prefiring_jet", output_file, functype="quadratic")
-
-    # W
-    # if year == 2017:
-    #     fpref = r.TFile.Open("sys/pref_unc.root")
-    #     add_variation(WScales, fpref, "{CHANNEL}_pref_unc_w_over_m".format(**filler), "wmn_weights_%s_prefiring_Up" % cid, _fOut)
-    #     add_variation(WScales, fpref, "{CHANNEL}_pref_unc_w_over_m".format(**filler), "wmn_weights_%s_prefiring_Down" % cid, _fOut, invert=True)
-    #     CRs[0].add_nuisance_shape("prefiring", _fOut, functype="quadratic")
-
-    #     add_variation(WScales_e, fpref, "{CHANNEL}_pref_unc_w_over_e".format(**filler), "wen_weights_%s_prefiring_Up" % cid, _fOut, invert=True)
-    #     add_variation(WScales_e, fpref, "{CHANNEL}_pref_unc_w_over_e".format(**filler), "wen_weights_%s_prefiring_Down" % cid, _fOut)
-    #     CRs[1].add_nuisance_shape("prefiring", _fOut, functype="quadratic")
-
-    # # Z
-    # if year == 2017:
-    #     fpref = r.TFile.Open("sys/pref_unc.root")
-
-    #     add_variation(ZmmScales, fpref, "{CHANNEL}_pref_unc_z_over_mm".format(**filler), "zmm_weights_%s_prefiring_Up" % cid, _fOut)
-    #     add_variation(ZmmScales, fpref, "{CHANNEL}_pref_unc_z_over_mm".format(**filler), "zmm_weights_%s_prefiring_Down" % cid, _fOut, invert=True)
-    #     CRs[1].add_nuisance_shape("prefiring", _fOut, functype="quadratic")
-
-    #     add_variation(ZeeScales, fpref, "{CHANNEL}_pref_unc_z_over_ee".format(**filler), "zee_weights_%s_prefiring_Up" % cid, _fOut, invert=True)
-    #     add_variation(ZeeScales, fpref, "{CHANNEL}_pref_unc_z_over_ee".format(**filler), "zee_weights_%s_prefiring_Down" % cid, _fOut)
-    #     CRs[2].add_nuisance_shape("prefiring", _fOut, functype="quadratic")
 
 
 # Ported from W_constraints, WIP
