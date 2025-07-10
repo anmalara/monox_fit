@@ -577,11 +577,11 @@ def add_prefiring_uncertainties(
                 unc_file=f_prefiring,
                 # unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
                 unc_name=f"{target_name}_over_{sample_map[region]}_prefiring_jet{var_direction}",
-                new_name=f"{region}_weights_{category_id}_prefiring_{var_direction}",
+                new_name=f"{region}_weights_{category_id}_prefiring_jet_{var_direction}",
                 outfile=output_file,
             )
 
-        channel_objects[region].add_nuisance_shape("prefiring", output_file, functype="quadratic")
+        channel_objects[region].add_nuisance_shape("prefiring_jet", output_file, functype="quadratic")
 
     # W
     # if year == 2017:

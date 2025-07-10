@@ -35,6 +35,23 @@ def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
     }[year]
 
 
+def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+
+    # proc_list = get_processes_by_type(analysis=analysis)
+    proc_list = get_processes_by_type(analysis=analysis)  # , types=["backgrounds"])
+    return {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                f"prefiring_jet": {"value": 1.02, "processes": proc_list},
+            },
+        },
+    }[
+        analysis
+    ][year]
+
+
 def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return lepton and photon efficiency lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
