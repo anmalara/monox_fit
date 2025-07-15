@@ -323,39 +323,10 @@ def write_variations_to_workspace(
         write_histogram_to_workspace(hist=hist, name=name, category=category, workspace=workspace, output_dir=output_dir, observable=observable)
 
 
-# def get_jes_variations(obj, f_jes, category):
-#   # TODO: adapt this function to updated code
-#   '''Get JES variations from JES source file, returns all the varied histograms stored in a dictionary.'''
-#   # Use QCD Z(vv) shapes from the source file
-#   # Save varied histograms for all JES variations and the histogram names in this dictionary
-#   varied_hists = {}
-
-#   keynames = [x.GetName() for x in f_jes.GetListOfKeys()]
-
-#   if 'vbf' in category:
-#     tag = 'ZJetsToNuNu'
-#     key_valid =lambda x: (tag in x) and (not 'jesTotal' in x), keynames
-#     regex_to_remove = '{TAG}20\d\d_'.format(TAG=tag)
-#   else:
-#     channel = 'monov' if 'monov' in category else 'monojet'
-#     key_valid = lambda x: x.startswith(channel)
-#     regex_to_remove = "{CHANNEL}_20\d\d_".format(CHANNEL=channel)
-
-#   for key in filter(key_valid, keynames):
-#     variation = re.sub(regex_to_remove, '', key)
-#     varied_name = obj.GetName()+"_"+variation
-#     varied_obj = obj.Clone(varied_name)
-#       # Multiply by JES factor to get the varied yields
-#     varied_obj.Multiply(f_jes.Get(key))
-#     # Save the varied histogram into a dict
-#     varied_hists[varied_name] = varied_obj
-
-#   return varied_hists
-
-
 def process_histogram(
     hist: ROOT.TH1,
-    shapes_directory: ROOT.TDirectory,
+    # shapes_directory: ROOT.TDirectory,
+    shapes_file: ROOT.TFile,
     category: str,
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
@@ -376,30 +347,36 @@ def process_histogram(
 
     # Apply shape variations to nominal histograms, and save to the workspace.
     # shape_file = ROOT.TFile("test_inputs/shapes_monojet.root", "READ")
-    year = "Run3"
-    for var in [
-        f"jer_{year}",
-        "jesAbsolute",
-        f"jesAbsolute_{year}",
-        "jesBBEC1",
-        f"jesBBEC1_{year}",
-        "jesEC2",
-        f"jesEC2_{year}",
-        "jesFlavorQCD",
-        "jesHF",
-        f"jesHF_{year}",
-        "jesRelativeBal",
-        f"jesRelativeSample_{year}",
-        "prefiring_jet",
-        "pu",
-    ]:
-        for var_direction in ["Up", "Down"]:
-            variation_name = f"{name}_{var}{var_direction}"
-            varied_hist = hist.Clone(variation_name)
-            varied_hist.SetDirectory(0)
-            # varied_hist.Multiply(shape_file.Get("category_monojet_Run3").Get(f"{name}_{var}{var_direction}"))
-            varied_hist.Multiply(shapes_directory.Get(f"{name}_{var}{var_direction}"))
-            write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
+    # year = "Run3"
+    # for var in [
+    #     f"jer_{year}",
+    #     "jesAbsolute",
+    #     f"jesAbsolute_{year}",
+    #     "jesBBEC1",
+    #     f"jesBBEC1_{year}",
+    #     "jesEC2",
+    #     f"jesEC2_{year}",
+    #     "jesFlavorQCD",
+    #     "jesHF",
+    #     f"jesHF_{year}",
+    #     "jesRelativeBal",
+    #     f"jesRelativeSample_{year}",
+    #     "prefiring_jet",
+    #     "pu",
+    # ]:
+    # for key in shapes_directory.GetListOfKeys():
+    for key in shapes_file.GetListOfKeys():
+        obj = key.ReadObj()
+        varname = key.GetName()
+        # for var_direction in ["Up", "Down"]:
+        # variation_name = f"{name}_{var}{var_direction}"
+        variation_name = f"{name}_{varname}"
+        varied_hist = hist.Clone(variation_name)
+        varied_hist.SetDirectory(0)
+        # Only one set of shapes for all process (copied from QCD Z(nunu) in signal region)
+        # varied_hist.Multiply(shapes_directory.Get(f"{var}{var_direction}"))
+        varied_hist.Multiply(obj)
+        write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
     # shape_file.Close()
 
     # MC stat
@@ -459,7 +436,10 @@ def create_workspace(
     output_file = ROOT.TFile(output_filename, "RECREATE")
 
     input_dir = input_file if root_folder is None else input_file.Get(root_folder)
-    shapes_dir = shapes_file if root_folder is None else shapes_file.Get(root_folder)
+    # shapes_dir = shapes_file if root_folder is None else shapes_file.Get(root_folder)
+    # import pdb
+
+    # pdb.set_trace()
     output_dir = output_file.mkdir(f"category_{category}")
 
     workspace = ROOT.RooWorkspace(f"wspace_{category}", f"wspace_{category}")
@@ -476,7 +456,8 @@ def create_workspace(
             continue
         process_histogram(
             hist=obj,
-            shapes_directory=shapes_dir,
+            # shapes_directory=shapes_dir,
+            shapes_file=shapes_file,
             category=category,
             workspace=workspace,
             output_dir=output_dir,
