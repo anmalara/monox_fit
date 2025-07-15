@@ -10,7 +10,7 @@ from functools import partial
 import CombineHarvester.CombineTools.ch as ch  # type: ignore
 from utils.generic.logger import initialize_colorized_logger
 from utils.workspace.processes import get_processes, get_region_label_map, get_process_model_map
-from utils.workspace.uncertainties import get_all_flat_systematics_functions, get_jec_shape, get_automc_stat
+from utils.workspace.uncertainties import get_all_flat_systematics_functions, get_all_shapes_functions, get_automc_stat
 
 
 class DatacardBuilder:
@@ -59,10 +59,13 @@ class DatacardBuilder:
         """Add lnN and shape systematics and custom nuisance parameters."""
         self.add_workspace_nuisances()
         lnN_funcs = get_all_flat_systematics_functions()
+        shapes_funcs = get_all_shapes_functions()
         for func in lnN_funcs:
             self.add_systematics(syst_func=func, syst_type="lnN")
 
-        self.add_systematics(syst_func=get_jec_shape, syst_type="shape")
+        for func in shapes_funcs:
+            self.add_systematics(syst_func=func, syst_type="shape")
+
         self.add_systematics(syst_func=partial(get_automc_stat, n_bins=self.n_bins), syst_type="shape")
 
     def add_workspace_nuisances(self) -> None:

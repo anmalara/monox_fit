@@ -5,6 +5,10 @@ from collections.abc import Callable
 from utils.workspace.processes import get_processes_by_region, get_processes_by_type, get_region_label_map
 
 
+def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
+    return [get_jec_shape, get_prefiring_shape, get_pu_shape]
+
+
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
     return [get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_Higgs_pdf_unc, get_misc_unc]
 
@@ -33,6 +37,36 @@ def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
             f"lumi_13p6TeV_{year}": {"value": 1.014, "processes": proc_list},
         },
     }[year]
+
+
+def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    proc_list = get_processes_by_type(analysis=analysis)
+    return {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                f"prefiring_jet": {"value": 1.0, "processes": proc_list},
+            },
+        },
+    }[
+        analysis
+    ][year]
+
+
+def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    proc_list = get_processes_by_type(analysis=analysis)
+    return {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                f"pu": {"value": 1.0, "processes": proc_list},
+            },
+        },
+    }[
+        analysis
+    ][year]
 
 
 def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
