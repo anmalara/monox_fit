@@ -355,6 +355,7 @@ def write_variations_to_workspace(
 
 def process_histogram(
     hist: ROOT.TH1,
+    shapes_directory: ROOT.TDirectory,
     category: str,
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
@@ -373,12 +374,8 @@ def process_histogram(
     if "data" in name:
         return
 
-    # TODO: jes from shapes
-    #   jes_varied_hists = get_jes_variations(obj, f_jes, category)
-    #   write_dict(jes_varied_hists)
-
-    # All variations up/down
-    shape_file = ROOT.TFile("test_inputs/shapes_monojet.root", "READ")
+    # Apply shape variations to nominal histograms, and save to the workspace.
+    # shape_file = ROOT.TFile("test_inputs/shapes_monojet.root", "READ")
     year = "Run3"
     for var in [
         f"jer_{year}",
@@ -400,16 +397,10 @@ def process_histogram(
             variation_name = f"{name}_{var}{var_direction}"
             varied_hist = hist.Clone(variation_name)
             varied_hist.SetDirectory(0)
-            # if var == "jer_Run3":
-            #     # JER is a multiplicative factor
-            #     jer_factor = 1.05 if var_direction == "Up" else 0.95
-            #     multiply_histogram_by_function(histogram=varied_hist, function=lambda x: jer_factor)
-            # else:
-            # Other variations are multiplicative factors from shapes
-            # shape_file = ROOT.TFile(f"inputs/sys/{category}/{var}.root", "READ")
-            varied_hist.Multiply(shape_file.Get("category_monojet_Run3").Get(f"{name}_{var}{var_direction}"))
+            # varied_hist.Multiply(shape_file.Get("category_monojet_Run3").Get(f"{name}_{var}{var_direction}"))
+            varied_hist.Multiply(shapes_directory.Get(f"{name}_{var}{var_direction}"))
             write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
-    shape_file.Close()
+    # shape_file.Close()
 
     # MC stat
     if is_minor_bkg(category=category, hname=name):
@@ -446,6 +437,7 @@ def process_histogram(
 
 def create_workspace(
     input_filename: str,
+    shapes_filename: str,
     output_filename: str,
     category: str,
     variable: str,
@@ -463,9 +455,11 @@ def create_workspace(
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
 
     input_file = ROOT.TFile(input_filename, "READ")
+    shapes_file = ROOT.TFile(shapes_filename, "READ")
     output_file = ROOT.TFile(output_filename, "RECREATE")
 
     input_dir = input_file if root_folder is None else input_file.Get(root_folder)
+    shapes_dir = shapes_file if root_folder is None else shapes_file.Get(root_folder)
     output_dir = output_file.mkdir(f"category_{category}")
 
     workspace = ROOT.RooWorkspace(f"wspace_{category}", f"wspace_{category}")
@@ -482,6 +476,7 @@ def create_workspace(
             continue
         process_histogram(
             hist=obj,
+            shapes_directory=shapes_dir,
             category=category,
             workspace=workspace,
             output_dir=output_dir,
