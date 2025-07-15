@@ -6,7 +6,7 @@ from utils.workspace.processes import get_processes_by_region, get_processes_by_
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_jec_shape, get_prefiring_shape]
+    return [get_jec_shape, get_prefiring_shape, get_pu_shape]
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -47,6 +47,21 @@ def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
         "monojet": {
             "Run3": {
                 f"prefiring_jet": {"value": 1.0, "processes": proc_list},
+            },
+        },
+    }[
+        analysis
+    ][year]
+
+
+def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    proc_list = get_processes_by_type(analysis=analysis)
+    return {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                f"pu": {"value": 1.0, "processes": proc_list},
             },
         },
     }[
