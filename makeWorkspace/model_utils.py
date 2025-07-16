@@ -15,7 +15,7 @@ def define_model(
     output_file: ROOT.TFile,
     output_workspace: ROOT.RooWorkspace,
     diagonalizer: Any,
-    year: int,
+    year: str,
     variable: str,
     convention: str,
     model_name: str,
@@ -23,7 +23,7 @@ def define_model(
     samples_map: dict[str, str],
     channel_names: dict[str, str],
     veto_channel_list: list[str],
-    trigger_channel_dict: dict[str],
+    trigger_channel_list: dict[str],
     jes_jer_channel_list: list[str],
     jes_jer_process: str,
     theory_channel_list: list[str],
@@ -50,14 +50,14 @@ def define_model(
         output_file (ROOT.TFile): Output ROOT file to store results.
         output_workspace (ROOT.RooWorkspace): Output workspace for the statistical model.
         diagonalizer (Any): Object for diagonalizing correlations.
-        year (int): Data-taking year.
+        year (str): Data-taking year.
         convention (str): Naming convention for systematic uncertainties.
         model_name (str): Name of the model.
         target_name (str): Name of the target MC sample in the input ROOT file.
         samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
         channel_names (dict[str, str]): Mapping of transfer factor labels to channel names.
         veto_channel_list (list[str]): Channels where veto uncertainties are applied.
-        trigger_channel_dict (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
+        trigger_channel_list (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
         veto_dict (dict[str, float]): Dictionary of veto nuisance values.
         jes_jer_channel_list (list[str]): Channels where JES/JER uncertainties are applied.
         jes_jer_process (str): Process label for JES/JER uncertainties.
@@ -106,10 +106,10 @@ def define_model(
     add_trigger_nuisances(
         transfer_factors=transfer_factors,
         channel_objects=CRs,
-        channel_dict=trigger_channel_dict,
+        channel_list=trigger_channel_list,
         category_id=category_id,
         output_file=output_file,
-        syst_folder=f"inputs/sys/{variable}",
+        year=year,
     )
     add_jes_jer_uncertainties(
         transfer_factors=transfer_factors,
@@ -273,51 +273,28 @@ def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[s
 def add_trigger_nuisances(
     transfer_factors: dict[str, Any],
     channel_objects: dict[str, Channel],
-    channel_dict: dict[str],
-    # model_name: str,
-    # year: int,
+    channel_list: list[str],
     category_id: str,
     output_file: ROOT.TFile,
-    # process: str,
     syst_folder: str,
+    year: str,
 ) -> None:
-    """
-    Adds veto systematic uncertainties to the specified control regions.
-
-    Args:
-        channel_objects (dict[str, Channel]): Dictionary mapping control region names to `Channel` objects.
-        channel_list (list[str]): List of control regions to apply veto uncertainties.
-        veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
-    """
-    # veto_dict = {f"CMS_veto_{key}_{year}": value for key, value in get_veto_unc(model=model_name).items()}
-    # for channel in channel_list:
-    #     for veto_name, veto_value in veto_dict.items():
-    #         channel_objects[channel].add_nuisance(veto_name, veto_value)
-
-    for sample, var in channel_dict.items():
-        # trig_unc_file = get_trig_unc_file(category=category_id, source=var, syst_folder=syst_folder)
-        trig_unc_file = ROOT.TFile(f"{syst_folder}/{category_id}/systematics_trigger.root", "READ")
+    """Adds veto systematic uncertainties to the specified control regions."""
+    hist_basename = "met_trigger_sys"
+    param_name = f"{hist_basename}_{year}"
+    for sample in channel_list:
+        trig_unc_file = ROOT.TFile(f"{syst_folder}/systematics_trigger_met_muondep.root", "READ")
         for var_direction in ["Up", "Down"]:
-            # tag: monojet: "", monov: "monov"
             # Scale transfer factor by relative variation and write to output file
             add_variation(
                 nominal=transfer_factors[sample],
                 unc_file=trig_unc_file,
-                # unc_name=f"{process}_over_{sample}_{var}{var_direction}",
-                # new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
-                unc_name=f"trigger_sys_{var}_{var_direction}",
-                new_name=f"{sample}_weights_{category_id}_trigger_sys_{var}_{var_direction}",
+                unc_name=f"{hist_basename}_{var_direction}",
+                new_name=f"{sample}_weights_{category_id}_{param_name}_{var_direction}",
                 outfile=output_file,
             )
         # Add function (quadratic) to model the nuisance
-        channel_objects[sample].add_nuisance_shape(f"trigger_sys_{var}", output_file)
-        #         new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
-        # channel_objects[sample].add_nuisance_shape(var, output_file)
-
-    # fztoz_trig = r.TFile.Open("sys/all_trig_2017.root") # 250 - 1400 binning
-    # add_variation(WScales, fztoz_trig, "trig_sys_down"+tag, "wmn_weights_%s_mettrig_%s_Down"%(cid,year), _fOut)
-    # add_variation(WScales, fztoz_trig, "trig_sys_up"+tag, "wmn_weights_%s_mettrig_%s_Up"%(cid,year), _fOut)
-    # CRs[0].add_nuisance_shape("mettrig_%s"%year,_fOut, functype='quadratic')
+        channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype="quadratic")
 
 
 def add_jes_jer_uncertainties(
