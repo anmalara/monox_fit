@@ -11,7 +11,7 @@ def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_lumi_unc, get_lepton_eff_unc, get_trigger_unc, get_qcd_unc, get_Higgs_pdf_unc, get_misc_unc]
+    return [get_lumi_unc, get_objects_eff_unc, get_trigger_unc, get_qcd_unc, get_Higgs_pdf_unc, get_misc_unc]
 
 
 def get_veto_unc(model: str) -> dict[str, float]:
@@ -42,30 +42,26 @@ def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
     return systematics[year]
 
 
-def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
+def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return lepton and photon efficiency lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
-    procs_by_region = {
-        "dielec": get_processes_by_region(analysis=analysis, region="dielec"),
-        "singleel": get_processes_by_region(analysis=analysis, region="singleel"),
-        "dimuon": get_processes_by_region(analysis=analysis, region="dimuon"),
-        "singlemu": get_processes_by_region(analysis=analysis, region="singlemu"),
-        "photon": get_processes_by_region(analysis=analysis, region="photon"),
-        "signal": get_processes_by_type(analysis=analysis),
-    }
+    regions = get_all_regions()
 
     # Run-dependent efficiencies
     m_id_eff = {"Run3": 0.004}[year]
     m_iso_eff = {"Run3": 0.005}[year]
     m_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
     e_id_eff = {"Run3": 0.014}[year]
-    e_reco_eff = {"Run3": 0.010}[year]  # TODO update for run3
-    g_id_eff = {"Run3": 0.014}[year]
+    e_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
+    g_id_eff = {"Run3": 0.015}[year]
+
     results = {
         f"CMS_eff_b_{year}": {"value": 1.03, "processes": ["top"]},
-        f"CMS_fake_b_{year}": {"value": 1.02, "processes": procs_by_region["signal"] - {"top"}},
-        # TODO 1% in VBF 2% in monojet
     }
+    results[f"CMS_fake_b_{year}"] = {  # TODO 1% in VBF 2% in monojet
+        region: {"value": 1.02, "processes": get_processes_by_region(analysis=analysis, region=region) - {"top"}} for region in regions
+    }
+
     lepton_unc = {
         f"CMS_eff_e_id_{year}": {"dielec": 2 * e_id_eff, "singleel": e_id_eff},
         f"CMS_eff_e_reco_{year}": {"dielec": 2 * e_reco_eff, "singleel": e_reco_eff},
@@ -76,7 +72,9 @@ def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     }
 
     for name, entries in lepton_unc.items():
-        results[name] = {region: {"value": 1 + value, "processes": procs_by_region[region]} for region, value in entries.items()}
+        results[name] = {
+            region: {"value": 1 + value, "processes": get_processes_by_region(analysis=analysis, region=region)} for region, value in entries.items()
+        }
 
     return results
 
@@ -109,9 +107,15 @@ def get_qcd_unc(year: str, analysis: str) -> dict[str, Any]:
     _ = analysis  # Currently unused
     return {
         "Run3": {
+            "top_Norm_13p6TeV": {"value": 1.1, "processes": ["top"]},
+            "wz_Norm_13p6TeV": {"value": 1.1, "processes": ["wz"]},
+            "zz_Norm_13p6TeV": {"value": 1.1, "processes": ["zz"]},
+            "ww_Norm_13p6TeV": {"value": 1.1, "processes": ["ww"]},
+            "wgamma_Norm_13p6TeV": {"value": 1.1, "processes": ["wgamma"]},
+            "zgamma_Norm_13p6TeV": {"value": 1.1, "processes": ["zgamma"]},
             "QCDscale_VV": {"value": 1.1, "processes": ["diboson"]},
             # "QCDscale_VV_ACCEPT": {"value": 1.1, "processes": ["diboson"]}, # TODO not present for monojet?
-            "QCDscale_ttbar": {"value": 1.1, "processes": ["top"]},
+            # "QCDscale_ttbar": {"value": 1.1, "processes": ["top"]}, # TODO not present for monojet?
             # "QCDscale_ttbar_ACCEPT": {"value": 1.1, "processes": ["top"]},# TODO not present for monojet?
             "QCDscale_Higgs_ggH2in": {"value": 1.039, "processes": ["ggh"]},  # TODO for vbf (0.933, 1.046)
             "QCDscale_Higgs_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
@@ -119,6 +123,7 @@ def get_qcd_unc(year: str, analysis: str) -> dict[str, Any]:
             "QCDscale_Higgs_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
             "QCDscale_Higgs_zh": {"value": (1.03, 0.969), "processes": ["zh"]},
             "QCDscale_Higgs_wh": {"value": (1.005, 0.993), "processes": ["wh"]},
+            "QCDscale_Higgs_ggzh": {"value": (1.251, 0.811), "processes": ["ggzh"]},
         },
     }[year]
 
@@ -129,6 +134,7 @@ def get_Higgs_pdf_unc(year: str, analysis: str) -> dict[str, Any]:
     return {
         "Run3": {
             "pdf_Higgs_gg": {"value": 1.032, "processes": ["ggh"]},
+            "pdf_Higgs_ggzh": {"value": (1.024, 0.982), "processes": ["ggzh"]},
             "pdf_Higgs_qqH": {"value": 1.021, "processes": ["vbf"]},
             "pdf_Higgs_qqH_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
             "pdf_Higgs_zh": {"value": (1.016, 0.987), "processes": ["zh"]},  # TODO was symmetric for VBF
@@ -142,9 +148,9 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
     _ = analysis  # Currently unused
     return {
         "Run3": {
-            "Top_Reweight13p6TeV": {"value": 1.1, "processes": ["top"]},
-            "ZJets_Norm13p6TeV": {"value": 1.2, "processes": ["qcdzll", "ewkzll"]},
-            "GJets_Norm13p6TeV": {"value": 1.2, "processes": ["qcdgjets"]},
+            "top_Reweight_13p6TeV": {"value": 1.1, "processes": ["top"]},
+            # "ZJets_Norm_13p6TeV": {"value": 1.2, "processes": ["qcdzll", "ewkzll"]}, #TODO was used for VBF
+            # "GJets_Norm_13p6TeV": {"value": 1.2, "processes": ["qcdgjets"]}, #TODO was used for VBF
             # "UEPS": {"value": 1.168, "processes": ["ggh"]},  # TODO only for VBF?
         },
     }[year]

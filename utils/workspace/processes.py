@@ -8,23 +8,23 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
             "signal": {
                 "signals": ["zh", "wh", "vbf", "ggh"],
                 "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "dimuon": {
                 "models": ["qcd_zll", "ewk_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "dielec": {
                 "models": ["qcd_zll", "ewk_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "singlemu": {
                 "models": ["qcd_wjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "singleel": {
                 "models": ["qcd_wjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "photon": {
                 "models": ["qcd_gjets", "ewk_gjets"],
@@ -32,29 +32,31 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
         },
         "monojet": {
             "signal": {
-                "signals": ["zh", "wh", "vbf", "ggh"],
+                "signals": ["zh", "wh", "vbf", "ggzh", "ggh"],
                 "models": ["qcd_zjets", "qcd_wjets"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
+                "data_driven": ["qcd"],
             },
             "dimuon": {
                 "models": ["qcd_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "dielec": {
                 "models": ["qcd_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "singlemu": {
                 "models": ["qcd_wjets"],
-                "backgrounds": ["qcdzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "top", "wz", "zz", "ww", "qcd"],
             },
             "singleel": {
                 "models": ["qcd_wjets"],
-                "backgrounds": ["qcdzll", "qcdgjets", "top", "diboson"],
+                "backgrounds": ["qcdzll", "qcdgjets", "top", "wz", "zz", "ww", "qcd"],
             },
             "photon": {
                 "models": ["qcd_gjets"],
-                "backgrounds": [],
+                "backgrounds": ["wgamma", "zgamma"],
+                "data_driven": ["qcd"],
             },
         },
     }
