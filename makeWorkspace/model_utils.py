@@ -71,6 +71,7 @@ def define_model(
     # Some setup
     input_tdir = input_file.Get(f"category_{category_id}")
     input_wspace = input_tdir.Get(f"wspace_{category_id}")
+    common_syst_folder = f"inputs/sys/{variable}"
 
     # Defining the nominal transfer factors
     # Nominal MC process to model
@@ -109,6 +110,7 @@ def define_model(
         channel_list=trigger_channel_list,
         category_id=category_id,
         output_file=output_file,
+        syst_folder=f"{common_syst_folder}/{category_id}",
         year=year,
     )
     add_jes_jer_uncertainties(
@@ -120,7 +122,7 @@ def define_model(
         output_file=output_file,
         process=jes_jer_process,
         production_mode=model_name.split("_")[0],
-        syst_folder=f"inputs/sys/{variable}",
+        syst_folder=common_syst_folder,
     )
     add_theory_uncertainties(
         control_samples=control_samples,
@@ -132,7 +134,7 @@ def define_model(
         category_id=category_id,
         output_file=output_file,
         production_mode=model_name.split("_")[0],
-        syst_folder=f"inputs/sys/{variable}",
+        syst_folder=common_syst_folder,
     )
 
     if do_monojet_Z_theory:
@@ -141,7 +143,7 @@ def define_model(
             channel_objects=CRs,
             category_id=category_id,
             output_file=output_file,
-            syst_folder=f"inputs/sys/{variable}",
+            syst_folder=common_syst_folder,
         )
 
     if prefiring_channel_list:
@@ -153,7 +155,7 @@ def define_model(
             category_id=category_id,
             output_file=output_file,
             samples_map=samples_map,
-            syst_folder=f"inputs/sys/{variable}",
+            syst_folder=common_syst_folder,
         )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
@@ -255,7 +257,7 @@ def define_channels(
     }
 
 
-def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: int) -> None:
+def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: str) -> None:
     """
     Adds veto systematic uncertainties to the specified control regions.
 
@@ -539,8 +541,7 @@ def add_prefiring_uncertainties(
     samples_map: dict[str, str],
     syst_folder: str,
 ):
-    """
-    Adds prefiring uncertainties to transfer factors.
+    """Adds prefiring uncertainties to transfer factors.
 
     Args:
         transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
@@ -599,13 +600,7 @@ def do_stat_unc(
         CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
 
 
-def add_variation(
-    nominal: ROOT.TH1,
-    unc_file: ROOT.TFile,
-    unc_name: str,
-    new_name: str,
-    outfile: ROOT.TFile,
-) -> None:
+def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_name: str, outfile: ROOT.TFile) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
     unc_name = unc_name.replace("zmumu_zjets_", "Zmm_qcdzll_").replace("zee_zjets_", "Zee_qcdzll_")
