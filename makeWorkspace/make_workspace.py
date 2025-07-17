@@ -380,6 +380,7 @@ def apply_shapes(
     hist: ROOT.TH1,
     category: str,
     variable: str,
+    source: str,
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
@@ -390,16 +391,16 @@ def apply_shapes(
     if "data" in name:
         return
 
-    shapes_filename = f"inputs/sys/{variable}/{category}/shapes.root"
+    shapes_filename = f"inputs/sys/{variable}/{category}/shapes_{source}.root"
     shapes_file = ROOT.TFile.Open(shapes_filename, "READ")
-    logger.debug(f"Applying all shapes to histogram {name} and saving to workspace.")
+    logger.debug(f"Applying {source} shapes to histogram {name} and saving to workspace.")
     common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
 
     # Apply shape variations to nominal histograms, and save to the workspace.
     for key in shapes_file.GetListOfKeys():
         obj = key.ReadObj()
         varname = key.GetName()
-        logger.debug(f"Applying all shape {varname} to histogram {name}.")
+        logger.debug(f"Applying shape {varname} to histogram {name}.")
         variation_name = f"{name}_{varname}"
         varied_hist = hist.Clone(variation_name)
         varied_hist.SetDirectory(0)
@@ -442,6 +443,10 @@ def create_workspace(
     # Loop through all histograms in the input file and add them to the work space.
     logger.info(green("Adding histograms to workspace..."))
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
+
+    # Shapes to apply:
+    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales"]
+
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
         if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
@@ -455,14 +460,16 @@ def create_workspace(
             per_region_minor_backgrounds=per_region_minor_backgrounds,
         )
 
-        apply_shapes(
-            hist=obj,
-            category=category,
-            variable=variable,
-            workspace=workspace,
-            output_dir=output_dir,
-            observable=observable,
-        )
+        for source in shapes_sources:
+            apply_shapes(
+                hist=obj,
+                category=category,
+                variable=variable,
+                source=source,
+                workspace=workspace,
+                output_dir=output_dir,
+                observable=observable,
+            )
 
     # now do the merging of MC-based bkg
     stat_variations = get_mergedMC_stat_variations(per_region_minor_backgrounds, category)
