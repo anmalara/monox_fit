@@ -2,7 +2,6 @@ import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
-from utils.workspace.jes_utils import get_jes_variations_names, get_jes_file
 from utils.workspace.uncertainties import get_veto_unc, get_jes_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
@@ -160,7 +159,7 @@ def define_model(
 
     # Add Bin by bin nuisances to cover statistical uncertainties
     for sample, transfer_factor in transfer_factors.items():
-        do_stat_unc(transfer_factor, proc=sample, region=region_names[sample], CR=CRs[sample], cid=category_id, outfile=output_file)
+        do_stat_unc(transfer_factor, sample=sample, region=region_names[sample], CR=CRs[sample], category_id=category_id, output_file=output_file)
 
     # Extract the bin edges of the distribution
     bin_edges = [target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)]
@@ -272,6 +271,10 @@ def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[s
             channel_objects[channel].add_nuisance(veto_name, veto_value)
 
 
+def get_weight_name(sample: str, category_id: str, param_name: str, direction: str) -> str:
+    return f"{sample}_weights_{category_id}_{param_name}_{direction}"
+
+
 def add_shape_nuisances(
     transfer_factors: dict[str, Any],
     channel_objects: dict[str, Channel],
@@ -298,8 +301,7 @@ def add_shape_nuisances(
     unc_file = ROOT.TFile(unc_file_name)
     for var_direction in ["Up", "Down"]:
         # Scale transfer factor by relative variation and write to output file
-        unc_name = f"{hist_basename}_{var_direction}"
-        new_name = f"{sample}_weights_{category_id}_{param_name}_{var_direction}"
+        new_name = get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction=direction)
         add_variation(nominal=transfer_factors[sample], unc_file=unc_file, unc_name=unc_name, new_name=new_name, outfile=output_file)
     # Add function (quadratic) to model the nuisance
     channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype=functype)
@@ -531,35 +533,24 @@ def add_monojet_Z_theory_uncertainties(
         ("d3kappa_z", "theory_sudakovZ"),
         ("mix", "theory_wcross"),
     ]
-    sample = "qcd_photon"
-    for var in photon_variations:
-        param_name = var[1]
-        hist_basename = f"{channel}_z_over_g_{var[0]}"
-        add_shape_nuisances(
-            transfer_factors=transfer_factors,
-            channel_objects=channel_objects,
-            category_id=category_id,
-            output_file=output_file,
-            sample=sample,
-            param_name=param_name,
-            unc_file_name=unc_file_name,
-            hist_basename=hist_basename,
-        )
-
-    sample = "qcd_w"
-    for var in w_variations:
-        param_name = var[1]
-        hist_basename = f"{channel}_z_over_w_{var[0]}"
-        add_shape_nuisances(
-            transfer_factors=transfer_factors,
-            channel_objects=channel_objects,
-            category_id=category_id,
-            output_file=output_file,
-            sample=sample,
-            param_name=param_name,
-            unc_file_name=unc_file_name,
-            hist_basename=hist_basename,
-        )
+    theory_config = [
+        ("qcd_photon", "z_over_g", photon_variations),
+        ("qcd_w", "z_over_w", w_variations),
+    ]
+    for sample, ratio_label, variations in theory_config:
+        for var in variations:
+            param_name = var[1]
+            hist_basename = f"{channel}_{ratio_label}_{var[0]}"
+            add_shape_nuisances(
+                transfer_factors=transfer_factors,
+                channel_objects=channel_objects,
+                category_id=category_id,
+                output_file=output_file,
+                sample=sample,
+                param_name=param_name,
+                unc_file_name=unc_file_name,
+                hist_basename=hist_basename,
+            )
 
 
 def add_prefiring_uncertainties(
@@ -587,40 +578,32 @@ def add_prefiring_uncertainties(
             param_name=param_name,
             unc_file_name=unc_file_name,
             hist_basename=hist_basename,
+            remove=True,
         )
 
 
-# Ported from W_constraints, WIP
-def do_stat_unc(
-    histogram,
-    proc,
-    cid,
-    region,
-    CR,
-    outfile,
-):
+def do_stat_unc(histogram: ROOT.TH1, sample: str, category_id: str, region: str, CR: str, output_file: ROOT.TFile) -> None:
     """Add stat. unc. variations to the workspace"""
 
     # Add one variation per bin
     for b in range(1, histogram.GetNbinsX() + 1):
         err = histogram.GetBinError(b)
         content = histogram.GetBinContent(b)
-
         # Safety
         if (content <= 0) or (err / content < 0.001):
             logger.critical(f"Stat. unc. undefined in bin {b} of hist '{histogram.GetName()}': content = {content}, error = {err}.", exception_cls=ValueError)
 
-        # Careful: The bin count "b" in this loop starts at 1
-        # In the combine model, we want it to start from 0!
-        up = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Up")
-        down = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Down")
+        # Careful: The bin count "b" in this loop starts at 1. In the combine model, we want it to start from 0!
+        param_name = f"{category_id}_stat_error_{region}_bin{b-1}"
+        up = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Up"))
+        down = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Down"))
         up.SetBinContent(b, content + err)
         down.SetBinContent(b, content - err)
-        outfile.WriteTObject(up)
-        outfile.WriteTObject(down)
+        output_file.WriteTObject(up)
+        output_file.WriteTObject(down)
 
         logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
-        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
+        CR.add_nuisance_shape(name=param_name, file=output_file, functype="lognorm")
 
 
 def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_name: str, outfile: ROOT.TFile) -> None:
