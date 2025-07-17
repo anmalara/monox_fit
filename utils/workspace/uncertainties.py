@@ -2,7 +2,8 @@ from typing import Any
 from functools import partial
 from collections.abc import Callable
 
-from utils.workspace.processes import get_all_regions, get_processes_by_region, get_region_label_map
+from utils.workspace.processes import get_all_regions, get_processes_by_region
+from utils.workspace.jes_utils import get_jes_variations_names
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -39,24 +40,6 @@ def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
         },
     }
     return systematics[year]
-
-
-def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
-    """Return prefiring shape systematics for a given year and analysis."""
-    systematics = {
-        "vbf": {"Run3": {}},
-        "monojet": {"Run3": get_generic_shape(systematics=["prefiring_jet"], analysis=analysis)},
-    }
-    return systematics[analysis][year]
-
-
-def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
-    """Return prefiring shape systematics for a given year and analysis."""
-    systematics = {
-        "vbf": {"Run3": {}},
-        "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
-    }
-    return systematics[analysis][year]
 
 
 def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
@@ -182,33 +165,36 @@ def get_generic_shape(systematics: list[str], analysis: str) -> dict[str, dict[s
 def get_jec_shape(year: str, analysis: str) -> dict[str, dict[str, Any]]:
     """Return JER and JES shape systematics for a given year and analysis."""
     # TODO need to change to CMS_scale_j_Absolute
-    jecs = [
-        f"jer_{year}",
-        "jesAbsolute",
-        f"jesAbsolute_{year}",
-        "jesBBEC1",
-        f"jesBBEC1_{year}",
-        "jesEC2",
-        f"jesEC2_{year}",
-        "jesFlavorQCD",
-        "jesHF",
-        f"jesHF_{year}",
-        "jesRelativeBal",
-        f"jesRelativeSample_{year}",
-    ]
+    jecs = get_jes_variations_names(year=year)
     return get_generic_shape(systematics=jecs, analysis=analysis)
+
+
+def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {"Run3": get_generic_shape(systematics=["prefiring_jet"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
+
+
+def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
 
 
 def get_automc_stat(year: str, analysis: str, n_bins: int) -> dict[str, dict[str, Any]]:
     """Return autoMC stat shapes for minor backgrounds for a given year and analysis."""
-    _ = year  # Currently unused
-    _ = analysis  # Currently unused
 
     automc_shape = {
         f"{region}_mergedMCBkg_{analysis}_{year}_stat_bin{idx}": {
             region: {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region=region, types=["backgrounds"])},
         }
-        for region, _ in get_region_label_map()
+        for region in get_all_regions()
         for idx in range(n_bins)
     }
     return automc_shape
