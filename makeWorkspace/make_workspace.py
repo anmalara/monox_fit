@@ -378,8 +378,8 @@ def process_histogram(
 
 def apply_shapes(
     hist: ROOT.TH1,
-    shapes_file: ROOT.TFile,
     category: str,
+    variable: str,
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
@@ -390,6 +390,8 @@ def apply_shapes(
     if "data" in name:
         return
 
+    shapes_filename = f"inputs/sys/{variable}/{category}/shapes.root"
+    shapes_file = ROOT.TFile.Open(shapes_filename, "READ")
     logger.debug(f"Applying all shapes to histogram {name} and saving to workspace.")
     common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
 
@@ -405,10 +407,11 @@ def apply_shapes(
         varied_hist.Multiply(obj)
         write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
 
+    shapes_file.Close()
+
 
 def create_workspace(
     input_filename: str,
-    shapes_filename: str,
     output_filename: str,
     category: str,
     variable: str,
@@ -426,7 +429,6 @@ def create_workspace(
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
 
     input_file = ROOT.TFile(input_filename, "READ")
-    shapes_file = ROOT.TFile(shapes_filename, "READ")
     output_file = ROOT.TFile(output_filename, "RECREATE")
 
     input_dir = input_file if root_folder is None else input_file.Get(root_folder)
@@ -455,8 +457,8 @@ def create_workspace(
 
         apply_shapes(
             hist=obj,
-            shapes_file=shapes_file,
             category=category,
+            variable=variable,
             workspace=workspace,
             output_dir=output_dir,
             observable=observable,

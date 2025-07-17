@@ -64,7 +64,6 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     os.makedirs(output_dir, exist_ok=True)
 
     input_filename = os.path.join(input_dir, f"histograms_{analysis}.root")
-    shapes_filename = f"inputs/sys/{variable}/{analysis}_{year}/shapes_{analysis}.root"
     workspace_file = os.path.join(output_dir, f"ws_{analysis}.root")
     combined_model_file = os.path.join(output_dir, f"combined_model_{analysis}.root")
     info_file = os.path.join(output_dir, "INFO.txt")
@@ -72,7 +71,6 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     logger.info(f"Creating workspace for category '{category}'...")
     create_workspace(
         input_filename=input_filename,
-        shapes_filename=shapes_filename,
         output_filename=workspace_file,
         category=category,
         variable=variable,
