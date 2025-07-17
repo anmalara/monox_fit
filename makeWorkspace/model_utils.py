@@ -158,8 +158,7 @@ def define_model(
         )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
-    for sample, transfer_factor in transfer_factors.items():
-        do_stat_unc(transfer_factor, sample=sample, region=region_names[sample], CR=CRs[sample], category_id=category_id, output_file=output_file)
+    do_stat_unc(transfer_factors=transfer_factors, channel_objects=CRs, region_names=region_names, category_id=category_id, output_file=output_file)
 
     # Extract the bin edges of the distribution
     bin_edges = [target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)]
@@ -299,8 +298,9 @@ def add_shape_nuisances(
         hist_basename: (str): Name of the histogram to load that contains the relative systematic uncertainty.
     """
     unc_file = ROOT.TFile(unc_file_name)
-    for var_direction in ["Up", "Down"]:
+    for direction in ["Up", "Down"]:
         # Scale transfer factor by relative variation and write to output file
+        unc_name = f"{hist_basename}{direction}"
         new_name = get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction=direction)
         add_variation(nominal=transfer_factors[sample], unc_file=unc_file, unc_name=unc_name, new_name=new_name, outfile=output_file)
     # Add function (quadratic) to model the nuisance
@@ -412,8 +412,7 @@ def add_theory_uncertainties(
     production_mode: str,
     syst_folder: str,
 ) -> None:
-    """
-    Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
+    """Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
 
     This function:
     - Saves copies of control samples used to derive theory variations.
@@ -578,32 +577,39 @@ def add_prefiring_uncertainties(
             param_name=param_name,
             unc_file_name=unc_file_name,
             hist_basename=hist_basename,
-            remove=True,
         )
 
 
-def do_stat_unc(histogram: ROOT.TH1, sample: str, category_id: str, region: str, CR: str, output_file: ROOT.TFile) -> None:
+def do_stat_unc(
+    transfer_factors: dict[str, ROOT.TH1],
+    channel_objects: dict[str, Channel],
+    region_names: dict[str, str],
+    category_id: str,
+    output_file: ROOT.TFile,
+) -> None:
     """Add stat. unc. variations to the workspace"""
 
-    # Add one variation per bin
-    for b in range(1, histogram.GetNbinsX() + 1):
-        err = histogram.GetBinError(b)
-        content = histogram.GetBinContent(b)
-        # Safety
-        if (content <= 0) or (err / content < 0.001):
-            logger.critical(f"Stat. unc. undefined in bin {b} of hist '{histogram.GetName()}': content = {content}, error = {err}.", exception_cls=ValueError)
+    for sample, histogram in transfer_factors.items():
+        # Add one variation per bin
+        region = region_names[sample]
+        for b in range(1, histogram.GetNbinsX() + 1):
+            err = histogram.GetBinError(b)
+            content = histogram.GetBinContent(b)
+            # Safety
+            if (content <= 0) or (err / content < 0.001):
+                logger.critical(f"Undefined behaviour for {histogram.GetName()} in bin {b}: content = {content}, error = {err}.", exception_cls=ValueError)
 
-        # Careful: The bin count "b" in this loop starts at 1. In the combine model, we want it to start from 0!
-        param_name = f"{category_id}_stat_error_{region}_bin{b-1}"
-        up = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Up"))
-        down = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Down"))
-        up.SetBinContent(b, content + err)
-        down.SetBinContent(b, content - err)
-        output_file.WriteTObject(up)
-        output_file.WriteTObject(down)
+            # Careful: The bin count "b" in this loop starts at 1. In the combine model, we want it to start from 0!
+            param_name = f"{category_id}_stat_error_{region}_bin{b-1}"
+            up = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Up"))
+            down = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Down"))
+            up.SetBinContent(b, content + err)
+            down.SetBinContent(b, content - err)
+            output_file.WriteTObject(up)
+            output_file.WriteTObject(down)
 
-        logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
-        CR.add_nuisance_shape(name=param_name, file=output_file, functype="lognorm")
+            logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
+            channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype="lognorm")
 
 
 def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_name: str, outfile: ROOT.TFile) -> None:
