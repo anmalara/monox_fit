@@ -330,6 +330,8 @@ def process_histogram(
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]],
+    shapes_sources: list[str],
+    variable: str,
 ) -> None:
     """Process a single histogram by applying systematic variations and importing it into the workspace."""
     name = hist.GetName()
@@ -343,6 +345,17 @@ def process_histogram(
     if "data" in name:
         return
 
+    # Apply shapes variations
+    for source in shapes_sources:
+        apply_shapes(
+            hist=hist,
+            category=category,
+            variable=variable,
+            source=source,
+            workspace=workspace,
+            output_dir=output_dir,
+            observable=observable,
+        )
     # MC stat
     if is_minor_bkg(category=category, hname=name):
         # for MC-based background, merge the stat unc into single nuisance
@@ -374,6 +387,38 @@ def process_histogram(
     # Signal theory variations
     signal_theory_vars = get_signal_theory_variations(hist, category)
     write_variations_to_workspace(variations=signal_theory_vars, **common_kwargs)
+
+
+def apply_shapes(
+    hist: ROOT.TH1,
+    category: str,
+    variable: str,
+    source: str,
+    workspace: ROOT.RooWorkspace,
+    output_dir: ROOT.TDirectory,
+    observable: ROOT.RooRealVar,
+) -> None:
+
+    name = hist.GetName()
+
+    shapes_filename = f"inputs/sys/{variable}/{category}/shapes_{source}.root"
+    shapes_file = ROOT.TFile.Open(shapes_filename, "READ")
+    logger.debug(f"Applying {source} shapes to histogram {name} and saving to workspace.")
+    common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
+
+    # Apply shape variations to nominal histograms, and save to the workspace.
+    for key in shapes_file.GetListOfKeys():
+        obj = key.ReadObj()
+        varname = key.GetName()
+        logger.debug(f"Applying shape {varname} to histogram {name}.")
+        variation_name = f"{name}_{varname}"
+        varied_hist = hist.Clone(variation_name)
+        varied_hist.SetDirectory(0)
+        # Only one set of shapes for all process (copied from QCD Z(nunu) in signal region)
+        varied_hist.Multiply(obj)
+        write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
+
+    shapes_file.Close()
 
 
 def create_workspace(
@@ -408,6 +453,10 @@ def create_workspace(
     # Loop through all histograms in the input file and add them to the work space.
     logger.info(green("Adding histograms to workspace..."))
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
+
+    # Shapes to apply:
+    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales"]
+
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
         if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
@@ -419,6 +468,8 @@ def create_workspace(
             output_dir=output_dir,
             observable=observable,
             per_region_minor_backgrounds=per_region_minor_backgrounds,
+            shapes_sources=shapes_sources,
+            variable=variable,
         )
 
     # now do the merging of MC-based bkg
