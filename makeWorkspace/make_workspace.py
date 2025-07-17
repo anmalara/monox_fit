@@ -325,7 +325,6 @@ def write_variations_to_workspace(
 
 def process_histogram(
     hist: ROOT.TH1,
-    shapes_file: ROOT.TFile,
     category: str,
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
@@ -343,17 +342,6 @@ def process_histogram(
 
     if "data" in name:
         return
-
-    # Apply shape variations to nominal histograms, and save to the workspace.
-    for key in shapes_file.GetListOfKeys():
-        obj = key.ReadObj()
-        varname = key.GetName()
-        variation_name = f"{name}_{varname}"
-        varied_hist = hist.Clone(variation_name)
-        varied_hist.SetDirectory(0)
-        # Only one set of shapes for all process (copied from QCD Z(nunu) in signal region)
-        varied_hist.Multiply(obj)
-        write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
 
     # MC stat
     if is_minor_bkg(category=category, hname=name):
@@ -386,6 +374,36 @@ def process_histogram(
     # Signal theory variations
     signal_theory_vars = get_signal_theory_variations(hist, category)
     write_variations_to_workspace(variations=signal_theory_vars, **common_kwargs)
+
+
+def apply_shapes(
+    hist: ROOT.TH1,
+    shapes_file: ROOT.TFile,
+    category: str,
+    workspace: ROOT.RooWorkspace,
+    output_dir: ROOT.TDirectory,
+    observable: ROOT.RooRealVar,
+):
+
+    name = hist.GetName()
+
+    if "data" in name:
+        return
+
+    logger.debug(f"Applying all shapes to histogram {name} and saving to workspace.")
+    common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
+
+    # Apply shape variations to nominal histograms, and save to the workspace.
+    for key in shapes_file.GetListOfKeys():
+        obj = key.ReadObj()
+        varname = key.GetName()
+        logger.debug(f"Applying all shape {varname} to histogram {name}.")
+        variation_name = f"{name}_{varname}"
+        varied_hist = hist.Clone(variation_name)
+        varied_hist.SetDirectory(0)
+        # Only one set of shapes for all process (copied from QCD Z(nunu) in signal region)
+        varied_hist.Multiply(obj)
+        write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
 
 
 def create_workspace(
@@ -428,12 +446,20 @@ def create_workspace(
             continue
         process_histogram(
             hist=obj,
-            shapes_file=shapes_file,
             category=category,
             workspace=workspace,
             output_dir=output_dir,
             observable=observable,
             per_region_minor_backgrounds=per_region_minor_backgrounds,
+        )
+
+        apply_shapes(
+            hist=obj,
+            shapes_file=shapes_file,
+            category=category,
+            workspace=workspace,
+            output_dir=output_dir,
+            observable=observable,
         )
 
     # now do the merging of MC-based bkg
