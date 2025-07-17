@@ -69,13 +69,7 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     info_file = os.path.join(output_dir, "INFO.txt")
 
     logger.info(f"Creating workspace for category '{category}'...")
-    create_workspace(
-        input_filename=input_filename,
-        output_filename=workspace_file,
-        category=category,
-        variable=variable,
-        root_folder=root_folder,
-    )
+    create_workspace(input_filename=input_filename, output_filename=workspace_file, category=category, variable=variable, root_folder=root_folder)
 
     logger.info("Running model generation...")
     generate_combine_model(input_filename=workspace_file, output_filename=combined_model_file, category=category, variable=variable)

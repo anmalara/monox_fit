@@ -330,6 +330,8 @@ def process_histogram(
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]],
+    shapes_sources: list[str],
+    variable: str,
 ) -> None:
     """Process a single histogram by applying systematic variations and importing it into the workspace."""
     name = hist.GetName()
@@ -343,6 +345,17 @@ def process_histogram(
     if "data" in name:
         return
 
+    # Apply shapes variations
+    for source in shapes_sources:
+        apply_shapes(
+            hist=hist,
+            category=category,
+            variable=variable,
+            source=source,
+            workspace=workspace,
+            output_dir=output_dir,
+            observable=observable,
+        )
     # MC stat
     if is_minor_bkg(category=category, hname=name):
         # for MC-based background, merge the stat unc into single nuisance
@@ -384,12 +397,9 @@ def apply_shapes(
     workspace: ROOT.RooWorkspace,
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
-):
+) -> None:
 
     name = hist.GetName()
-
-    if "data" in name:
-        return
 
     shapes_filename = f"inputs/sys/{variable}/{category}/shapes_{source}.root"
     shapes_file = ROOT.TFile.Open(shapes_filename, "READ")
@@ -458,18 +468,9 @@ def create_workspace(
             output_dir=output_dir,
             observable=observable,
             per_region_minor_backgrounds=per_region_minor_backgrounds,
+            shapes_sources=shapes_sources,
+            variable=variable,
         )
-
-        for source in shapes_sources:
-            apply_shapes(
-                hist=obj,
-                category=category,
-                variable=variable,
-                source=source,
-                workspace=workspace,
-                output_dir=output_dir,
-                observable=observable,
-            )
 
     # now do the merging of MC-based bkg
     stat_variations = get_mergedMC_stat_variations(per_region_minor_backgrounds, category)
