@@ -3,7 +3,6 @@ from functools import partial
 from collections.abc import Callable
 
 from utils.workspace.processes import get_all_regions, get_processes_by_region
-from utils.workspace.jes_utils import get_jes_variations_names
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -12,6 +11,26 @@ def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
     return [get_lumi_unc, get_objects_eff_unc, get_trigger_unc, get_qcd_unc, get_Higgs_pdf_unc, get_misc_unc]
+
+
+def get_jes_variations_names(year: str) -> list[str]:
+    """Get the list of JES variations."""
+    jes_names = [
+        f"jer_{year}",
+        "jesAbsolute",
+        f"jesAbsolute_{year}",
+        "jesBBEC1",
+        f"jesBBEC1_{year}",
+        "jesEC2",
+        f"jesEC2_{year}",
+        "jesFlavorQCD",
+        "jesHF",
+        f"jesHF_{year}",
+        "jesRelativeBal",
+        f"jesRelativeSample_{year}",
+    ]
+
+    return jes_names
 
 
 def get_veto_unc(model: str) -> dict[str, float]:
