@@ -62,6 +62,10 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
     return processes.get(analysis, {}).get(region, {}).get(type, [])
 
 
+def get_all_regions() -> list[str]:
+    return [region for region, _ in get_region_label_map()]
+
+
 def get_region_label_map() -> list[tuple[str, str]]:
     return [
         ("dielec", "Zee"),
@@ -102,12 +106,6 @@ def get_process_model_map(region: str) -> dict[str, dict[str, str]]:
             "qcd_gjets": "qcd_photon_qcd_zjets",
         },
     }[region]
-
-
-def get_processes_by_type(analysis: str, types: list[str] = ["signals", "backgrounds"]) -> set[str]:
-    """Return the set of all processes of the given types used in all regions of the given analysis."""
-    regions = [region for region, _ in get_region_label_map()]
-    return {proc for region in regions for category in types for proc in get_processes(analysis=analysis, region=region, type=category)}
 
 
 def get_processes_by_region(analysis: str, region: str, types: list[str] = ["backgrounds", "models"]) -> set[str]:

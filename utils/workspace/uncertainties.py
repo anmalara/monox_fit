@@ -2,7 +2,7 @@ from typing import Any
 from functools import partial
 from collections.abc import Callable
 
-from utils.workspace.processes import get_processes_by_region, get_processes_by_type, get_region_label_map
+from utils.workspace.processes import get_all_regions, get_processes_by_region, get_region_label_map
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -30,43 +30,33 @@ def get_veto_unc(model: str) -> dict[str, float]:
 def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return luminosity lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
-
-    proc_list = get_processes_by_type(analysis=analysis)
-    return {
+    systematics = {
         "Run3": {
-            f"lumi_13p6TeV_{year}": {"value": 1.014, "processes": proc_list},
+            f"lumi_13p6TeV_{year}": {
+                region: {"value": 1.014, "processes": get_processes_by_region(analysis=analysis, region=region, types=["signals", "backgrounds"])}
+                for region in get_all_regions()
+            }
         },
-    }[year]
+    }
+    return systematics[year]
 
 
 def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
     """Return prefiring shape systematics for a given year and analysis."""
-    proc_list = get_processes_by_type(analysis=analysis)
-    return {
+    systematics = {
         "vbf": {"Run3": {}},
-        "monojet": {
-            "Run3": {
-                f"prefiring_jet": {"value": 1.0, "processes": proc_list},
-            },
-        },
-    }[
-        analysis
-    ][year]
+        "monojet": {"Run3": get_generic_shape(systematics=["prefiring_jet"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
 
 
 def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
     """Return prefiring shape systematics for a given year and analysis."""
-    proc_list = get_processes_by_type(analysis=analysis)
-    return {
+    systematics = {
         "vbf": {"Run3": {}},
-        "monojet": {
-            "Run3": {
-                f"pu": {"value": 1.0, "processes": proc_list},
-            },
-        },
-    }[
-        analysis
-    ][year]
+        "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
 
 
 def get_lepton_eff_unc(year: str, analysis: str) -> dict[str, Any]:
@@ -177,27 +167,36 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
     }[year]
 
 
+def get_generic_shape(systematics: list[str], analysis: str) -> dict[str, dict[str, Any]]:
+    """Return JER and JES shape systematics for a given year and analysis."""
+    results = {
+        syst: {
+            region: {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region=region, types=["signals", "backgrounds"])}
+            for region in get_all_regions()
+        }
+        for syst in systematics
+    }
+    return results
+
+
 def get_jec_shape(year: str, analysis: str) -> dict[str, dict[str, Any]]:
     """Return JER and JES shape systematics for a given year and analysis."""
-    _ = year  # Currently unused
-    _ = analysis  # Currently unused
-
-    proc_list = get_processes_by_type(analysis=analysis)
     # TODO need to change to CMS_scale_j_Absolute
-    return {
-        f"jer_{year}": {"value": 1.0, "processes": proc_list},
-        "jesAbsolute": {"value": 1.0, "processes": proc_list},
-        f"jesAbsolute_{year}": {"value": 1.0, "processes": proc_list},
-        "jesBBEC1": {"value": 1.0, "processes": proc_list},
-        f"jesBBEC1_{year}": {"value": 1.0, "processes": proc_list},
-        "jesEC2": {"value": 1.0, "processes": proc_list},
-        f"jesEC2_{year}": {"value": 1.0, "processes": proc_list},
-        "jesFlavorQCD": {"value": 1.0, "processes": proc_list},
-        "jesHF": {"value": 1.0, "processes": proc_list},
-        f"jesHF_{year}": {"value": 1.0, "processes": proc_list},
-        "jesRelativeBal": {"value": 1.0, "processes": proc_list},
-        f"jesRelativeSample_{year}": {"value": 1.0, "processes": proc_list},
-    }
+    jecs = [
+        f"jer_{year}",
+        "jesAbsolute",
+        f"jesAbsolute_{year}",
+        "jesBBEC1",
+        f"jesBBEC1_{year}",
+        "jesEC2",
+        f"jesEC2_{year}",
+        "jesFlavorQCD",
+        "jesHF",
+        f"jesHF_{year}",
+        "jesRelativeBal",
+        f"jesRelativeSample_{year}",
+    ]
+    return get_generic_shape(systematics=jecs, analysis=analysis)
 
 
 def get_automc_stat(year: str, analysis: str, n_bins: int) -> dict[str, dict[str, Any]]:
