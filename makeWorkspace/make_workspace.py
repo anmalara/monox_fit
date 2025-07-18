@@ -482,7 +482,7 @@ def create_workspace(
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
 
     # Shapes to apply:
-    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales"]
+    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales", "diboson_unc"]
 
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
