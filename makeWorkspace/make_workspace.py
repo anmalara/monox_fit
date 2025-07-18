@@ -421,6 +421,33 @@ def apply_shapes(
     shapes_file.Close()
 
 
+def add_qcd_to_workspace(
+    category: str,
+    workspace: ROOT.RooWorkspace,
+    output_dir: ROOT.TDirectory,
+    observable: ROOT.RooRealVar,
+    variable: str,
+):
+
+    common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
+    qcd_file_path = f"inputs/sys/{variable}/{category}/systematics_qcd_estimate_signal.root"
+    logger.debug(f"Copying content {qcd_file_path} into workspace")
+    qcd_file = ROOT.TFile(qcd_file_path, "READ")
+    qcd_dir = qcd_file.Get(f"category_{category}")
+
+    for key in qcd_dir.GetListOfKeys():
+        obj = key.ReadObj()
+
+        if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
+            continue
+
+        ensure_nonzero_integral(hist=obj)
+        merge_overflow_into_last_bin(hist=obj)
+        write_histogram_to_workspace(hist=obj, name=obj.GetName(), **common_kwargs)
+
+    qcd_file.Close()
+
+
 def create_workspace(
     input_filename: str,
     output_filename: str,
@@ -481,6 +508,8 @@ def create_workspace(
         output_dir=output_dir,
         observable=observable,
     )
+
+    add_qcd_to_workspace(category=category, workspace=workspace, output_dir=output_dir, observable=observable, variable=variable)
 
     # Finalize workspace and close files
     output_dir.cd()

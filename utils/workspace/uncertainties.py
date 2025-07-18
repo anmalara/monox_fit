@@ -6,7 +6,7 @@ from utils.workspace.processes import get_all_regions, get_processes_by_region
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_jec_shape, get_prefiring_shape, get_pu_shape]
+    return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape]
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -208,6 +208,20 @@ def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
     systematics = {
         "vbf": {"Run3": {}},
         "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
+
+
+def get_qcd_estimate_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                syst: {"signal": {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region="signal", types=["data_driven"])}}
+                for syst in [f"qcdfit_{analysis}_{year}", f"qcdbinning_{analysis}_{year}"]
+            },
+        },
     }
     return systematics[analysis][year]
 
