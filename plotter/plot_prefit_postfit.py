@@ -95,8 +95,10 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         processes = [
             # "qcd",
             "qcdzll",
+            "ww",
+            "zz",
+            "wz",
             "top",
-            "diboson",
             "ewkwjets",
             "ewkzll",
             "ewkgjets",
@@ -106,9 +108,6 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             "qcd_wjets",
             "qcd_zjets",
             "qcd_zll",
-            # "ww",
-            # "wz",
-            # "zz",
             # "wgamma",
             # "zgamma",
         ]
@@ -130,7 +129,6 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             "ewk_gjets",
             "qcd_gjets",
             "top",
-            "diboson",
             "ewk_wjets",
             "qcd_wjets",
             "qcd_zjets",
@@ -139,10 +137,9 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
     colors = {
         "qcd": "#F1F1F2",
         "top": "#CF3721",
-        "diboson": "#4897D8",
-        # "ww": "#4897D8",
-        # "wz": "#4897D8",
-        # "zz": "#4897D8",
+        "ww": "#9A9EAB",
+        "wz": "#4897D8",
+        "zz": "#859ade",
         # "wgamma": "#4897D8",
         # "zgamma": "#4897D8",
         "qcd_gjets": "#859ade",
@@ -299,8 +296,10 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)+jets")
         add_entry(name="ewkwjets", leg="EWK W(l#nu)+jets")
         add_entry(name="ewk_wjets", leg="EWK W(l#nu)+jets")
-        add_entry(name="diboson", leg="WW/ZZ/WZ")
         add_entry(name="top", leg="Top quark")
+        add_entry(name="wz", leg="WZ")
+        add_entry(name="zz", leg="ZZ")
+        add_entry(name="ww", leg="WW")
         add_entry(name="qcdzll", leg="QCD Z(ll)+jets")
         if not is_mono:
             legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")

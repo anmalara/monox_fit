@@ -50,7 +50,8 @@ class DatacardBuilder:
 
             model_procs = get_processes(analysis=self.analysis, region=region_name, type="models")
             bkg_procs = get_processes(analysis=self.analysis, region=region_name, type="backgrounds")
-            self.harvester.AddProcesses(procs=model_procs + bkg_procs, bin=[(region_idx, region_name)], signal=False, **common_args)
+            data_driven_procs = get_processes(analysis=self.analysis, region=region_name, type="data_driven")
+            self.harvester.AddProcesses(procs=model_procs + bkg_procs + data_driven_procs, bin=[(region_idx, region_name)], signal=False, **common_args)
 
         # Set rates to -1 for all processes except models
         self.harvester.ForEachProc(lambda x: x.set_rate(1 if x.process() in self.model_names else -1))

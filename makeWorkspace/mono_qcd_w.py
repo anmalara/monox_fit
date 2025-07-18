@@ -12,7 +12,7 @@ def cmodel(
     output_file: ROOT.TFile,
     output_workspace: ROOT.RooWorkspace,
     diagonalizer,
-    year: int,
+    year: str,
     variable: str,
     convention: str = "BU",
 ) -> Category:
@@ -33,7 +33,7 @@ def cmodel(
         output_file (ROOT.TFile): Output ROOT file for storing processed histograms.
         output_workspace (ROOT.RooWorkspace): Output workspace for RooFit objects.
         diagonalizer: Diagonalizer to pass to `Category`
-        year (int): Data-taking year.
+        year (str): Data-taking year.
         convention (str, optional): Naming convention for transfer factors. Defaults to "BU".
 
     Returns:
@@ -61,7 +61,7 @@ def cmodel(
         # Channels where veto uncertainties are applied.
         "veto_channel_list": ["qcd_wmn", "qcd_wen"],
         # Channels where trigger uncertainties are applied.
-        "trigger_channel_dict": {"qcd_wmn": "met"},
+        "trigger_channel_list": ["qcd_wmn"],
         # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_wmn", "qcd_wen"],
         "jes_jer_process": "wlnu",

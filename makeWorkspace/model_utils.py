@@ -2,8 +2,7 @@ import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
-from utils.workspace.jes_utils import get_jes_variations_names, get_jes_file
-from utils.workspace.uncertainties import get_veto_unc
+from utils.workspace.uncertainties import get_veto_unc, get_jes_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -15,7 +14,7 @@ def define_model(
     output_file: ROOT.TFile,
     output_workspace: ROOT.RooWorkspace,
     diagonalizer: Any,
-    year: int,
+    year: str,
     variable: str,
     convention: str,
     model_name: str,
@@ -23,7 +22,7 @@ def define_model(
     samples_map: dict[str, str],
     channel_names: dict[str, str],
     veto_channel_list: list[str],
-    trigger_channel_dict: dict[str],
+    trigger_channel_list: dict[str],
     jes_jer_channel_list: list[str],
     jes_jer_process: str,
     theory_channel_list: list[str],
@@ -50,14 +49,14 @@ def define_model(
         output_file (ROOT.TFile): Output ROOT file to store results.
         output_workspace (ROOT.RooWorkspace): Output workspace for the statistical model.
         diagonalizer (Any): Object for diagonalizing correlations.
-        year (int): Data-taking year.
+        year (str): Data-taking year.
         convention (str): Naming convention for systematic uncertainties.
         model_name (str): Name of the model.
         target_name (str): Name of the target MC sample in the input ROOT file.
         samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
         channel_names (dict[str, str]): Mapping of transfer factor labels to channel names.
         veto_channel_list (list[str]): Channels where veto uncertainties are applied.
-        trigger_channel_dict (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
+        trigger_channel_list (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
         veto_dict (dict[str, float]): Dictionary of veto nuisance values.
         jes_jer_channel_list (list[str]): Channels where JES/JER uncertainties are applied.
         jes_jer_process (str): Process label for JES/JER uncertainties.
@@ -71,6 +70,7 @@ def define_model(
     # Some setup
     input_tdir = input_file.Get(f"category_{category_id}")
     input_wspace = input_tdir.Get(f"wspace_{category_id}")
+    common_syst_folder = f"inputs/sys/{variable}"
 
     # Defining the nominal transfer factors
     # Nominal MC process to model
@@ -106,10 +106,11 @@ def define_model(
     add_trigger_nuisances(
         transfer_factors=transfer_factors,
         channel_objects=CRs,
-        channel_dict=trigger_channel_dict,
+        channel_list=trigger_channel_list,
         category_id=category_id,
         output_file=output_file,
-        syst_folder=f"inputs/sys/{variable}",
+        syst_folder=f"{common_syst_folder}/{category_id}",
+        year=year,
     )
     add_jes_jer_uncertainties(
         transfer_factors=transfer_factors,
@@ -120,7 +121,7 @@ def define_model(
         output_file=output_file,
         process=jes_jer_process,
         production_mode=model_name.split("_")[0],
-        syst_folder=f"inputs/sys/{variable}",
+        syst_folder=common_syst_folder,
     )
     add_theory_uncertainties(
         control_samples=control_samples,
@@ -132,7 +133,7 @@ def define_model(
         category_id=category_id,
         output_file=output_file,
         production_mode=model_name.split("_")[0],
-        syst_folder=f"inputs/sys/{variable}",
+        syst_folder=common_syst_folder,
     )
 
     if do_monojet_Z_theory:
@@ -141,7 +142,7 @@ def define_model(
             channel_objects=CRs,
             category_id=category_id,
             output_file=output_file,
-            syst_folder=f"inputs/sys/{variable}",
+            syst_folder=common_syst_folder,
         )
 
     if prefiring_channel_list:
@@ -153,12 +154,11 @@ def define_model(
             category_id=category_id,
             output_file=output_file,
             samples_map=samples_map,
-            syst_folder=f"inputs/sys/{variable}",
+            syst_folder=common_syst_folder,
         )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
-    for sample, transfer_factor in transfer_factors.items():
-        do_stat_unc(transfer_factor, proc=sample, region=region_names[sample], CR=CRs[sample], cid=category_id, outfile=output_file)
+    do_stat_unc(transfer_factors=transfer_factors, channel_objects=CRs, region_names=region_names, category_id=category_id, output_file=output_file)
 
     # Extract the bin edges of the distribution
     bin_edges = [target.GetBinLowEdge(b + 1) for b in range(target.GetNbinsX() + 1)]
@@ -255,7 +255,7 @@ def define_channels(
     }
 
 
-def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: int) -> None:
+def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: str) -> None:
     """
     Adds veto systematic uncertainties to the specified control regions.
 
@@ -270,54 +270,68 @@ def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[s
             channel_objects[channel].add_nuisance(veto_name, veto_value)
 
 
+def get_weight_name(sample: str, category_id: str, param_name: str, direction: str) -> str:
+    return f"{sample}_weights_{category_id}_{param_name}_{direction}"
+
+
+def add_shape_nuisances(
+    transfer_factors: dict[str, Any],
+    channel_objects: dict[str, Channel],
+    category_id: str,
+    output_file: ROOT.TFile,
+    sample: str,
+    param_name: str,
+    unc_file_name: str,
+    hist_basename: str,
+    functype: str = "quadratic",
+) -> None:
+    """Adds shape systematic uncertainties to the specified control regions.
+
+    Args:
+        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
+        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
+        category_id (str): Unique identifier for the category.
+        output_file (ROOT.TFile): Output ROOT file for storing variations.
+        sample: (str): Name of sample to which the systematic should be applied to.
+        param_name: (str): Name of the nuisance parameter to add to the model.
+        unc_file_name: (str): Name of the root file where the systematic uncertainties are stored.
+        hist_basename: (str): Name of the histogram to load that contains the relative systematic uncertainty.
+    """
+    unc_file = ROOT.TFile(unc_file_name)
+    for direction in ["Up", "Down"]:
+        # Scale transfer factor by relative variation and write to output file
+        unc_name = f"{hist_basename}{direction}"
+        new_name = get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction=direction)
+        add_variation(nominal=transfer_factors[sample], unc_file=unc_file, unc_name=unc_name, new_name=new_name, outfile=output_file)
+    # Add function (quadratic) to model the nuisance
+    channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype=functype)
+    unc_file.Close()
+
+
 def add_trigger_nuisances(
     transfer_factors: dict[str, Any],
     channel_objects: dict[str, Channel],
-    channel_dict: dict[str],
-    # model_name: str,
-    # year: int,
+    channel_list: list[str],
     category_id: str,
     output_file: ROOT.TFile,
-    # process: str,
     syst_folder: str,
+    year: str,
 ) -> None:
-    """
-    Adds veto systematic uncertainties to the specified control regions.
-
-    Args:
-        channel_objects (dict[str, Channel]): Dictionary mapping control region names to `Channel` objects.
-        channel_list (list[str]): List of control regions to apply veto uncertainties.
-        veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
-    """
-    # veto_dict = {f"CMS_veto_{key}_{year}": value for key, value in get_veto_unc(model=model_name).items()}
-    # for channel in channel_list:
-    #     for veto_name, veto_value in veto_dict.items():
-    #         channel_objects[channel].add_nuisance(veto_name, veto_value)
-
-    for sample, var in channel_dict.items():
-        # trig_unc_file = get_trig_unc_file(category=category_id, source=var, syst_folder=syst_folder)
-        trig_unc_file = ROOT.TFile(f"{syst_folder}/{category_id}/systematics_trigger.root", "READ")
-        for var_direction in ["Up", "Down"]:
-            # tag: monojet: "", monov: "monov"
-            # Scale transfer factor by relative variation and write to output file
-            add_variation(
-                nominal=transfer_factors[sample],
-                unc_file=trig_unc_file,
-                # unc_name=f"{process}_over_{sample}_{var}{var_direction}",
-                # new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
-                unc_name=f"trigger_sys_{var}_{var_direction}",
-                new_name=f"{sample}_weights_{category_id}_trigger_sys_{var}_{var_direction}",
-                outfile=output_file,
-            )
-        # Add function (quadratic) to model the nuisance
-        channel_objects[sample].add_nuisance_shape(f"trigger_sys_{var}", output_file)
-        #         new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
-        # channel_objects[sample].add_nuisance_shape(var, output_file)
-
-    # fztoz_trig = r.TFile.Open("sys/all_trig_2017.root") # 250 - 1400 binning
-    # add_variation(WScales, fztoz_trig, "trig_sys_down"+tag, "wmn_weights_%s_mettrig_%s_Down"%(cid,year), _fOut)
-    # add_variation(WScales, fztoz_trig, "trig_sys_up"+tag, "wmn_weights_%s_mettrig_%s_Up"%(cid,year), _fOut)
-    # CRs[0].add_nuisance_shape("mettrig_%s"%year,_fOut, functype='quadratic')
+    """Adds veto systematic uncertainties to the specified control regions."""
+    hist_basename = "met_trigger_sys"
+    param_name = f"{hist_basename}_{year}"
+    for sample in channel_list:
+        unc_file_name = f"{syst_folder}/systematics_trigger_met_muondep.root"
+        add_shape_nuisances(
+            transfer_factors=transfer_factors,
+            channel_objects=channel_objects,
+            category_id=category_id,
+            output_file=output_file,
+            sample=sample,
+            param_name=param_name,
+            unc_file_name=unc_file_name,
+            hist_basename=hist_basename,
+        )
 
 
 def add_jes_jer_uncertainties(
@@ -371,18 +385,19 @@ def add_jes_jer_uncertainties(
 
     for sample in channel_list:
         for var in jet_variations:
-            fjes = get_jes_file(category=category_id, source=var, syst_folder=syst_folder)
-            for var_direction in ["Up", "Down"]:
-                # Scale transfer factor by relative variation and write to output file
-                add_variation(
-                    nominal=transfer_factors[sample],
-                    unc_file=fjes,
-                    unc_name=f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{var}{var_direction}",
-                    new_name=f"{sample}_weights_{category_id}_{var}_{var_direction}",
-                    outfile=output_file,
-                )
-            # Add function (quadratic) to model the nuisance
-            channel_objects[sample].add_nuisance_shape(var, output_file)
+            param_name = var
+            unc_file_name = f"{syst_folder}/{category_id}/systematics_{param_name}.root"
+            hist_basename = f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{param_name}"
+            add_shape_nuisances(
+                transfer_factors=transfer_factors,
+                channel_objects=channel_objects,
+                category_id=category_id,
+                output_file=output_file,
+                sample=sample,
+                param_name=param_name,
+                unc_file_name=unc_file_name,
+                hist_basename=hist_basename,
+            )
 
 
 def add_theory_uncertainties(
@@ -397,8 +412,7 @@ def add_theory_uncertainties(
     production_mode: str,
     syst_folder: str,
 ) -> None:
-    """
-    Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
+    """Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
 
     This function:
     - Saves copies of control samples used to derive theory variations.
@@ -491,20 +505,12 @@ def add_monojet_Z_theory_uncertainties(
     output_file: ROOT.TFile,
     syst_folder: str,
 ) -> None:
-    """
-    Adds theoretical uncertainties to transfer factors for monojet/monov Z model.
-
-    Args:
-        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
-        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
-        category_id (str): Unique identifier for the category.
-        output_file (ROOT.TFile): Output ROOT file for storing variations.
-    """
+    """Adds theoretical uncertainties to transfer factors for monojet/monov Z model."""
 
     channel = "monojet" if "monojet" in category_id else "monov"
-    ftheo = ROOT.TFile(f"{syst_folder}/{category_id}/vjets_theory_unc.root")
+    unc_file_name = f"{syst_folder}/{category_id}/vjets_theory_unc.root"
     # TODO: change the naming convention
-    for var in [
+    photon_variations = [
         ("d1k", "theory_qcd"),
         ("d2k", "theory_qcdshape"),
         ("d3k", "theory_qcdprocess"),
@@ -514,21 +520,8 @@ def add_monojet_Z_theory_uncertainties(
         ("d3kappa_g", "theory_sudakovG"),
         ("d3kappa_z", "theory_sudakovZ"),
         ("mix", "theory_cross"),
-    ]:
-        for var_direction in ["Up", "Down"]:
-            add_variation(
-                nominal=transfer_factors["qcd_photon"],
-                unc_file=ftheo,
-                unc_name=f"{channel}_z_over_g_{var[0]}_{var_direction}",
-                new_name=f"qcd_photon_weights_{category_id}_{var[1]}_{var_direction}",
-                outfile=output_file,
-            )
-
-        # Add function (quadratic) to model the nuisance
-        channel_objects["qcd_photon"].add_nuisance_shape(var[1], output_file, functype="quadratic")
-
-    # TODO: change the naming convention
-    for var in [
+    ]
+    w_variations = [
         ("d1k", "theory_wqcd"),
         ("d2k", "theory_wqcdshape"),
         ("d3k", "theory_wqcdprocess"),
@@ -538,18 +531,25 @@ def add_monojet_Z_theory_uncertainties(
         ("d3kappa_w", "theory_sudakovW"),
         ("d3kappa_z", "theory_sudakovZ"),
         ("mix", "theory_wcross"),
-    ]:
-        for var_direction in ["Up", "Down"]:
-            add_variation(
-                nominal=transfer_factors["qcd_w"],
-                unc_file=ftheo,
-                unc_name=f"{channel}_z_over_w_{var[0]}_{var_direction}",
-                new_name=f"qcd_w_weights_{category_id}_{var[1]}_{var_direction}",
-                outfile=output_file,
+    ]
+    theory_config = [
+        ("qcd_photon", "z_over_g", photon_variations),
+        ("qcd_w", "z_over_w", w_variations),
+    ]
+    for sample, ratio_label, variations in theory_config:
+        for var in variations:
+            param_name = var[1]
+            hist_basename = f"{channel}_{ratio_label}_{var[0]}"
+            add_shape_nuisances(
+                transfer_factors=transfer_factors,
+                channel_objects=channel_objects,
+                category_id=category_id,
+                output_file=output_file,
+                sample=sample,
+                param_name=param_name,
+                unc_file_name=unc_file_name,
+                hist_basename=hist_basename,
             )
-
-        channel_objects["qcd_w"].add_nuisance_shape(var[1], output_file, functype="quadratic")
-    ftheo.Close()
 
 
 def add_prefiring_uncertainties(
@@ -562,73 +562,57 @@ def add_prefiring_uncertainties(
     samples_map: dict[str, str],
     syst_folder: str,
 ):
-    """
-    Adds prefiring uncertainties to transfer factors.
-
-    Args:
-        transfer_factors (dict[str, ROOT.TH1]): Dictionary mapping transfer factors labels to their distributions.
-        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
-        channel_list (list[str]): List of control regions to apply prefiring uncertainties.
-        target_name (str): Name of the target process.
-        category_id (str): Unique identifier for the category.
-        output_file (ROOT.TFile): Output ROOT file for storing variations.
-        samples_map (dict[str, str]): Mapping of control MC sample names to their ROOT file entries.
-    """
-    f_prefiring = ROOT.TFile(f"{syst_folder}/{category_id}/systematics_prefiring_jet.root")
+    """Adds prefiring uncertainties to transfer factors."""
+    param_name = "prefiring_jet"
+    unc_file_name = f"{syst_folder}/{category_id}/systematics_prefiring_jet.root"
     for region in channel_list:
+        sample = region
+        hist_basename = f"{target_name}_over_{samples_map[sample]}_{param_name}"
+        add_shape_nuisances(
+            transfer_factors=transfer_factors,
+            channel_objects=channel_objects,
+            category_id=category_id,
+            output_file=output_file,
+            sample=sample,
+            param_name=param_name,
+            unc_file_name=unc_file_name,
+            hist_basename=hist_basename,
+        )
 
-        for var_direction in ["Up", "Down"]:
-            add_variation(
-                nominal=transfer_factors[region],
-                unc_file=f_prefiring,
-                unc_name=f"{target_name}_over_{samples_map[region]}_prefiring_jet{var_direction}",
-                new_name=f"{region}_weights_{category_id}_prefiring_jet_{var_direction}",
-                outfile=output_file,
-            )
 
-        channel_objects[region].add_nuisance_shape("prefiring_jet", output_file, functype="quadratic")
-
-
-# Ported from W_constraints, WIP
 def do_stat_unc(
-    histogram,
-    proc,
-    cid,
-    region,
-    CR,
-    outfile,
-):
+    transfer_factors: dict[str, ROOT.TH1],
+    channel_objects: dict[str, Channel],
+    region_names: dict[str, str],
+    category_id: str,
+    output_file: ROOT.TFile,
+) -> None:
     """Add stat. unc. variations to the workspace"""
 
-    # Add one variation per bin
-    for b in range(1, histogram.GetNbinsX() + 1):
-        err = histogram.GetBinError(b)
-        content = histogram.GetBinContent(b)
+    for sample, histogram in transfer_factors.items():
+        # Add one variation per bin
+        region = region_names[sample]
+        for b in range(1, histogram.GetNbinsX() + 1):
+            err = histogram.GetBinError(b)
+            content = histogram.GetBinContent(b)
+            # Safety
+            if (content <= 0) or (err / content < 0.001):
+                logger.critical(f"Undefined behaviour for {histogram.GetName()} in bin {b}: content = {content}, error = {err}.", exception_cls=ValueError)
 
-        # Safety
-        if (content <= 0) or (err / content < 0.001):
-            logger.critical(f"Stat. unc. undefined in bin {b} of hist '{histogram.GetName()}': content = {content}, error = {err}.", exception_cls=ValueError)
+            # Careful: The bin count "b" in this loop starts at 1. In the combine model, we want it to start from 0!
+            param_name = f"{category_id}_stat_error_{region}_bin{b-1}"
+            up = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Up"))
+            down = histogram.Clone(get_weight_name(sample=sample, category_id=category_id, param_name=param_name, direction="Down"))
+            up.SetBinContent(b, content + err)
+            down.SetBinContent(b, content - err)
+            output_file.WriteTObject(up)
+            output_file.WriteTObject(down)
 
-        # Careful: The bin count "b" in this loop starts at 1
-        # In the combine model, we want it to start from 0!
-        up = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Up")
-        down = histogram.Clone(f"{proc}_weights_{cid}_{cid}_stat_error_{region}_bin{b-1}_Down")
-        up.SetBinContent(b, content + err)
-        down.SetBinContent(b, content - err)
-        outfile.WriteTObject(up)
-        outfile.WriteTObject(down)
-
-        logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
-        CR.add_nuisance_shape(f"{cid}_stat_error_{region}_bin{b-1}", outfile, functype="lognorm")
+            logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
+            channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype="lognorm")
 
 
-def add_variation(
-    nominal: ROOT.TH1,
-    unc_file: ROOT.TFile,
-    unc_name: str,
-    new_name: str,
-    outfile: ROOT.TFile,
-) -> None:
+def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_name: str, outfile: ROOT.TFile) -> None:
     # TODO: remove
     unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
     unc_name = unc_name.replace("zmumu_zjets_", "Zmm_qcdzll_").replace("zee_zjets_", "Zee_qcdzll_")

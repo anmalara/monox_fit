@@ -8,23 +8,23 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
             "signal": {
                 "signals": ["zh", "wh", "vbf", "ggh"],
                 "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "dimuon": {
                 "models": ["qcd_zll", "ewk_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "dielec": {
                 "models": ["qcd_zll", "ewk_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "singlemu": {
                 "models": ["qcd_wjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "singleel": {
                 "models": ["qcd_wjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "qcdgjets", "ewkzll", "top", "wz", "zz", "ww"],
             },
             "photon": {
                 "models": ["qcd_gjets", "ewk_gjets"],
@@ -32,34 +32,40 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
         },
         "monojet": {
             "signal": {
-                "signals": ["zh", "wh", "vbf", "ggh"],
+                "signals": ["zh", "wh", "vbf", "ggzh", "ggh"],
                 "models": ["qcd_zjets", "qcd_wjets"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
+                "data_driven": ["qcd"],
             },
             "dimuon": {
                 "models": ["qcd_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "dielec": {
                 "models": ["qcd_zll"],
-                "backgrounds": ["top", "diboson"],
+                "backgrounds": ["top", "wz", "zz", "ww"],
             },
             "singlemu": {
                 "models": ["qcd_wjets"],
-                "backgrounds": ["qcdzll", "top", "diboson"],
+                "backgrounds": ["qcdzll", "top", "wz", "zz", "ww", "qcd"],
             },
             "singleel": {
                 "models": ["qcd_wjets"],
-                "backgrounds": ["qcdzll", "qcdgjets", "top", "diboson"],
+                "backgrounds": ["qcdzll", "qcdgjets", "top", "wz", "zz", "ww", "qcd"],
             },
             "photon": {
                 "models": ["qcd_gjets"],
-                "backgrounds": [],
+                "backgrounds": ["wgamma", "zgamma"],
+                "data_driven": ["qcd"],
             },
         },
     }
 
     return processes.get(analysis, {}).get(region, {}).get(type, [])
+
+
+def get_all_regions() -> list[str]:
+    return [region for region, _ in get_region_label_map()]
 
 
 def get_region_label_map() -> list[tuple[str, str]]:
@@ -102,12 +108,6 @@ def get_process_model_map(region: str) -> dict[str, dict[str, str]]:
             "qcd_gjets": "qcd_photon_qcd_zjets",
         },
     }[region]
-
-
-def get_processes_by_type(analysis: str, types: list[str] = ["signals", "backgrounds"]) -> set[str]:
-    """Return the set of all processes of the given types used in all regions of the given analysis."""
-    regions = [region for region, _ in get_region_label_map()]
-    return {proc for region in regions for category in types for proc in get_processes(analysis=analysis, region=region, type=category)}
 
 
 def get_processes_by_region(analysis: str, region: str, types: list[str] = ["backgrounds", "models"]) -> set[str]:
