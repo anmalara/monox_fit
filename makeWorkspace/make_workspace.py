@@ -15,6 +15,7 @@ from utils.generic.general import rename_region, is_minor_bkg
 from utils.generic.logger import initialize_colorized_logger
 from utils.generic.colors import green
 from utils.workspace.generic import safe_import
+from utils.workspace.uncertainties import get_qcd_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -421,6 +422,36 @@ def apply_shapes(
     shapes_file.Close()
 
 
+def add_qcd_to_workspace(category: str, workspace: ROOT.RooWorkspace, output_dir: ROOT.TDirectory, observable: ROOT.RooRealVar, variable: str):
+    """Add QCD estimate as a nominal histogram and all shapes uncertainties to the workspace."""
+
+    common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
+    qcd_file_path = f"inputs/sys/{variable}/{category}/systematics_qcd_estimate_signal.root"
+    logger.debug(f"Copying content {qcd_file_path} into workspace")
+    qcd_file = ROOT.TFile(qcd_file_path, "READ")
+    qcd_dir = qcd_file.Get(f"category_{category}")
+
+    for syst in get_qcd_variations_names():
+        for direction in ["Up", "Down"]:
+            hist = qcd_dir.Get(f"signal_qcd_{category}_{syst}{direction}")
+
+            if not isinstance(hist, (ROOT.TH1D, ROOT.TH1F)):
+                continue
+
+            ensure_nonzero_integral(hist=hist)
+            merge_overflow_into_last_bin(hist=hist)
+            write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
+
+    # Nominal histogram
+    hist = qcd_dir.Get(f"signal_qcd")
+
+    ensure_nonzero_integral(hist=hist)
+    merge_overflow_into_last_bin(hist=hist)
+    write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
+
+    qcd_file.Close()
+
+
 def create_workspace(
     input_filename: str,
     output_filename: str,
@@ -455,7 +486,7 @@ def create_workspace(
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
 
     # Shapes to apply:
-    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales"]
+    shapes_sources = ["jecs", "prefiring", "pu", "qcd_pdf_and_scales", "diboson_unc"]
 
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
@@ -481,6 +512,8 @@ def create_workspace(
         output_dir=output_dir,
         observable=observable,
     )
+
+    add_qcd_to_workspace(category=category, workspace=workspace, output_dir=output_dir, observable=observable, variable=variable)
 
     # Finalize workspace and close files
     output_dir.cd()

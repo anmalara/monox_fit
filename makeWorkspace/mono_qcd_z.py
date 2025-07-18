@@ -82,7 +82,7 @@ def cmodel(
             "qcd_w": "qcd_wzCR",
             "qcd_photon": "qcd_photonCR",
         },
-        "do_monojet_Z_theory": True,
+        "do_monojet_theory": True,
         "prefiring_channel_list": ["qcd_zmm", "qcd_zee"],
     }
 

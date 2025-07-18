@@ -6,7 +6,7 @@ from utils.workspace.processes import get_all_regions, get_processes_by_region
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_jec_shape, get_prefiring_shape, get_pu_shape]
+    return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape, get_diboson_shape]
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -31,6 +31,15 @@ def get_jes_variations_names(year: str) -> list[str]:
     ]
 
     return jes_names
+
+
+def get_qcd_variations_names() -> list[str]:
+    """Get the list of QCD variations."""
+    qcd_names = [
+        "qcdbinning",
+        "qcdfit",
+    ]
+    return qcd_names
 
 
 def get_veto_unc(model: str) -> dict[str, float]:
@@ -208,6 +217,34 @@ def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
     systematics = {
         "vbf": {"Run3": {}},
         "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
+    }
+    return systematics[analysis][year]
+
+
+def get_qcd_estimate_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {
+                f"{analysis}_{year}_{syst}": {
+                    "signal": {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region="signal", types=["data_driven"])}
+                }
+                for syst in get_qcd_variations_names()
+            },
+        },
+    }
+    return systematics[analysis][year]
+
+
+def get_diboson_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return prefiring shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {
+            "Run3": {f"{vv}_ewkqcd_mix": {region: {"value": 1.0, "processes": [vv]} for region in get_all_regions()} for vv in ["wz", "zz", "ww"]}
+            | {f"{vv}_ewkqcd_mix": {"photon": {"value": 1.0, "processes": [vv]}} for vv in ["wgamma", "zgamma"]}
+        },
     }
     return systematics[analysis][year]
 

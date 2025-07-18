@@ -27,7 +27,7 @@ def define_model(
     jes_jer_process: str,
     theory_channel_list: list[str],
     region_names: dict[str, str],
-    do_monojet_Z_theory: bool = False,
+    do_monojet_theory: bool = False,
     prefiring_channel_list: list[str] = [],
 ):
     """
@@ -136,13 +136,14 @@ def define_model(
         syst_folder=common_syst_folder,
     )
 
-    if do_monojet_Z_theory:
-        add_monojet_Z_theory_uncertainties(
+    if do_monojet_theory:
+        add_monojet_theory_uncertainties(
             transfer_factors=transfer_factors,
             channel_objects=CRs,
             category_id=category_id,
             output_file=output_file,
             syst_folder=common_syst_folder,
+            model=model_name,
         )
 
     if prefiring_channel_list:
@@ -498,58 +499,88 @@ def add_theory_uncertainties(
                 channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
 
 
-def add_monojet_Z_theory_uncertainties(
+def add_monojet_theory_uncertainties(
     transfer_factors: dict[str, ROOT.TH1],
     channel_objects: dict[str, Channel],
     category_id: str,
     output_file: ROOT.TFile,
     syst_folder: str,
+    model: str,
 ) -> None:
     """Adds theoretical uncertainties to transfer factors for monojet/monov Z model."""
 
     channel = "monojet" if "monojet" in category_id else "monov"
-    unc_file_name = f"{syst_folder}/{category_id}/vjets_theory_unc.root"
-    # TODO: change the naming convention
-    photon_variations = [
-        ("d1k", "theory_qcd"),
-        ("d2k", "theory_qcdshape"),
-        ("d3k", "theory_qcdprocess"),
-        ("d1kappa", "theory_ewk"),
-        ("d2kappa_g", "theory_nnlomissG"),
-        ("d2kappa_z", "theory_nnlomissZ"),
-        ("d3kappa_g", "theory_sudakovG"),
-        ("d3kappa_z", "theory_sudakovZ"),
-        ("mix", "theory_cross"),
-    ]
-    w_variations = [
-        ("d1k", "theory_wqcd"),
-        ("d2k", "theory_wqcdshape"),
-        ("d3k", "theory_wqcdprocess"),
-        ("d1kappa", "theory_wewk"),
-        ("d2kappa_w", "theory_nnlomissW"),
-        ("d2kappa_z", "theory_nnlomissZ"),
-        ("d3kappa_w", "theory_sudakovW"),
-        ("d3kappa_z", "theory_sudakovZ"),
-        ("mix", "theory_wcross"),
-    ]
-    theory_config = [
-        ("qcd_photon", "z_over_g", photon_variations),
-        ("qcd_w", "z_over_w", w_variations),
-    ]
-    for sample, ratio_label, variations in theory_config:
-        for var in variations:
-            param_name = var[1]
-            hist_basename = f"{channel}_{ratio_label}_{var[0]}"
-            add_shape_nuisances(
-                transfer_factors=transfer_factors,
-                channel_objects=channel_objects,
-                category_id=category_id,
-                output_file=output_file,
-                sample=sample,
-                param_name=param_name,
-                unc_file_name=unc_file_name,
-                hist_basename=hist_basename,
-            )
+
+    if "zjets" in model:
+        unc_file_name = f"{syst_folder}/{category_id}/vjets_theory_unc.root"
+        # TODO: change the naming convention
+        photon_variations = [
+            ("d1k", "theory_qcd"),
+            ("d2k", "theory_qcdshape"),
+            ("d3k", "theory_qcdprocess"),
+            ("d1kappa", "theory_ewk"),
+            ("d2kappa_g", "theory_nnlomissG"),
+            ("d2kappa_z", "theory_nnlomissZ"),
+            ("d3kappa_g", "theory_sudakovG"),
+            ("d3kappa_z", "theory_sudakovZ"),
+            ("mix", "theory_cross"),
+        ]
+        w_variations = [
+            ("d1k", "theory_wqcd"),
+            ("d2k", "theory_wqcdshape"),
+            ("d3k", "theory_wqcdprocess"),
+            ("d1kappa", "theory_wewk"),
+            ("d2kappa_w", "theory_nnlomissW"),
+            ("d2kappa_z", "theory_nnlomissZ"),
+            ("d3kappa_w", "theory_sudakovW"),
+            ("d3kappa_z", "theory_sudakovZ"),
+            ("mix", "theory_wcross"),
+        ]
+        theory_config = [
+            ("qcd_photon", "z_over_g", photon_variations),
+            ("qcd_w", "z_over_w", w_variations),
+        ]
+        for sample, ratio_label, variations in theory_config:
+            for var in variations:
+                param_name = var[1]
+                hist_basename = f"{channel}_{ratio_label}_{var[0]}"
+                add_shape_nuisances(
+                    transfer_factors=transfer_factors,
+                    channel_objects=channel_objects,
+                    category_id=category_id,
+                    output_file=output_file,
+                    sample=sample,
+                    param_name=param_name,
+                    unc_file_name=unc_file_name,
+                    hist_basename=hist_basename,
+                )
+
+    pdf_file_name = f"{syst_folder}/{category_id}/systematics_pdf_ratios.root"
+
+    pdf_config = {
+        "qcd_zjets": [
+            ("qcd_photon", "z_over_g_pdf"),
+            ("qcd_zmm", "z_over_z_pdf"),
+            ("qcd_zee", "z_over_z_pdf"),
+            ("qcd_w", "z_over_w_pdf"),
+        ],
+        "qcd_wjets": [
+            ("qcd_wen", "w_over_w_pdf"),
+            ("qcd_wmn", "w_over_w_pdf"),
+        ],
+    }[model]
+
+    for sample, hist_basename in pdf_config:
+        add_shape_nuisances(
+            transfer_factors=transfer_factors,
+            channel_objects=channel_objects,
+            category_id=category_id,
+            output_file=output_file,
+            sample=sample,
+            param_name=hist_basename,
+            unc_file_name=pdf_file_name,
+            hist_basename=hist_basename,
+        )
 
 
 def add_prefiring_uncertainties(
