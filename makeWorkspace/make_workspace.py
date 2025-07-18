@@ -428,6 +428,7 @@ def add_qcd_to_workspace(
     observable: ROOT.RooRealVar,
     variable: str,
 ):
+    """Add QCD estimate nominal value histogram and shapes for binning and fit to the workspace."""
 
     common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
     qcd_file_path = f"inputs/sys/{variable}/{category}/systematics_qcd_estimate_signal.root"

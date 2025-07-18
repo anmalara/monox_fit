@@ -552,24 +552,22 @@ def add_monojet_Z_theory_uncertainties(
             )
 
     pdf_file_name = f"{syst_folder}/{category_id}/systematics_pdf_ratios.root"
-    # systematics_pdf_ratios.root
 
     pdf_config = [
-        ("qcd_photon", "z_over_g_pdf", "z_over_g_pdf"),
-        ("qcd_zmm", "z_over_zmm_pdf", "z_over_z_pdf"),
-        ("qcd_zee", "z_over_zee_pdf", "z_over_z_pdf"),
-        ("qcd_w", "z_over_w_pdf", "z_over_w_pdf"),
+        ("qcd_photon", "z_over_g_pdf"),
+        ("qcd_zmm", "z_over_z_pdf"),
+        ("qcd_zee", "z_over_z_pdf"),
+        ("qcd_w", "z_over_w_pdf"),
     ]
 
-    for sample, ratio_label, nuis_name in pdf_config:
-        hist_basename = f"{channel}_{ratio_label}"
+    for sample, hist_basename in pdf_config:
         add_shape_nuisances(
             transfer_factors=transfer_factors,
             channel_objects=channel_objects,
             category_id=category_id,
             output_file=output_file,
             sample=sample,
-            param_name=nuis_name,
+            param_name=hist_basename,
             unc_file_name=pdf_file_name,
             hist_basename=hist_basename,
         )

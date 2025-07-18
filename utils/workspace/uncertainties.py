@@ -218,8 +218,10 @@ def get_qcd_estimate_shape(year: str, analysis: str) -> dict[str, Any]:
         "vbf": {"Run3": {}},
         "monojet": {
             "Run3": {
-                syst: {"signal": {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region="signal", types=["data_driven"])}}
-                for syst in [f"qcdfit_{analysis}_{year}", f"qcdbinning_{analysis}_{year}"]
+                f"{syst}_{analysis}_{year}": {
+                    "signal": {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region="signal", types=["data_driven"])}
+                }
+                for syst in ["qcdfit", "qcdbinning"]
             },
         },
     }
@@ -231,10 +233,7 @@ def get_diboson_shape(year: str, analysis: str) -> dict[str, Any]:
     systematics = {
         "vbf": {"Run3": {}},
         "monojet": {
-            "Run3": {
-                f"{vv}_ewkqcd_mix": {region: {"value": 1.0, "processes": [vv]} for region in ["signal", "dimuon", "dielec", "singlemu", "singleel"]}
-                for vv in ["wz", "zz", "ww"]
-            }
+            "Run3": {f"{vv}_ewkqcd_mix": {region: {"value": 1.0, "processes": [vv]} for region in get_all_regions()} for vv in ["wz", "zz", "ww"]}
             | {f"{vv}_ewkqcd_mix": {"photon": {"value": 1.0, "processes": [vv]}} for vv in ["wgamma", "zgamma"]}
         },
     }
