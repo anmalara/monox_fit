@@ -143,6 +143,7 @@ def define_model(
             category_id=category_id,
             output_file=output_file,
             syst_folder=common_syst_folder,
+            year=year,
         )
 
     if prefiring_channel_list:
@@ -504,6 +505,7 @@ def add_monojet_Z_theory_uncertainties(
     category_id: str,
     output_file: ROOT.TFile,
     syst_folder: str,
+    year: str,
 ) -> None:
     """Adds theoretical uncertainties to transfer factors for monojet/monov Z model."""
 
@@ -550,6 +552,28 @@ def add_monojet_Z_theory_uncertainties(
                 unc_file_name=unc_file_name,
                 hist_basename=hist_basename,
             )
+
+    pdf_file_name = f"{syst_folder}/{category_id}/tf_pdf_unc.root"
+
+    pdf_config = [
+        ("qcd_photon", "z_over_g_pdf", "z_over_g_pdf"),
+        ("qcd_zmm", "z_over_zmm_pdf", "z_over_z_pdf"),
+        ("qcd_zee", "z_over_zee_pdf", "z_over_z_pdf"),
+        ("qcd_w", "z_over_w_pdf", "z_over_w_pdf"),
+    ]
+
+    for sample, ratio_label, nuis_name in pdf_config:
+        hist_basename = f"{channel}_{ratio_label}_{year}"
+        add_shape_nuisances(
+            transfer_factors=transfer_factors,
+            channel_objects=channel_objects,
+            category_id=category_id,
+            output_file=output_file,
+            sample=sample,
+            param_name=nuis_name,
+            unc_file_name=pdf_file_name,
+            hist_basename=hist_basename,
+        )
 
 
 def add_prefiring_uncertainties(
