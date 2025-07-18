@@ -66,7 +66,6 @@ def cmodel(
         "trigger_channel_list": ["qcd_zmm"],
         # Channels where JES/JER uncertainties are applied.
         "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
-        "jes_jer_process": "znunu",
         # Channels where theory uncertainties are applied.
         "theory_channel_list": ["qcd_w", "qcd_photon"],
         # Mapping of transfer factor labels to region names.

@@ -3,6 +3,7 @@
 *.d
 *.pcm
 *.*~
+**/__pycache__
 .vscode/
 vbf/*
 !vbf/scripts
