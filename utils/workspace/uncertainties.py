@@ -33,6 +33,15 @@ def get_jes_variations_names(year: str) -> list[str]:
     return jes_names
 
 
+def get_qcd_variations_names() -> list[str]:
+    """Get the list of QCD variations."""
+    qcd_names = [
+        "qcdbinning",
+        "qcdfit",
+    ]
+    return qcd_names
+
+
 def get_veto_unc(model: str) -> dict[str, float]:
     # TODO split or with the same name?
     return {
@@ -218,10 +227,10 @@ def get_qcd_estimate_shape(year: str, analysis: str) -> dict[str, Any]:
         "vbf": {"Run3": {}},
         "monojet": {
             "Run3": {
-                f"{syst}_{analysis}_{year}": {
+                f"{analysis}_{year}_{syst}": {
                     "signal": {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region="signal", types=["data_driven"])}
                 }
-                for syst in ["qcdfit", "qcdbinning"]
+                for syst in get_qcd_variations_names()
             },
         },
     }

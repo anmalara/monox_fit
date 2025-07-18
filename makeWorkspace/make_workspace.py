@@ -15,6 +15,7 @@ from utils.generic.general import rename_region, is_minor_bkg
 from utils.generic.logger import initialize_colorized_logger
 from utils.generic.colors import green
 from utils.workspace.generic import safe_import
+from utils.workspace.uncertainties import get_qcd_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -421,14 +422,8 @@ def apply_shapes(
     shapes_file.Close()
 
 
-def add_qcd_to_workspace(
-    category: str,
-    workspace: ROOT.RooWorkspace,
-    output_dir: ROOT.TDirectory,
-    observable: ROOT.RooRealVar,
-    variable: str,
-):
-    """Add QCD estimate nominal value histogram and shapes for binning and fit to the workspace."""
+def add_qcd_to_workspace(category: str, workspace: ROOT.RooWorkspace, output_dir: ROOT.TDirectory, observable: ROOT.RooRealVar, variable: str):
+    """Add QCD estimate as a nominal histogram and all shapes uncertainties to the workspace."""
 
     common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
     qcd_file_path = f"inputs/sys/{variable}/{category}/systematics_qcd_estimate_signal.root"
@@ -436,15 +431,23 @@ def add_qcd_to_workspace(
     qcd_file = ROOT.TFile(qcd_file_path, "READ")
     qcd_dir = qcd_file.Get(f"category_{category}")
 
-    for key in qcd_dir.GetListOfKeys():
-        obj = key.ReadObj()
+    for syst in get_qcd_variations_names():
+        for direction in ["Up", "Down"]:
+            hist = qcd_dir.Get(f"signal_qcd_{category}_{syst}{direction}")
 
-        if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
-            continue
+            if not isinstance(hist, (ROOT.TH1D, ROOT.TH1F)):
+                continue
 
-        ensure_nonzero_integral(hist=obj)
-        merge_overflow_into_last_bin(hist=obj)
-        write_histogram_to_workspace(hist=obj, name=obj.GetName(), **common_kwargs)
+            ensure_nonzero_integral(hist=hist)
+            merge_overflow_into_last_bin(hist=hist)
+            write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
+
+    # Nominal histogram
+    hist = qcd_dir.Get(f"signal_qcd")
+
+    ensure_nonzero_integral(hist=hist)
+    merge_overflow_into_last_bin(hist=hist)
+    write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
 
     qcd_file.Close()
 
