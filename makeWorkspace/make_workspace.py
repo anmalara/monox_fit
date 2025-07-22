@@ -119,12 +119,21 @@ def get_photon_qcd_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.T
     Returns:
         dict[str, ROOT.TH1]: Dictionary with Up and Down varied histograms.
     """
-    match = re.match(r".*(201[6-8]).*", category)
-    if not match:
-        logger.critical(f"Could not extract year from category: {category}", exception_cls=ValueError)
-    year = match.group(1)
+    year = category.split("_")[-1]
 
-    unc = 1.05 if year == "2018" else 1.10
+    unc_dict = {
+        "2016": 1.10,
+        "2017": 1.10,
+        "2018": 1.05,
+        # TODO: update value for Run3
+        "Run3": 1.05,
+    }
+
+    if not year in unc_dict:
+        logger.critical(f"Could not extract year from category: {category}", exception_cls=ValueError)
+
+    unc = unc_dict[year]
+
     tag = f"purity_fit_{year}"
     func_up = lambda x: 1 + (unc - 1) / 550 * (x - 250)
     func_dn = lambda x: 1 - (unc - 1) / 550 * (x - 250)
@@ -363,6 +372,11 @@ def process_histogram(
         region, background = name.split("_")
         logger.debug(f"Adding {background} as minor background for {region} region.")
         per_region_minor_backgrounds[region].append(hist)
+
+    # Photon purity shape
+    if name == "gjets_qcd":
+        photon_qcd_vars = get_photon_qcd_variations(hist, category)
+        write_variations_to_workspace(variations=photon_qcd_vars, **common_kwargs)
 
     return
     # TODO: import shapes for photon id
