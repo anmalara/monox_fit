@@ -126,7 +126,7 @@ def get_photon_qcd_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.T
         "2017": 1.10,
         "2018": 1.05,
         # TODO: update value for Run3
-        "Run3": 1.05,
+        "Run3": 1.10,
     }
 
     if not year in unc_dict:
@@ -386,9 +386,6 @@ def process_histogram(
         write_variations_to_workspace(variations=photon_id_vars, **common_kwargs)
 
     return
-    if name == "gjets_qcd":
-        photon_qcd_vars = get_photon_qcd_variations(hist, category)
-        write_variations_to_workspace(variations=photon_qcd_vars, **common_kwargs)
 
     # Diboson variations
     diboson_processes = ["wz", "ww", "zz", "zgamma", "wgamma"]
