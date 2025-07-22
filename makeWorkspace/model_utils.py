@@ -120,18 +120,18 @@ def define_model(
         model_name=model_name,
         syst_folder=common_syst_folder,
     )
-    add_theory_uncertainties(
-        control_samples=control_samples,
-        transfer_factors=transfer_factors,
-        target_sample=target,
-        channel_objects=CRs,
-        channel_list=theory_channel_list,
-        year=year,
-        category_id=category_id,
-        output_file=output_file,
-        production_mode=model_name.split("_")[0],
-        syst_folder=common_syst_folder,
-    )
+    # add_theory_uncertainties(
+    #     control_samples=control_samples,
+    #     transfer_factors=transfer_factors,
+    #     target_sample=target,
+    #     channel_objects=CRs,
+    #     channel_list=theory_channel_list,
+    #     year=year,
+    #     category_id=category_id,
+    #     output_file=output_file,
+    #     production_mode=model_name.split("_")[0],
+    #     syst_folder=common_syst_folder,
+    # )
 
     if do_monojet_theory:
         add_monojet_theory_uncertainties(
