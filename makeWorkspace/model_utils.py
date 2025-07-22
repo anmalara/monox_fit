@@ -24,7 +24,6 @@ def define_model(
     veto_channel_list: list[str],
     trigger_channel_list: dict[str],
     jes_jer_channel_list: list[str],
-    jes_jer_process: str,
     theory_channel_list: list[str],
     region_names: dict[str, str],
     do_monojet_theory: bool = False,
@@ -59,7 +58,6 @@ def define_model(
         trigger_channel_list (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
         veto_dict (dict[str, float]): Dictionary of veto nuisance values.
         jes_jer_channel_list (list[str]): Channels where JES/JER uncertainties are applied.
-        jes_jer_process (str): Process label for JES/JER uncertainties.
         theory_channel_list (list[str]): Channels where theory uncertainties are applied.
         region_names (dict[str, str]): Mapping of transfer factor labels to region names.
 
@@ -119,22 +117,21 @@ def define_model(
         year=year,
         category_id=category_id,
         output_file=output_file,
-        process=jes_jer_process,
-        production_mode=model_name.split("_")[0],
+        model_name=model_name,
         syst_folder=common_syst_folder,
     )
-    add_theory_uncertainties(
-        control_samples=control_samples,
-        transfer_factors=transfer_factors,
-        target_sample=target,
-        channel_objects=CRs,
-        channel_list=theory_channel_list,
-        year=year,
-        category_id=category_id,
-        output_file=output_file,
-        production_mode=model_name.split("_")[0],
-        syst_folder=common_syst_folder,
-    )
+    # add_theory_uncertainties(
+    #     control_samples=control_samples,
+    #     transfer_factors=transfer_factors,
+    #     target_sample=target,
+    #     channel_objects=CRs,
+    #     channel_list=theory_channel_list,
+    #     year=year,
+    #     category_id=category_id,
+    #     output_file=output_file,
+    #     production_mode=model_name.split("_")[0],
+    #     syst_folder=common_syst_folder,
+    # )
 
     if do_monojet_theory:
         add_monojet_theory_uncertainties(
@@ -143,7 +140,7 @@ def define_model(
             category_id=category_id,
             output_file=output_file,
             syst_folder=common_syst_folder,
-            model=model_name,
+            model_name=model_name,
         )
 
     if prefiring_channel_list:
@@ -342,53 +339,16 @@ def add_jes_jer_uncertainties(
     year: str,
     category_id: str,
     output_file: ROOT.TFile,
-    process: str,
-    production_mode: str,
+    model_name: str,
     syst_folder: str,
 ) -> None:
-    """
-    Adds JES and JER uncertainties to transfer factors.
-
-    This function:
-    - Retrieves JES/JER uncertainty variations from an external file.
-    - Applies up/down variations to transfer factors.
-    - Stores the modified transfer factors in the output file.
-    - Adds nuisance parameters for JES/JER uncertainties to the corresponding channels.
-
-    Args:
-        transfer_factors (dict[str, Any]): Dictionary of transfer factors.
-        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
-        channel_list (list[str]): List of control regions to apply JES/JER uncertainties.
-        year (str): Data-taking year.
-        category_id (str): Unique identifier for the category.
-        output_file (ROOT.TFile): Output ROOT file for storing variations.
-        process (str): Label indicating the process being modeled, either "znunu" or "wlnu".
-        production_mode (str): Label indicating the if the production_mode is strong or electroweak, either "qcd" or "ewk".
-    """
-
-    jes_region_labels = {
-        "qcd_w": "wlnu",
-        "qcd_zmm": "zmumu",
-        "qcd_zee": "zee",
-        "qcd_photon": "gjets",
-        "qcd_wmn": "wmunu",
-        "qcd_wen": "wenu",
-        "ewk_w": "wlnu",
-        "ewk_zmm": "zmumu",
-        "ewk_zee": "zee",
-        "ewk_photon": "gjets",
-        "ewk_wmn": "wmunu",
-        "ewk_wen": "wenu",
-    }
-    # Get the JES/JER uncertainty file for transfer factors
-    # Read the split uncertainties from there
+    """Adds JES and JER uncertainties to transfer factors."""
     jet_variations = get_jes_variations_names(year=year)
-
     for sample in channel_list:
         for var in jet_variations:
             param_name = var
             unc_file_name = f"{syst_folder}/{category_id}/systematics_{param_name}.root"
-            hist_basename = f"{process}_over_{jes_region_labels[sample]}_{production_mode}_{param_name}"
+            hist_basename = f"{model_name}_over_{sample}_{param_name}"
             add_shape_nuisances(
                 transfer_factors=transfer_factors,
                 channel_objects=channel_objects,
@@ -462,7 +422,7 @@ def add_theory_uncertainties(
         # Add QCD and PDF uncertainties
         # TODO follow https://cms-analysis.docs.cern.ch/guidelines/systematics/systematics/#pdf-uncertainties
         # QCD_ren_scale_<process> QCD_fac_scale_<process>
-        for var in [("mur", "QCD_ren_scale"), ("muf", "QCD_fac_scale"), ("pdf", "pdf")]:
+        for var in [("mur", "QCD_ren_scale"), ("muf", "QCD_fac_scale")]:
             param_name = f"CMS_{category_id}_{var[1]}_{qcd_label}"
             f_theory = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
             for var_direction in ["Up", "Down"]:
@@ -505,13 +465,13 @@ def add_monojet_theory_uncertainties(
     category_id: str,
     output_file: ROOT.TFile,
     syst_folder: str,
-    model: str,
+    model_name: str,
 ) -> None:
     """Adds theoretical uncertainties to transfer factors for monojet/monov Z model."""
 
     channel = "monojet" if "monojet" in category_id else "monov"
 
-    if "zjets" in model:
+    if "zjets" in model_name:
         unc_file_name = f"{syst_folder}/{category_id}/vjets_theory_unc.root"
         # TODO: change the naming convention
         photon_variations = [
@@ -568,7 +528,7 @@ def add_monojet_theory_uncertainties(
             ("qcd_wen", "w_over_w_pdf"),
             ("qcd_wmn", "w_over_w_pdf"),
         ],
-    }[model]
+    }[model_name]
 
     for sample, hist_basename in pdf_config:
         add_shape_nuisances(
@@ -644,32 +604,6 @@ def do_stat_unc(
 
 
 def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_name: str, outfile: ROOT.TFile) -> None:
-    # TODO: remove
-    unc_name = unc_name.replace("znunu_over_", "signal_qcdzjets_over_").replace("zmumu_qcd", "Zmm_qcdzll").replace("zee_qcd", "Zee_qcdzll")
-    unc_name = unc_name.replace("zmumu_zjets_", "Zmm_qcdzll_").replace("zee_zjets_", "Zee_qcdzll_")
-    unc_name = unc_name.replace("Zmm_qcdzll_zjets", "Zmm_qcdzll").replace("Zee_qcdzll_zjets", "Zee_qcdzll")
-    unc_name = unc_name.replace("wlnu_qcd", "signal_qcdwjets").replace("gjets_qcd", "gjets_qcdgjets")
-    unc_name = unc_name.replace("wlnu_over_", "signal_qcdwjets_over_").replace("wmunu_qcd", "Wmn_qcdwjets").replace("wenu_qcd", "Wen_qcdwjets")
-    unc_name = unc_name.replace("wlnu_zjets", "signal_qcdwjets_zjets")
-    unc_name = unc_name.replace("qcdwjets_zjets", "qcdwjets").replace("gjets_zjets", "gjets_qcdgjets")
-    unc_name = unc_name.replace("wmunu_wjets", "Wmn_qcdwjets").replace("wenu_wjets", "Wen_qcdwjets")
-    if "_ewk" in unc_name:
-        unc_name = unc_name.replace("signal_qcdzjets", "signal_ewkzjets")
-        unc_name = unc_name.replace("zmumu_ewk", "Zmm_ewkzll").replace("zee_ewk", "Zee_ewkzll")
-        unc_name = unc_name.replace("wlnu_ewk", "signal_ewkwjets").replace("wmunu_ewk", "Wmn_ewkwjets").replace("wenu_ewk", "Wen_ewkwjets")
-        unc_name = unc_name.replace("gjets_ewk", "gjets_ewkgjets")
-
-    unc_name = unc_name.replace("zoverw_over_qcd_w_qcd", "signal_qcdzjets_over_signal_qcdwjets")
-    unc_name = unc_name.replace("zoverw_over_ewk_w_ewk", "signal_ewkzjets_over_signal_ewkwjets")
-    unc_name = unc_name.replace("goverz_over_qcd_photon_qcd", "signal_qcdzjets_over_gjets_qcdgjets")
-    unc_name = unc_name.replace("goverz_over_ewk_photon_ewk", "signal_ewkzjets_over_gjets_ewkgjets")
-
-    unc_name = unc_name.replace("zoverw_over_qcd_w_zjets", "signal_qcdzjets_over_signal_qcdwjets")
-    unc_name = unc_name.replace("goverz_over_qcd_photon_zjets", "signal_qcdzjets_over_gjets_qcdgjets")
-
-    # TODO: why are these ratios missing?
-    unc_name = unc_name.replace("signal_qcdwjets_over_Wmn_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
-    unc_name = unc_name.replace("signal_qcdwjets_over_Wen_ewkwjets", "signal_qcdzjets_over_signal_ewkzjets")
     factor = unc_file.Get(unc_name)
     variation = nominal.Clone(new_name)
     if factor.GetNbinsX() == 1:
@@ -677,11 +611,5 @@ def add_variation(nominal: ROOT.TH1, unc_file: ROOT.TFile, unc_name: str, new_na
         variation.Scale(factor_value)
     else:
         assert variation.Multiply(factor)
-        # TODO
-        if "_pdf" in unc_name:
-            for bin_idx in range(0, factor.GetNbinsX() + 2):  # includes underflow (0) and overflow (nbins+1)
-                content = factor.GetBinContent(bin_idx)
-                new_content = (content - 1) / 10 + 1
-                factor.SetBinContent(bin_idx, new_content)
         variation.Multiply(factor)
     outfile.WriteTObject(variation)
