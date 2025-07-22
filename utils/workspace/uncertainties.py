@@ -6,7 +6,7 @@ from utils.workspace.processes import get_all_regions, get_processes_by_region
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape, get_diboson_shape]
+    return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
@@ -245,6 +245,15 @@ def get_diboson_shape(year: str, analysis: str) -> dict[str, Any]:
             "Run3": {f"{vv}_ewkqcd_mix": {region: {"value": 1.0, "processes": [vv]} for region in get_all_regions()} for vv in ["wz", "zz", "ww"]}
             | {f"{vv}_ewkqcd_mix": {"photon": {"value": 1.0, "processes": [vv]}} for vv in ["wgamma", "zgamma"]}
         },
+    }
+    return systematics[analysis][year]
+
+
+def get_purity_shape(year: str, analysis: str) -> dict[str, Any]:
+    """Return purity shape systematics for a given year and analysis."""
+    systematics = {
+        "vbf": {"Run3": {}},
+        "monojet": {"Run3": {f"purity_fit_{year}": {"photon": {"value": 1.0, "processes": ["qcd"]}}}},
     }
     return systematics[analysis][year]
 
