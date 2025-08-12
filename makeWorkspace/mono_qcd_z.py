@@ -82,7 +82,6 @@ def cmodel(
             "qcd_photon": "qcd_photonCR",
         },
         "do_monojet_theory": True,
-        "prefiring_channel_list": ["qcd_zmm", "qcd_zee"],
     }
 
     cat = define_model(

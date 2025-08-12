@@ -23,12 +23,12 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
     model_file = rt.TFile.Open(model_filename, "READ")
 
     region_config = {
-        "dimuon": {"sample": "zll", "process": "zmm", "model": "z", "label": "Z(#mu#mu)"},
-        "dielec": {"sample": "zll", "process": "zee", "model": "z", "label": "Z(ee)"},
+        "dimuon": {"sample": "zll", "process": "zmm", "model": "z", "label": "#mu#mu"},
+        "dielec": {"sample": "zll", "process": "zee", "model": "z", "label": "ee"},
         "photon": {"sample": "gjets", "process": "photon", "model": "z", "label": "#gamma"},
         "signal": {"sample": "zjets", "process": "w", "model": "z", "label": "Z/W"},
-        "singleel": {"sample": "wjets", "process": "wen", "model": "w", "label": "W(e#nu)"},
-        "singlemu": {"sample": "wjets", "process": "wmn", "model": "w", "label": "W(#mu#nu)"},
+        "singleel": {"sample": "wjets", "process": "wen", "model": "w", "label": "e#nu"},
+        "singlemu": {"sample": "wjets", "process": "wmn", "model": "w", "label": "#mu#nu"},
     }
     config = region_config[region]
 

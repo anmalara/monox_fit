@@ -68,7 +68,7 @@ def define_model(
     # Some setup
     input_tdir = input_file.Get(f"category_{category_id}")
     input_wspace = input_tdir.Get(f"wspace_{category_id}")
-    common_syst_folder = f"inputs/sys/{variable}"
+    common_syst_folder = f"inputs/sys/{variable}/{category_id}"
 
     # Defining the nominal transfer factors
     # Nominal MC process to model
@@ -96,9 +96,13 @@ def define_model(
     )
 
     add_veto_nuisances(
+        transfer_factors=transfer_factors,
         channel_objects=CRs,
         channel_list=veto_channel_list,
         model_name=model_name,
+        category_id=category_id,
+        output_file=output_file,
+        syst_folder=common_syst_folder,
         year=year,
     )
     add_trigger_nuisances(
@@ -107,7 +111,7 @@ def define_model(
         channel_list=trigger_channel_list,
         category_id=category_id,
         output_file=output_file,
-        syst_folder=f"{common_syst_folder}/{category_id}",
+        syst_folder=common_syst_folder,
         year=year,
     )
     add_jes_jer_uncertainties(
@@ -253,19 +257,46 @@ def define_channels(
     }
 
 
-def add_veto_nuisances(channel_objects: dict[str, Channel], channel_list: list[str], model_name: str, year: str) -> None:
-    """
-    Adds veto systematic uncertainties to the specified control regions.
+def add_veto_nuisances(
+    transfer_factors: dict[str, Any],
+    channel_objects: dict[str, Channel],
+    channel_list: list[str],
+    model_name: str,
+    category_id: str,
+    output_file: ROOT.TFile,
+    syst_folder: str,
+    year: str,
+) -> None:
+    """Adds veto systematic uncertainties to the specified control regions.
 
     Args:
         channel_objects (dict[str, Channel]): Dictionary mapping control region names to `Channel` objects.
         channel_list (list[str]): List of control regions to apply veto uncertainties.
         veto_dict (dict[str, float]): Dictionnary mapping the name of the nuissance to add and its value.
     """
-    veto_dict = {f"CMS_veto_{key}_{year}": value for key, value in get_veto_unc(model=model_name).items()}
-    for channel in channel_list:
-        for veto_name, veto_value in veto_dict.items():
-            channel_objects[channel].add_nuisance(veto_name, veto_value)
+    lep_map = {"e": "electron", "m": "muon", "t": "tau"}
+    analysis = category_id.replace(f"_{year}", "")
+    for key, veto_value in get_veto_unc(model=model_name, analysis=analysis).items():
+        lep = lep_map[key]
+        veto_name = f"CMS_veto_{key}_{year}"
+        is_shape = veto_value == "shape"
+        if is_shape:
+            unc_file_name = f"{syst_folder}/systematics_{lep}_veto.root"
+        for channel in channel_list:
+            if is_shape:
+                hist_basename = f"{model_name}_over_{channel}_{lep}_veto"
+                add_shape_nuisances(
+                    transfer_factors=transfer_factors,
+                    channel_objects=channel_objects,
+                    category_id=category_id,
+                    output_file=output_file,
+                    sample=channel,
+                    param_name=veto_name,
+                    unc_file_name=unc_file_name,
+                    hist_basename=hist_basename,
+                )
+            else:
+                channel_objects[channel].add_nuisance(veto_name, veto_value)
 
 
 def get_weight_name(sample: str, category_id: str, param_name: str, direction: str) -> str:
@@ -347,7 +378,7 @@ def add_jes_jer_uncertainties(
     for sample in channel_list:
         for var in jet_variations:
             param_name = var
-            unc_file_name = f"{syst_folder}/{category_id}/systematics_{param_name}.root"
+            unc_file_name = f"{syst_folder}/systematics_{param_name}.root"
             hist_basename = f"{model_name}_over_{sample}_{param_name}"
             add_shape_nuisances(
                 transfer_factors=transfer_factors,
@@ -424,14 +455,15 @@ def add_theory_uncertainties(
         # QCD_ren_scale_<process> QCD_fac_scale_<process>
         for var in [("mur", "QCD_ren_scale"), ("muf", "QCD_fac_scale")]:
             param_name = f"CMS_{category_id}_{var[1]}_{qcd_label}"
-            f_theory = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_{var[0]}.root", "READ")
+            f_theory = ROOT.TFile.Open(f"{syst_folder}/systematics_{var[0]}.root", "READ")
             for var_direction in ["Up", "Down"]:
+                new_name = get_weight_name(sample=region, category_id=category_id, param_name=param_name, direction=var_direction)
                 add_variation(
                     nominal=transfer_factors[region],
                     unc_file=f_theory,
                     # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}",
                     unc_name=f"{ratio}_over_{region}_{production_mode}_{var[0]}{var_direction}",
-                    new_name=f"{region}_weights_{category_id}_{param_name}_{var_direction}",
+                    new_name=new_name,
                     outfile=output_file,
                 )
             f_theory.Close()
@@ -441,7 +473,7 @@ def add_theory_uncertainties(
 
         if "vbf" in category_id:
             # EWK uncertainty (decorrelated among bins)
-            ewk_sys = ROOT.TFile.Open(f"{syst_folder}/{category_id}/systematics_pdf.root", "READ")  # TODO
+            ewk_sys = ROOT.TFile.Open(f"{syst_folder}/systematics_pdf.root", "READ")  # TODO
             for dir in ["Up", "Down"]:
                 ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
                 # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
@@ -472,7 +504,7 @@ def add_monojet_theory_uncertainties(
     channel = "monojet" if "monojet" in category_id else "monov"
 
     if "zjets" in model_name:
-        unc_file_name = f"{syst_folder}/{category_id}/vjets_theory_unc.root"
+        unc_file_name = f"{syst_folder}/vjets_theory_unc.root"
         # TODO: change the naming convention
         photon_variations = [
             ("d1k", "theory_qcd"),
@@ -515,7 +547,7 @@ def add_monojet_theory_uncertainties(
                     hist_basename=hist_basename,
                 )
 
-    pdf_file_name = f"{syst_folder}/{category_id}/systematics_pdf_ratios.root"
+    pdf_file_name = f"{syst_folder}/systematics_pdf_ratios.root"
 
     pdf_config = {
         "qcd_zjets": [
@@ -555,7 +587,7 @@ def add_prefiring_uncertainties(
 ):
     """Adds prefiring uncertainties to transfer factors."""
     param_name = "prefiring_jet"
-    unc_file_name = f"{syst_folder}/{category_id}/systematics_prefiring_jet.root"
+    unc_file_name = f"{syst_folder}/systematics_prefiring_jet.root"
     for region in channel_list:
         sample = region
         hist_basename = f"{target_name}_over_{samples_map[sample]}_{param_name}"
@@ -599,7 +631,7 @@ def do_stat_unc(
             output_file.WriteTObject(up)
             output_file.WriteTObject(down)
 
-            logger.info(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
+            logger.debug(f"Adding statistical variation with absolute error = {err:.4f}, relative error = {err / content:.4f}: {up.GetName()}")
             channel_objects[sample].add_nuisance_shape(name=param_name, file=output_file, functype="lognorm")
 
 

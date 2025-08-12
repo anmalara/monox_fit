@@ -86,7 +86,7 @@ def generate_combine_model(
         #   for veto, JES/JER, theory and statistical uncertainties
         #   for each transfer factor in the model
         convention = "IC" if "MTR" in rename else "BU"
-        logger.info(f"Running on {model_name}")
+        logger.info(f"Creating model for {model_name}")
         model = module.cmodel(
             category_id=category,
             category_name=model_name,

@@ -93,7 +93,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             "signal": ["qcd_zjets", "qcd_wjets"],
         }
         processes = [
-            # "qcd",
+            "qcd",
             "qcdzll",
             "ww",
             "zz",
@@ -108,8 +108,8 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             "qcd_wjets",
             "qcd_zjets",
             "qcd_zll",
-            # "wgamma",
-            # "zgamma",
+            "wgamma",
+            "zgamma",
         ]
     else:
         mainbkgs = {
@@ -135,13 +135,13 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             "ewk_zjets",
         ]
     colors = {
-        "qcd": "#F1F1F2",
+        "qcd": "#9A9EAB",
         "top": "#CF3721",
-        "ww": "#9A9EAB",
+        "ww": "#2267a1",
         "wz": "#4897D8",
         "zz": "#859ade",
-        # "wgamma": "#4897D8",
-        # "zgamma": "#4897D8",
+        "wgamma": "#4897D8",
+        "zgamma": "#4897D8",
         "qcd_gjets": "#859ade",
         "qcdgjets": "#859ade",
         "ewk_gjets": "#9A9EAB",
@@ -282,7 +282,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         legname = "Z #rightarrow ee"
 
     n_leg_entries = (len(h_postfit) + 1) if is_SR else 6
-    legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.045, x2=0.89, y2=0.89, textSize=0.045)
+    legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.05, x2=0.89, y2=0.89, textSize=0.045)
 
     def add_entry(name, leg):
         if name in h_postfit:
@@ -301,6 +301,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         add_entry(name="zz", leg="ZZ")
         add_entry(name="ww", leg="WW")
         add_entry(name="qcdzll", leg="QCD Z(ll)+jets")
+        add_entry(name="qcd", leg="QCD multijet")
         if not is_mono:
             legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
         # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO

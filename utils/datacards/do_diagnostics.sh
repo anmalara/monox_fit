@@ -15,6 +15,7 @@ EXTRA_OPTS+=(--saveShapes)
 EXTRA_OPTS+=(--saveWithUncertainties)
 EXTRA_OPTS+=(--cminDefaultMinimizerStrategy 0)
 EXTRA_OPTS+=(--robustHesse 1)
+EXTRA_OPTS+=(--rMin -100 --rMax 100)
 # EXTRA_OPTS+=(--skipSBFit)
 
 for YEAR in "${YEARS[@]}"; do

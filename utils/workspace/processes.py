@@ -32,7 +32,7 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
         },
         "monojet": {
             "signal": {
-                "signals": ["zh", "wh", "vbf", "ggzh", "ggh"],
+                "signals": ["zh", "wh", "vbf", "ggh"],  # ggzh
                 "models": ["qcd_zjets", "qcd_wjets"],
                 "backgrounds": ["top", "wz", "zz", "ww"],
                 "data_driven": ["qcd"],

@@ -3,10 +3,11 @@ import sys
 import array
 import re
 from HiggsAnalysis.CombinedLimit.ModelTools import SafeWorkspaceImporter  # type: ignore
-from utils.workspace.generic import safe_import
+from utils.workspace.generic import safe_import, suppress_roofit_info
 from utils.generic.logger import initialize_colorized_logger
 
-logger = initialize_colorized_logger(log_level="INFO")
+log_level = "INFO"
+logger = initialize_colorized_logger(log_level=log_level)
 
 MAXBINS = 100
 
@@ -60,10 +61,11 @@ class Bin:
         # self.dataset   = self.wspace.data(datasetname)
 
         self.rngename = f"rnge_{self.binid}"
-        self.var.setRange(self.rngename, xmin, xmax)
         self.xmin = xmin
         self.xmax = xmax
-        self.cen = (xmax + xmin) / 2
+        self.cen = (self.xmax + self.xmin) / 2
+        with suppress_roofit_info(debug=log_level == "DEBUG"):
+            self.var.setRange(self.rngename, self.xmin, self.xmax)
 
         self.initY = 0
         self.initE = 0
@@ -140,14 +142,7 @@ class Bin:
     def set_initY(self, mcdataset):
         var = self.var.GetName()
         sum_formula = f"{var}>={self.xmin} && {var}<{self.xmax}"
-        print(
-            "INIT Y: ",
-            sum_formula,
-            self.rngename,
-            self.wspace,
-            self.wspace.data(mcdataset),
-            mcdataset,
-        )
+        logger.debug(f"INIT Y: {sum_formula} {self.rngename} {self.wspace} {self.wspace.data(mcdataset)} {mcdataset}")
         self.initY = self.wspace.data(mcdataset).sumEntries(sum_formula, self.rngename)
 
     def set_initE_precorr(self):
@@ -184,7 +179,7 @@ class Bin:
 
         # Either fetch the QCD Znunu in SR yield,
         # or the transfer factor and nuisances from the category this process depends on
-        print("functionalForm", functionalForm)
+        logger.debug(f"functionalForm: {functionalForm}")
         if not len(functionalForm):
             if not self.wspace_out.var(naming_convention(self.id, self.catid, self.convention)):
                 # RooRealVar containing `initY` (for `qcd_zjets`, this is the QCD Znunu in SR yield)
@@ -195,7 +190,7 @@ class Bin:
             else:
                 self.model_mu = self.wspace_out.var(naming_convention(self.id, self.catid, self.convention))
         else:
-            logger.info("Setting up dependence!!")
+            logger.debug("Setting up dependence!!")
             if self.convention == "BU":
                 DEPENDANT = f"{functionalForm}_bin_{self.id}"
             else:
@@ -223,7 +218,7 @@ class Bin:
                     if self.wspace_out.function(f"sys_function_{nuis}_{self.binid}").getAttribute("temp"):
                         continue
 
-                    print("Adding Nuisance ", nuis)
+                    logger.debug(f"Adding Nuisance {nuis}")
                     # Nuisance*Scale is the model
                     form_args = ROOT.RooArgList(self.wspace_out.function(f"sys_function_{nuis}_{self.binid}"))
                     delta_nuis = ROOT.RooFormulaVar(f"delta_{self.binid}_{nuis}", f"Delta Change from {nuis}", "1+@0", form_args)
@@ -232,7 +227,7 @@ class Bin:
 
                 prod = ROOT.RooProduct(f"prod_{self.binid}", "Nuisance Modifier", nuis_args)
             else:
-                print("Adding Nuisance ", nuisances[0])
+                logger.debug(f"Adding Nuisance {nuisances[0]}")
                 prod = ROOT.RooFormulaVar(
                     f"prod_{self.binid}",
                     f"Delta Change from {nuisances[0]}",
@@ -249,7 +244,7 @@ class Bin:
         self.mu = ROOT.RooFormulaVar(f"mu_{self.binid}", f"Number of expected events in {self.binid}", "@0", bkgArgList)
 
         safe_import(workspace=self.wspace_out, obj=self.mu)
-        safe_import(workspace=self.wspace_out, obj=self.obs)
+        # safe_import(workspace=self.wspace_out, obj=self.obs)
         self.wspace_out.factory(f"Poisson::pdf_{self.binid}(observed,mu_{self.binid})")
 
     def add_to_dataset(self):
