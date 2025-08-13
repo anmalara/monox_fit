@@ -422,6 +422,12 @@ def apply_shapes(
     for key in shapes_file.GetListOfKeys():
         obj = key.ReadObj()
         varname = key.GetName()
+        if "_over_" in varname:
+            continue
+        if "id_shapes" in source:
+            if varname[: varname.find("CMS")] not in name:
+                continue
+            varname = varname[varname.find("CMS") :]
         variation_name = f"{name}_{varname}"
         if "jecs" in source or "btag" in source:
             if ("top" in varname) ^ ("top" in name):

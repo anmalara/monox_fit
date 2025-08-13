@@ -2,7 +2,7 @@ import ROOT  # type:ignore
 from typing import Any
 from counting_experiment import Category, Channel
 from utils.generic.logger import initialize_colorized_logger
-from utils.workspace.uncertainties import get_veto_unc, get_jes_variations_names
+from utils.workspace.uncertainties import get_veto_unc, get_jes_variations_names, get_id_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -114,6 +114,18 @@ def define_model(
         syst_folder=common_syst_folder,
         year=year,
     )
+
+    add_id_nuisances(
+        transfer_factors=transfer_factors,
+        channel_objects=CRs,
+        channel_list=samples_map.keys(),
+        year=year,
+        category_id=category_id,
+        output_file=output_file,
+        syst_folder=common_syst_folder,
+        model_name=model_name,
+    )
+
     add_jes_jer_uncertainties(
         transfer_factors=transfer_factors,
         channel_objects=CRs,
@@ -346,11 +358,11 @@ def add_trigger_nuisances(
     syst_folder: str,
     year: str,
 ) -> None:
-    """Adds veto systematic uncertainties to the specified control regions."""
+    """Adds trigger systematic uncertainties to the specified control regions."""
     hist_basename = "met_trigger_sys"
     param_name = f"{hist_basename}_{year}"
+    unc_file_name = f"{syst_folder}/systematics_trigger_met_muondep.root"
     for sample in channel_list:
-        unc_file_name = f"{syst_folder}/systematics_trigger_met_muondep.root"
         add_shape_nuisances(
             transfer_factors=transfer_factors,
             channel_objects=channel_objects,
@@ -361,6 +373,35 @@ def add_trigger_nuisances(
             unc_file_name=unc_file_name,
             hist_basename=hist_basename,
         )
+
+
+def add_id_nuisances(
+    transfer_factors: dict[str, Any],
+    channel_objects: dict[str, Channel],
+    channel_list: list[str],
+    year: str,
+    category_id: str,
+    output_file: ROOT.TFile,
+    syst_folder: str,
+    model_name: str,
+) -> None:
+    """Adds lepton id systematic uncertainties to the specified control regions."""
+    id_variations = get_id_variations_names(year=year)
+    unc_file_name = f"{syst_folder}/systematics_id_shapes.root"
+    for var in id_variations:
+        param_name = var
+        for sample in channel_list:
+            hist_basename = f"{model_name}_over_{sample}_{param_name}"
+            add_shape_nuisances(
+                transfer_factors=transfer_factors,
+                channel_objects=channel_objects,
+                category_id=category_id,
+                output_file=output_file,
+                sample=sample,
+                param_name=param_name,
+                unc_file_name=unc_file_name,
+                hist_basename=hist_basename,
+            )
 
 
 def add_jes_jer_uncertainties(
