@@ -5,9 +5,10 @@ source "$(dirname "$0")/colors.sh"
 
 CHANNEL="$1"
 YEARS=("Run3")
+FOLDER="limit"
 
-mkdir -p limit
-pushd limit > /dev/null
+mkdir -p ${FOLDER}
+pushd ${FOLDER} > /dev/null
 
 # Uncomment the options you want to use
 EXTRA_OPTS=()
@@ -19,7 +20,8 @@ for YEAR in "${YEARS[@]}"; do
     TAG="${CHANNEL}_${YEAR}"
     CARD="../cards/card_${TAG}.root"
     LOGFILE="log_limit_${YEAR}.txt"
-    METHOD="-M AsymptoticLimits -t -1"
+    METHOD="-M AsymptoticLimits"
+    # METHOD="-M AsymptoticLimits -t -1"
 
     cecho blue "Running AsymptoticLimits for ${TAG}"
     combine ${METHOD} ${CARD} -n "_${TAG}" "${EXTRA_OPTS[@]}" | tee ${LOGFILE}

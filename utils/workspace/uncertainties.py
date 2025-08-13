@@ -9,9 +9,9 @@ def get_shape_systematic_sources(category: str) -> list[str]:
     """Return the list of shape-related systematic uncertainty sources."""
     analysis, year = category.split("_")
     sources = {
-        "monojet": {"Run3": ["jecs", "prefiring_jet", "pdf_scale"]},
+        "monojet": {"Run3": ["jecs", "btag", "prefiring_jet", "pdf_scale", "id_shapes"]},
     }
-    # TODO qcd_pdf_and_scales, diboson_unc
+    # TODO diboson_unc
     return sources[analysis][year]
 
 
@@ -19,8 +19,8 @@ def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
     # get_diboson_shape
     shapes = [
         get_jec_shape,
+        get_objects_shape_unc,
         get_prefiring_shape,
-        get_pu_shape,
         get_qcd_estimate_shape,
         get_purity_shape,
         get_higgs_theory_shape_unc,
@@ -31,7 +31,7 @@ def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
     shapes = [
-        get_lumi_unc,
+        get_pu_lumi_unc,
         get_objects_eff_unc,
         get_trigger_unc,
         get_theory_unc,
@@ -63,22 +63,25 @@ def get_veto_unc(model: str, analysis: str) -> dict[str, Union[float, str]]:
             "ewk_wjets": {"t": 0.01, "m": 0.02, "e": 0.03},
         },
         "monojet": {
-            "qcd_zjets": {"t": "shape", "m": 0.005, "e": 0.008},
-            "qcd_wjets": {"t": "shape", "m": -0.005, "e": -0.008},
+            "qcd_zjets": {"t": "shape", "m": 0.0001, "e": 0.006},
+            "qcd_wjets": {"t": "shape", "m": -0.0001, "e": -0.006},
         },
     }
     return systematics[analysis][model]
 
 
-def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
-    """Return luminosity lnN systematics for a given year and analysis."""
+def get_pu_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
+    """Return pileup and luminosity lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
+    types = ["signals", "backgrounds"]
     systematics = {
         "Run3": {
-            f"lumi_13p6TeV_{year}": {
-                region: {"value": 1.014, "processes": get_processes_by_region(analysis=analysis, region=region, types=["signals", "backgrounds"])}
-                for region in get_all_regions()
-            }
+            "lumi_13p6TeV": {
+                region: {"value": 1.014, "processes": get_processes_by_region(analysis=analysis, region=region, types=types)} for region in get_all_regions()
+            },
+            "CMS_pileup_13p6TeV": {
+                region: {"value": 1.01, "processes": get_processes_by_region(analysis=analysis, region=region, types=types)} for region in get_all_regions()
+            },
         },
     }
     return systematics[year]
@@ -87,30 +90,20 @@ def get_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
 def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return lepton and photon efficiency lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
-    regions = get_all_regions()
 
     # Run-dependent efficiencies
     m_id_eff = {"Run3": -0.004}[year]
     m_iso_eff = {"Run3": -0.005}[year]
     m_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
-    e_id_eff = {"Run3": 0.014}[year]
     e_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
-    g_id_eff = {"Run3": 0.015}[year]
 
-    results = {
-        f"CMS_eff_b_{year}": {"value": 1.03, "processes": ["top"]},
-    }
-    results[f"CMS_fake_b_{year}"] = {  # TODO 1% in VBF 2% in monojet
-        region: {"value": 1.02, "processes": get_processes_by_region(analysis=analysis, region=region, types=["backgrounds"]) - {"top"}} for region in regions
-    }
+    results = {}
 
     lepton_unc = {
-        f"CMS_eff_e_id_{year}": {"dielec": 2 * e_id_eff, "singleel": e_id_eff},
         # f"CMS_eff_e_reco_{year}": {"dielec": 2 * e_reco_eff, "singleel": e_reco_eff},
         f"CMS_eff_m_id_{year}": {"dimuon": 2 * m_id_eff, "singlemu": m_id_eff},
         f"CMS_eff_m_iso_{year}": {"dimuon": 2 * m_iso_eff, "singlemu": m_iso_eff},
         # f"CMS_eff_m_reco_{year}": {"dimuon": 2 * m_reco_eff, "singlemu": m_reco_eff},
-        f"CMS_eff_g_id_{year}": {"photon": g_id_eff},
     }
 
     for name, entries in lepton_unc.items():
@@ -128,14 +121,14 @@ def get_trigger_unc(year: str, analysis: str) -> dict[str, Any]:
     proc_list = partial(get_processes_by_region, analysis=analysis, types=["signals", "backgrounds", "models"])
     return {
         "Run3": {
-            f"CMS_eff_g_trigger_{year}_13p6TeV": {
+            f"CMS_eff_g_trigger_{year}": {
                 "photon": {"value": 0.99, "processes": proc_list(region="photon")},
             },
-            f"CMS_eff_e_trigger_{year}_13p6TeV": {
+            f"CMS_eff_e_trigger_{year}": {
                 "dielec": {"value": 0.99, "processes": proc_list(region="dielec")},
                 "singleel": {"value": 0.99, "processes": proc_list(region="singleel")},
             },
-            f"CMS_eff_met_trigger_{year}_13p6TeV": {
+            f"CMS_eff_met_trigger_{year}": {
                 "signal": {"value": 1.01, "processes": proc_list(region="signal")},
                 "dimuon": {"value": 1.01, "processes": proc_list(region="dimuon")},
                 "singlemu": {"value": 1.01, "processes": proc_list(region="singlemu")},
@@ -147,17 +140,18 @@ def get_trigger_unc(year: str, analysis: str) -> dict[str, Any]:
 def get_theory_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return QCD scale lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
+    # merging all theory norm into a single parameter. Having them split is useful only when combining with other analyses/channels.
     sample_map = {
         "Run3": {
-            "qcdzll": {"qcdzll_Norm": 1.1, "QCDscale_ren_Z": 0.97, "QCDscale_fac_Z": 0.94, "pdf_Z": 1.06},
-            "qcdwjet": {"qcdwjet_Norm": 1.1, "QCDscale_ren_W": 0.95, "QCDscale_fac_W": 0.93, "pdf_W": 1.05},
-            "qcdgjets": {"qcdgjets_Norm": 1.1, "QCDscale_ren_G": 0.93, "QCDscale_fac_G": 0.98, "pdf_G": 1.03},
-            "wz": {"wz_Norm": 1.1, "QCDscale_ren_WZ": 1.10, "QCDscale_fac_WZ": 1.10, "pdf_WZ": 1.10},
-            "zz": {"zz_Norm": 1.1, "QCDscale_ren_ZZ": 1.10, "QCDscale_fac_ZZ": 1.10, "pdf_ZZ": 1.10},
-            "ww": {"ww_Norm": 1.1, "QCDscale_ren_WW": 1.10, "QCDscale_fac_WW": 1.10, "pdf_WW": 1.10},
-            "wgamma": {"QCDscale_ren_Wgamma": 1.10, "QCDscale_fac_Wgamma": 1.10, "pdf_Wgamma": 1.10},
-            "zgamma": {"QCDscale_ren_Zgamma": 1.10, "QCDscale_fac_Zgamma": 1.10, "pdf_Zgamma": 1.10},
-            "top": {"QCDscale_ren_ttbar": 1.02, "QCDscale_fac_ttbar": 0.90, "pdf_ttbar": 0.97},
+            "qcdzll": {"Norm_Z": 1.10},  # "QCDscale_ren_Z": 0.97, "QCDscale_fac_Z": 0.94, "pdf_Z": 1.06},
+            "qcdwjet": {"Norm_W": 1.10},  # "QCDscale_ren_W": 0.95, "QCDscale_fac_W": 0.93, "pdf_W": 1.05},
+            "qcdgjets": {"Norm_G": 1.10},  # "QCDscale_ren_G": 0.93, "QCDscale_fac_G": 0.98, "pdf_G": 1.03},
+            "wz": {"Norm_WZ": 1.20},  # "QCDscale_ren_WZ": 1.10, "QCDscale_fac_WZ": 1.10, "pdf_WZ": 1.10},
+            "zz": {"Norm_ZZ": 1.20},  # "QCDscale_ren_ZZ": 1.10, "QCDscale_fac_ZZ": 1.10, "pdf_ZZ": 1.10},
+            "ww": {"Norm_WW": 1.20},  # "QCDscale_ren_WW": 1.10, "QCDscale_fac_WW": 1.10, "pdf_WW": 1.10},
+            "wgamma": {"Norm_Wgamma": 1.20},  # "QCDscale_ren_Wgamma": 1.10, "QCDscale_fac_Wgamma": 1.10, "pdf_Wgamma": 1.10},
+            "zgamma": {"Norm_Zgamma": 1.20},  # "QCDscale_ren_Zgamma": 1.10, "QCDscale_fac_Zgamma": 1.10, "pdf_Zgamma": 1.10},
+            "top": {"Norm_ttbar": 1.10},  # "QCDscale_ren_ttbar": 1.02, "QCDscale_fac_ttbar": 0.90, "pdf_ttbar": 0.97},
         }
     }
     systematics = {}
@@ -166,13 +160,27 @@ def get_theory_unc(year: str, analysis: str) -> dict[str, Any]:
             systematics[var] = {"value": value, "processes": [sample]}
     systematics.update(
         {
-            "QCD_Norm": {
+            "Norm_QCD_multijet": {
                 "singleel": {"value": 1.75, "processes": ["qcd"]},
                 "singlemu": {"value": 1.50, "processes": ["qcd"]},
             }
         }
     )
     return systematics
+
+
+def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
+    """Return miscellaneous lnN systematics for a given year and analysis."""
+    _ = analysis  # Currently unused
+    return {
+        "Run3": {
+            "top_pt_reweighting": {"value": 1.1, "processes": ["top"]},
+            # "UEPS": {"value": 1.168, "processes": ["ggh"]},  # TODO only for VBF?
+            f"monojet_{year}_purity_closure": {"photon": {"value": 1.25, "processes": ["qcd"]}},
+            f"monojet_{year}_qcd_closure": {"signal": {"value": 1.25, "processes": ["qcd"]}},
+            f"gamma_norm_{year}": {"photon": {"value": 1.20, "processes": ["qcd_gjets"]}},
+        },
+    }[year]
 
 
 def get_higgs_theory_unc(year: str, analysis: str) -> dict[str, Any]:
@@ -221,18 +229,43 @@ def get_pdf_scale_shape_unc(year: str, analysis: str) -> dict[str, Any]:
     return systematics
 
 
-def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
-    """Return miscellaneous lnN systematics for a given year and analysis."""
+def get_id_variations_names(year: str) -> list[str]:
+    """Get the list of lepton id variations."""
+    _ = year
+    var_names = [
+        "CMS_eff_e_id",
+        "CMS_eff_e_id_high_pt",
+        "CMS_eff_g_id_high_pt",
+    ]
+    return var_names
+
+
+def get_btag_variations_names(year: str) -> list[str]:
+    """Get the list of btag variations."""
+    _ = year
+    btag_names = [
+        "CMS_btag_fixedWP_light_correlated",
+        f"CMS_btag_fixedWP_light_uncorrelated_{year}",
+        "CMS_btag_fixedWP_bc_correlated",
+        f"CMS_btag_fixedWP_bc_uncorrelated_{year}",
+    ]
+    if year == "Run3":
+        btag_src = []
+        for y in ["2022", "2022EE", "2023", "2023BPix"]:
+            btag_src += get_btag_variations_names(year=y)
+        btag_names = list(sorted(set(btag_src)))
+    return btag_names
+
+
+def get_objects_shape_unc(year: str, analysis: str) -> dict[str, Any]:
+    """Return lepton and photon efficiency lnN systematics for a given year and analysis."""
     _ = analysis  # Currently unused
-    return {
-        "Run3": {
-            "top_Reweight_13p6TeV": {"value": 1.1, "processes": ["top"]},
-            # "UEPS": {"value": 1.168, "processes": ["ggh"]},  # TODO only for VBF?
-            f"QCD_NormPurity_monojet_{year}": {"photon": {"value": 1.25, "processes": ["qcd"]}},
-            f"qcdclosure_monojet_{year}": {"signal": {"value": 1.25, "processes": ["qcd"]}},
-            f"gamma_norm_{year}": {"photon": {"value": 1.20, "processes": ["qcd_gjets"]}},
-        },
-    }[year]
+    results = get_generic_shape(systematics=get_btag_variations_names(year=year), analysis=analysis)
+    systematics = get_id_variations_names(year=year)
+    for syst in systematics:
+        regions = ["dielec", "singleel"] if "e_id" in syst else ["photon"]
+        results.update(get_generic_shape(systematics=[syst], analysis=analysis, regions=regions))
+    return results
 
 
 def get_jes_variations_names(year: str) -> list[str]:
@@ -248,7 +281,7 @@ def get_jes_variations_names(year: str) -> list[str]:
         "CMS_scale_j_FlavorQCD",
         "CMS_scale_j_HF",
         f"CMS_scale_j_HF_{year}",
-        "CMS_scale_j_RelativeBal",
+        # "CMS_scale_j_RelativeBal", #TODO
         f"CMS_scale_j_RelativeSample_{year}",
     ]
     if year == "Run3":
@@ -261,7 +294,6 @@ def get_jes_variations_names(year: str) -> list[str]:
 
 def get_jec_shape(year: str, analysis: str) -> dict[str, dict[str, Any]]:
     """Return JER and JES shape systematics for a given year and analysis."""
-    # TODO need to change to CMS_scale_j_Absolute
     jecs = get_jes_variations_names(year=year)
     return get_generic_shape(systematics=jecs, analysis=analysis)
 
@@ -271,16 +303,6 @@ def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
     systematics = {
         "vbf": {"Run3": {}},
         "monojet": {"Run3": get_generic_shape(systematics=["prefiring_jet"], analysis=analysis)},
-    }
-    return systematics[analysis][year]
-
-
-def get_pu_shape(year: str, analysis: str) -> dict[str, Any]:
-    """Return prefiring shape systematics for a given year and analysis."""
-    systematics = {
-        "vbf": {"Run3": {}},
-        "monojet": {"Run3": {}},
-        # "monojet": {"Run3": get_generic_shape(systematics=["pu"], analysis=analysis)},
     }
     return systematics[analysis][year]
 
@@ -417,12 +439,15 @@ if __name__ == "__main__":
     def print_table(grouped: dict) -> None:
         # Print LaTeX table
         print("\\begin{table}[htbp] \n\\centering")
-        print(f"\\caption{{Summary systematic uncertainties applied lnN variations.}}")
+        print(f"\\topcaption{{Summary systematic uncertainties applied lnN variations.}}")
         print("\\begin{tabular}{l c l l}\nUncertainty name & Uncertainty & Region & Processes \\\ \n\\hline\\hline")
         for unc_name, rows in sorted(grouped.items()):
-            n = len(rows)
+            nrows = len(rows)
             for i, (reg, value, procs) in enumerate(rows):
-                unc_col = f"\\multirow{{{n}}}{{*}}{{{unc_name}}}" if i == 0 else ""
+                if nrows == 1:
+                    unc_col = unc_name
+                else:
+                    unc_col = f"\\multirow{{{nrows}}}{{*}}{{{unc_name}}}" if i == 0 else ""
                 reg = (
                     reg.replace("dielec", "\\twoEleCR")
                     .replace("dimuon", "\\twoMuoCR")
@@ -436,20 +461,28 @@ if __name__ == "__main__":
         print("\\end{tabular} \n\\label{tab:sf_systematics} \n\\end{table}")
 
     grouped = {}
-    # return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
+    # return [get_jec_shape, get_prefiring_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
 
     for unc_func in get_all_flat_systematics_functions():
-        if unc_func in [get_lumi_unc, get_theory_unc, get_higgs_theory_unc, get_misc_unc]:
+        if unc_func in [get_pu_lumi_unc, get_theory_unc, get_higgs_theory_unc, get_misc_unc]:
             continue
         uncertainties = unc_func(year=year, analysis=analysis)
         # get_uncertainties(grouped=grouped, is_models=True)
+    # print_table(grouped)
 
-    # Print LaTeX table
+    for unc_func in get_all_flat_systematics_functions() + get_all_shapes_functions():
+        if unc_func in [get_higgs_theory_shape_unc, get_higgs_theory_unc, get_pdf_scale_shape_unc, get_theory_unc]:
+            continue
+        uncertainties = unc_func(year=year, analysis=analysis)
+        # get_uncertainties(grouped=grouped, is_models=False)
+    # print_table(grouped)
+
+    for unc_func in [get_pdf_scale_shape_unc, get_theory_unc]:
+        uncertainties = unc_func(year=year, analysis=analysis)
+        # get_uncertainties(grouped=grouped, is_models=False)
     # print_table(grouped)
 
     for unc_func in [get_higgs_theory_unc, get_higgs_theory_shape_unc]:
         uncertainties = unc_func(year=year, analysis=analysis)
-        get_uncertainties(grouped=grouped, is_models=False)
-
-    # Print LaTeX table
-    print_table(grouped)
+        # get_uncertainties(grouped=grouped, is_models=False)
+    # print_table(grouped)
