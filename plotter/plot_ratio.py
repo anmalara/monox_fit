@@ -74,7 +74,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
             up_hist = model_file.Get(f"{dirname}/{name}")
             if "stat_error" in name:
                 syst = "stat"
-            elif any(word in name for word in ["trig", "prefiring", "veto", "eff", "jes", "jer", "photon_scale"]):
+            elif any(word in name for word in ["trig", "prefiring", "veto", "eff", "scale_j", "res_j", "photon_scale"]):
                 syst = "exp"
             elif any(word in name for word in ["theory_sudakov", "theory_nnlo", "ewk", "EWK_ren_scale", "EWK_fac_scale", "EWK_pdf"]):
                 syst = "ewk"

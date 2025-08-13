@@ -15,7 +15,7 @@ from utils.generic.general import rename_region, is_minor_bkg
 from utils.generic.logger import initialize_colorized_logger
 from utils.generic.colors import green
 from utils.workspace.generic import safe_import
-from utils.workspace.uncertainties import get_qcd_variations_names
+from utils.workspace.uncertainties import get_shape_systematic_sources, get_qcd_variations_names
 
 logger = initialize_colorized_logger(log_level="INFO")
 
@@ -340,7 +340,6 @@ def process_histogram(
     output_dir: ROOT.TDirectory,
     observable: ROOT.RooRealVar,
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]],
-    shapes_sources: list[str],
     variable: str,
 ) -> None:
     """Process a single histogram by applying systematic variations and importing it into the workspace."""
@@ -356,7 +355,8 @@ def process_histogram(
         return
 
     # Apply shapes variations
-    for source in shapes_sources:
+    for source in get_shape_systematic_sources(category=category):
+        # Apply shape uncertainties to all histograms. The datacard will determine which processes are affected. TODO it can be potentially dangerous
         apply_shapes(
             hist=hist,
             category=category,
@@ -422,8 +422,16 @@ def apply_shapes(
     for key in shapes_file.GetListOfKeys():
         obj = key.ReadObj()
         varname = key.GetName()
-        logger.debug(f"Applying shape {varname} to histogram {name}.")
         variation_name = f"{name}_{varname}"
+        if "jecs" in source or "btag" in source:
+            if ("top" in varname) ^ ("top" in name):
+                continue
+            if "btag" in source and "top" in name and name not in varname:
+                continue
+            if "btag" in source:
+                varname = varname[varname.find("CMS") :]
+            variation_name = f"{name}_{varname.replace('top_','').replace('others_','')}"
+        logger.debug(f"Applying shape {varname} to histogram {name} as {variation_name}.")
         varied_hist = hist.Clone(variation_name)
         varied_hist.SetDirectory(0)
         # Only one set of shapes for all process (copied from QCD Z(nunu) in signal region)
@@ -496,9 +504,6 @@ def create_workspace(
     logger.info(green("Adding histograms to workspace..."))
     per_region_minor_backgrounds: dict[str, list[ROOT.TH1]] = defaultdict(list)
 
-    # Shapes to apply:
-    shapes_sources = ["jecs", "prefiring_jet", "qcd_pdf_and_scales", "diboson_unc"]
-
     for key in input_dir.GetListOfKeys():
         obj = key.ReadObj()
         if not isinstance(obj, (ROOT.TH1D, ROOT.TH1F)):
@@ -510,7 +515,6 @@ def create_workspace(
             output_dir=output_dir,
             observable=observable,
             per_region_minor_backgrounds=per_region_minor_backgrounds,
-            shapes_sources=shapes_sources,
             variable=variable,
         )
 
