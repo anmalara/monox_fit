@@ -1,35 +1,79 @@
-from typing import Any, Union
+from typing import Any, Optional, Union
 from functools import partial
 from collections.abc import Callable
 
 from utils.workspace.processes import get_processes, get_all_regions, get_processes_by_region
 
 
+def get_shape_systematic_sources(category: str) -> list[str]:
+    """Return the list of shape-related systematic uncertainty sources."""
+    analysis, year = category.split("_")
+    sources = {
+        "monojet": {"Run3": ["jecs", "prefiring_jet", "theory_signal"]},
+    }
+    # TODO qcd_pdf_and_scales, diboson_unc
+    return sources[analysis][year]
+
+
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_jec_shape, get_prefiring_shape, get_pu_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
+    # get_diboson_shape
+    shapes = [
+        get_jec_shape,
+        get_prefiring_shape,
+        get_pu_shape,
+        get_qcd_estimate_shape,
+        get_purity_shape,
+        get_higgs_shape_unc,
+    ]
+    return shapes
 
 
 def get_all_flat_systematics_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    return [get_lumi_unc, get_objects_eff_unc, get_trigger_unc, get_norm_unc, get_higgs_unc, get_misc_unc]
+    shapes = [
+        get_lumi_unc,
+        get_objects_eff_unc,
+        get_trigger_unc,
+        get_norm_unc,
+        get_higgs_unc,
+        get_misc_unc,
+    ]
+    return shapes
+
+
+def get_generic_shape(
+    systematics: list[str],
+    analysis: str,
+    regions: Optional[list[str]] = [],
+    processes: Callable[[str], list[str]] = None,
+) -> dict[str, dict[str, Any]]:
+    """Return a generic shape for a list of systematics for a given year and analysis."""
+    regions = regions or get_all_regions()
+    processes = processes or partial(get_processes_by_region, analysis=analysis, types=["signals", "backgrounds"])
+    results = {syst: {region: {"value": 1.0, "processes": processes(region=region)} for region in regions} for syst in systematics}
+    return results
 
 
 def get_jes_variations_names(year: str) -> list[str]:
     """Get the list of JES variations."""
     jes_names = [
-        f"jer_{year}",
-        "jesAbsolute",
-        f"jesAbsolute_{year}",
-        "jesBBEC1",
-        f"jesBBEC1_{year}",
-        "jesEC2",
-        f"jesEC2_{year}",
-        "jesFlavorQCD",
-        "jesHF",
-        f"jesHF_{year}",
-        "jesRelativeBal",
-        f"jesRelativeSample_{year}",
+        f"CMS_res_j_{year}",
+        "CMS_scale_j_Absolute",
+        f"CMS_scale_j_Absolute_{year}",
+        "CMS_scale_j_BBEC1",
+        f"CMS_scale_j_BBEC1_{year}",
+        "CMS_scale_j_EC2",
+        f"CMS_scale_j_EC2_{year}",
+        "CMS_scale_j_FlavorQCD",
+        "CMS_scale_j_HF",
+        f"CMS_scale_j_HF_{year}",
+        "CMS_scale_j_RelativeBal",
+        f"CMS_scale_j_RelativeSample_{year}",
     ]
-
+    if year == "Run3":
+        jec_src = []
+        for y in ["2022", "2022EE", "2023", "2023BPix"]:
+            jec_src += get_jes_variations_names(year=y)
+        jes_names = list(sorted(set(jec_src)))
     return jes_names
 
 
@@ -158,25 +202,36 @@ def get_norm_unc(year: str, analysis: str) -> dict[str, Any]:
 
 
 def get_higgs_unc(year: str, analysis: str) -> dict[str, Any]:
-    """Return PDF systematics for a given year and analysis."""
+    """Return lnN Higgs related systematics for a given year and analysis."""
     _ = analysis  # Currently unused
     return {
         "Run3": {
-            "QCDscale_Higgs_ggH2in": {"value": 1.039, "processes": ["ggh"]},  # TODO for vbf (0.933, 1.046)
-            "QCDscale_Higgs_ggH2in_ACCEPT": {"value": 1.4, "processes": ["ggh"]},
+            "QCDscale_Higgs_ggH2in": {"value": (1.046 / 0.933), "processes": ["ggh"]},  # TODO for vbf (0.933, 1.046)
             "QCDscale_Higgs_qqH": {"value": (1.004, 0.997), "processes": ["vbf"]},
-            "QCDscale_Higgs_qqH_ACCEPT": {"value": 1.02, "processes": ["vbf"]},
-            "QCDscale_Higgs_zh": {"value": (1.03, 0.969), "processes": ["zh"]},
             "QCDscale_Higgs_wh": {"value": (1.005, 0.993), "processes": ["wh"]},
+            "QCDscale_Higgs_zh": {"value": (1.03, 0.969), "processes": ["zh"]},
             "QCDscale_Higgs_ggzh": {"value": (1.251, 0.811), "processes": ["ggzh"]},
             "pdf_Higgs_gg": {"value": 1.032, "processes": ["ggh"]},
-            "pdf_Higgs_ggzh": {"value": (1.024, 0.982), "processes": ["ggzh"]},
             "pdf_Higgs_qqH": {"value": 1.021, "processes": ["vbf"]},
-            "pdf_Higgs_qqH_ACCEPT": {"value": 1.01, "processes": ["vbf"]},
-            "pdf_Higgs_zh": {"value": (1.016, 0.987), "processes": ["zh"]},  # TODO was symmetric for VBF
             "pdf_Higgs_wh": {"value": 1.019, "processes": ["wh"]},
+            "pdf_Higgs_zh": {"value": (1.016, 0.987), "processes": ["zh"]},  # TODO was symmetric for VBF
+            "pdf_Higgs_ggzh": {"value": (1.024, 0.982), "processes": ["ggzh"]},
         },
     }[year]
+
+
+def get_higgs_shape_unc(year: str, analysis: str) -> dict[str, Any]:
+    """Return lnN Higgs related systematics for a given year and analysis."""
+    _ = year
+    regions = ["signal"]
+    syst_map = {
+        "ggh": ["QCDscale_Higgs_ggH2in_ACCEPT", "pdf_Higgs_gg_ACCEPT"],
+        "vbf": ["QCDscale_Higgs_qqH_ACCEPT", "pdf_Higgs_qqH_ACCEPT"],
+    }
+    systematics = {}
+    for proc, theory_unc in syst_map.items():
+        systematics.update(get_generic_shape(systematics=theory_unc, analysis=analysis, regions=regions, processes=lambda region: {proc}))
+    return systematics
 
 
 def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
@@ -191,18 +246,6 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
             f"gamma_norm_{year}": {"photon": {"value": 1.20, "processes": ["qcd_gjets"]}},
         },
     }[year]
-
-
-def get_generic_shape(systematics: list[str], analysis: str) -> dict[str, dict[str, Any]]:
-    """Return a generic shape for a list of systematics for a given year and analysis."""
-    results = {
-        syst: {
-            region: {"value": 1.0, "processes": get_processes_by_region(analysis=analysis, region=region, types=["signals", "backgrounds"])}
-            for region in get_all_regions()
-        }
-        for syst in systematics
-    }
-    return results
 
 
 def get_jec_shape(year: str, analysis: str) -> dict[str, dict[str, Any]]:
