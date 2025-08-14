@@ -24,10 +24,8 @@ def define_model(
     veto_channel_list: list[str],
     trigger_channel_list: dict[str],
     jes_jer_channel_list: list[str],
-    theory_channel_list: list[str],
     region_names: dict[str, str],
     do_monojet_theory: bool = False,
-    prefiring_channel_list: list[str] = [],
 ):
     """
     Defines a statistical model for a given category using transfer factors.
@@ -58,7 +56,6 @@ def define_model(
         trigger_channel_list (dict[str]): Channels where trigger uncertainties are applied and corresponding trigger name.
         veto_dict (dict[str, float]): Dictionary of veto nuisance values.
         jes_jer_channel_list (list[str]): Channels where JES/JER uncertainties are applied.
-        theory_channel_list (list[str]): Channels where theory uncertainties are applied.
         region_names (dict[str, str]): Mapping of transfer factor labels to region names.
 
     Returns:
@@ -136,18 +133,6 @@ def define_model(
         model_name=model_name,
         syst_folder=common_syst_folder,
     )
-    # add_theory_uncertainties(
-    #     control_samples=control_samples,
-    #     transfer_factors=transfer_factors,
-    #     target_sample=target,
-    #     channel_objects=CRs,
-    #     channel_list=theory_channel_list,
-    #     year=year,
-    #     category_id=category_id,
-    #     output_file=output_file,
-    #     production_mode=model_name.split("_")[0],
-    #     syst_folder=common_syst_folder,
-    # )
 
     if do_monojet_theory:
         add_monojet_theory_uncertainties(
@@ -157,18 +142,6 @@ def define_model(
             output_file=output_file,
             syst_folder=common_syst_folder,
             model_name=model_name,
-        )
-
-    if prefiring_channel_list:
-        add_prefiring_uncertainties(
-            transfer_factors=transfer_factors,
-            channel_objects=CRs,
-            channel_list=prefiring_channel_list,
-            target_name=target_name,
-            category_id=category_id,
-            output_file=output_file,
-            samples_map=samples_map,
-            syst_folder=common_syst_folder,
         )
 
     # Add Bin by bin nuisances to cover statistical uncertainties
@@ -433,105 +406,6 @@ def add_jes_jer_uncertainties(
             )
 
 
-def add_theory_uncertainties(
-    control_samples: dict[str, Any],
-    transfer_factors: dict[str, ROOT.TH1],
-    target_sample: Any,
-    channel_objects: dict[str, Channel],
-    channel_list: list[str],
-    year: str,
-    category_id: str,
-    output_file: ROOT.TFile,
-    production_mode: str,
-    syst_folder: str,
-) -> None:
-    """Adds theoretical uncertainties (scale, PDF, and EWK corrections) to transfer factors.
-
-    This function:
-    - Saves copies of control samples used to derive theory variations.
-    - Retrieves theoretical uncertainty histograms from an external file.
-    - Computes and stores up/down variations for QCD scale, PDF, and EWK uncertainties.
-    - Applies bin-by-bin decorrelated EWK uncertainties.
-    - Adds nuisance parameters for theoretical uncertainties to the corresponding channels.
-
-    Args:
-        control_samples (dict[str, Any]): Dictionary of control region histograms.
-        target_sample (Any): Histogram of the target process.
-        channel_objects (dict[str, Channel]): Dictionary of `Channel` objects.
-        channel_list (list[str]): List of control regions to apply theoretical uncertainties.
-        year (str): Data-taking year.
-        category_id (str): Unique identifier for the category.
-        output_file (ROOT.TFile): Output ROOT file for storing variations.
-    """
-    # Save a (renamed) copy of samples used to derive theory variations
-    # Done to perfectly mirrors what is done in Z_constraints_qcd_withphoton
-    spectrum_label = {
-        "qcd_w": "qcd_w",
-        "qcd_photon": "qcd_gjets",
-        "ewk_w": "ewk_w",
-        "ewk_photon": "ewk_photon",
-    }
-    # TODO: also write Z->nunu spectrum
-    spectrums = {region: control_samples[region].Clone() for region in channel_list}
-    for region, sample in spectrums.items():
-        sample.SetName(f"{spectrum_label[region]}_spectrum_{category_id}_")
-        output_file.WriteTObject(sample)
-
-    nbins = target_sample.GetNbinsX()
-
-    # different labels to convert naming scheme between the different histogram and nuisances to read and write
-    label_dict = {
-        "qcd_w": ("zoverw", "ZnunuWJets", "qcd_ewk"),
-        "qcd_photon": ("goverz", "Photon", "qcd_photon_ewk"),
-    }
-    if "vbf" in category_id:
-        label_dict["ewk_w"] = ("zoverw", "ZnunuWJets_EWK", "ewk_ewk")
-        label_dict["ewk_photon"] = ("goverz", "Photon_EWK", "ewkphoton_ewk")
-
-    for region in channel_list:
-        ratio, qcd_label, ewk_label = label_dict[region]
-
-        # Add QCD and PDF uncertainties
-        # TODO follow https://cms-analysis.docs.cern.ch/guidelines/systematics/systematics/#pdf-uncertainties
-        # QCD_ren_scale_<process> QCD_fac_scale_<process>
-        for var in [("mur", "QCD_ren_scale"), ("muf", "QCD_fac_scale")]:
-            param_name = f"CMS_{category_id}_{var[1]}_{qcd_label}"
-            f_theory = ROOT.TFile.Open(f"{syst_folder}/systematics_{var[0]}.root", "READ")
-            for var_direction in ["Up", "Down"]:
-                new_name = get_weight_name(sample=region, category_id=category_id, param_name=param_name, direction=var_direction)
-                add_variation(
-                    nominal=transfer_factors[region],
-                    unc_file=f_theory,
-                    # unc_name=f"uncertainty_ratio_{denom_label}_mjj_unc_{ratio}_nlo_{var[0]}_{dir}_{year}",
-                    unc_name=f"{ratio}_over_{region}_{production_mode}_{var[0]}{var_direction}",
-                    new_name=new_name,
-                    outfile=output_file,
-                )
-            f_theory.Close()
-
-            # Add function (quadratic) to model the nuisance
-            channel_objects[region].add_nuisance_shape(param_name, output_file)
-
-        if "vbf" in category_id:
-            # EWK uncertainty (decorrelated among bins)
-            ewk_sys = ROOT.TFile.Open(f"{syst_folder}/systematics_pdf.root", "READ")  # TODO
-            for dir in ["Up", "Down"]:
-                ratio_ewk = transfer_factors[region].Clone(f"{region}_weights_{category_id}_ewk_{dir}")
-                # ratio_ewk.Multiply(vbf_sys.Get(f"uncertainty_ratio_{denom_label}_mjj_unc_w_ewkcorr_overz_common_{dir}_{year}"))
-                ratio_ewk.Multiply(ewk_sys.Get(f"signal_ewkzjets_over_signal_ewkwjets_pdf{dir}"))
-
-                for b in range(nbins):
-                    new_name = f"{region}_weights_{category_id}_{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}_{dir}"
-                    ewk_w = transfer_factors[region].Clone(new_name)
-                    ewk_w.SetBinContent(b + 1, ratio_ewk.GetBinContent(b + 1))
-                    output_file.WriteTObject(ewk_w)
-            ewk_sys.Close()
-
-            for b in range(nbins):
-                # Add function (quadratic) to model the nuisance
-                channel_objects[region].add_nuisance_shape(f"{ewk_label}_{category_id.replace(f'_{year}', '')}_bin{b}", output_file)
-
-
 def add_monojet_theory_uncertainties(
     transfer_factors: dict[str, ROOT.TH1],
     channel_objects: dict[str, Channel],
@@ -545,7 +419,7 @@ def add_monojet_theory_uncertainties(
     channel = "monojet" if "monojet" in category_id else "monov"
 
     if "zjets" in model_name:
-        unc_file_name = f"{syst_folder}/vjets_theory_unc.root"
+        unc_file_name = f"{syst_folder}/systematics_vjets_theory.root"
         # TODO: change the naming convention
         photon_variations = [
             ("d1k", "theory_qcd"),
@@ -612,34 +486,6 @@ def add_monojet_theory_uncertainties(
             sample=sample,
             param_name=hist_basename,
             unc_file_name=pdf_file_name,
-            hist_basename=hist_basename,
-        )
-
-
-def add_prefiring_uncertainties(
-    transfer_factors: dict[str, Any],
-    channel_objects: dict[str, Channel],
-    channel_list: list[str],
-    target_name: str,
-    category_id: str,
-    output_file: ROOT.TFile,
-    samples_map: dict[str, str],
-    syst_folder: str,
-):
-    """Adds prefiring uncertainties to transfer factors."""
-    param_name = "prefiring_jet"
-    unc_file_name = f"{syst_folder}/systematics_prefiring_jet.root"
-    for region in channel_list:
-        sample = region
-        hist_basename = f"{target_name}_over_{samples_map[sample]}_{param_name}"
-        add_shape_nuisances(
-            transfer_factors=transfer_factors,
-            channel_objects=channel_objects,
-            category_id=category_id,
-            output_file=output_file,
-            sample=sample,
-            param_name=param_name,
-            unc_file_name=unc_file_name,
             hist_basename=hist_basename,
         )
 

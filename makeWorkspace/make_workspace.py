@@ -374,7 +374,7 @@ def process_histogram(
         per_region_minor_backgrounds[region].append(hist)
 
     # Photon purity shape
-    if name == "gjets_qcd":
+    if name == "gjets_qcd_estimate":
         photon_qcd_vars = get_photon_qcd_variations(hist, category)
         write_variations_to_workspace(variations=photon_qcd_vars, **common_kwargs)
 
@@ -458,8 +458,7 @@ def add_qcd_to_workspace(category: str, workspace: ROOT.RooWorkspace, output_dir
 
     for syst in get_qcd_variations_names():
         for direction in ["Up", "Down"]:
-            hist = qcd_dir.Get(f"signal_qcd_{category}_{syst}{direction}")
-
+            hist = qcd_dir.Get(f"signal_qcd_{category}_{syst}{direction}").Clone(f"signal_qcd_estimate_{category}_{syst}{direction}")
             if not isinstance(hist, (ROOT.TH1D, ROOT.TH1F)):
                 continue
 
@@ -468,7 +467,7 @@ def add_qcd_to_workspace(category: str, workspace: ROOT.RooWorkspace, output_dir
             write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
 
     # Nominal histogram
-    hist = qcd_dir.Get(f"signal_qcd")
+    hist = qcd_dir.Get(f"signal_qcd").Clone(f"signal_qcd_estimate")
 
     ensure_nonzero_integral(hist=hist)
     merge_overflow_into_last_bin(hist=hist)

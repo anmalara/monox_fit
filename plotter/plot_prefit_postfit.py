@@ -292,10 +292,11 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         legend.AddEntry(h_data, "Pseudo data", "elp")
         add_entry(name="qcd_zjets", leg="QCD Z(#nu#nu)+jets")
         add_entry(name="qcd_wjets", leg="QCD W(l#nu)+jets")
-        add_entry(name="ewkzjets", leg="EWK Z(#nu#nu)+jets")
-        add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)+jets")
+        add_entry(name="qcd_gjets", leg="QCD #gamma+jets")
         add_entry(name="ewkwjets", leg="EWK W(l#nu)+jets")
         add_entry(name="ewk_wjets", leg="EWK W(l#nu)+jets")
+        add_entry(name="ewkzjets", leg="EWK Z(#nu#nu)+jets")
+        add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)+jets")
         add_entry(name="top", leg="Top quark")
         add_entry(name="wz", leg="WZ")
         add_entry(name="zz", leg="ZZ")
@@ -304,8 +305,6 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         add_entry(name="qcd", leg="QCD multijet")
         if not is_mono:
             legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
-        # legend.AddEntry(h_postfit["gjets"], "#gamma+jets", "f") TODO
-        # legend.AddEntry(h_postfit["qcd"], "QCD", "f")
         if sb:
             legend.AddEntry(h_postfit_total_sig_bkg, "S+B post-fit", "f")
 
@@ -361,7 +360,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
             sigma = mc_pred + postfit_err**2
         pull = (data_pred - mc_pred) / math.sqrt(sigma)
         # TODO
-        logger.info(
+        logger.debug(
             f"Bin {hbin} at x={center} with pull={pull}, sigma={math.sqrt(sigma)}, sigma_data ={math.sqrt(mc_pred)}, sigma_fit={postfit_err}, diff={data_pred - mc_pred}, data_pred={data_pred}, mc_pred={mc_pred}."
         )
         return pull

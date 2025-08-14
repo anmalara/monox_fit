@@ -63,11 +63,11 @@ def get_veto_unc(model: str, analysis: str) -> dict[str, Union[float, str]]:
             "ewk_wjets": {"t": 0.01, "m": 0.02, "e": 0.03},
         },
         "monojet": {
-            "qcd_zjets": {"t": "shape", "m": 0.0001, "e": 0.006},
+            "qcd_zjets": {"t": "shape", "m": 0.0001, "e": 0.006},  # TODO is this correct?
             "qcd_wjets": {"t": "shape", "m": -0.0001, "e": -0.006},
         },
-    }
-    return systematics[analysis][model]
+    }[analysis]
+    return systematics[model] if model in systematics else {}
 
 
 def get_pu_lumi_unc(year: str, analysis: str) -> dict[str, Any]:
@@ -176,8 +176,8 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
         "Run3": {
             "top_pt_reweighting": {"value": 1.1, "processes": ["top"]},
             # "UEPS": {"value": 1.168, "processes": ["ggh"]},  # TODO only for VBF?
-            f"monojet_{year}_purity_closure": {"photon": {"value": 1.25, "processes": ["qcd"]}},
-            f"monojet_{year}_qcd_closure": {"signal": {"value": 1.25, "processes": ["qcd"]}},
+            f"monojet_{year}_purity_closure": {"photon": {"value": 1.25, "processes": ["qcd_estimate"]}},
+            f"monojet_{year}_qcd_closure": {"signal": {"value": 1.25, "processes": ["qcd_estimate"]}},
             f"gamma_norm_{year}": {"photon": {"value": 1.20, "processes": ["qcd_gjets"]}},
         },
     }[year]
@@ -187,7 +187,7 @@ def get_higgs_theory_unc(year: str, analysis: str) -> dict[str, Any]:
     """Return lnN Higgs related systematics for a given year and analysis."""
     _ = analysis  # Currently unused
     return {
-        "Run3": {  # TODO split in ren and fac?
+        "Run3": {
             "QCDscale_ggH": {"value": (1.046, 0.933), "processes": ["ggh"]},  # YR checked
             "QCDscale_qqH": {"value": (1.005, 0.997), "processes": ["vbf"]},  # YR checked
             "QCDscale_wh": {"value": (1.004, 0.993), "processes": ["wh"]},  # YR checked
@@ -348,7 +348,7 @@ def get_purity_shape(year: str, analysis: str) -> dict[str, Any]:
     """Return purity shape systematics for a given year and analysis."""
     systematics = {
         "vbf": {"Run3": {}},
-        "monojet": {"Run3": {f"purity_fit_{year}": {"photon": {"value": 1.0, "processes": ["qcd"]}}}},
+        "monojet": {"Run3": {f"purity_fit_{year}": {"photon": {"value": 1.0, "processes": ["qcd_estimate"]}}}},
     }
     return systematics[analysis][year]
 

@@ -370,7 +370,7 @@ class Channel:
                 fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin_{ b}"
             else:
                 fname = f"sys_function_{name}_cat_{self.catid}_ch_{self.chid}_bin{b + 1}"
-            func = ROOT.RooFormulaVar(fname, "Systematic Varation", f"@0*{size}", ROOT.RooArgList(self.wspace_out.var(name)))
+            func = ROOT.RooFormulaVar(fname, "Systematic Variation", f"@0*{size}", ROOT.RooArgList(self.wspace_out.var(name)))
             if not self.wspace_out.function(func.GetName()):
                 safe_import(workspace=self.wspace_out, obj=func)
         if bkg:
@@ -433,7 +433,7 @@ class Channel:
                 coeff_b = 0.5 * (vu - vd)
 
                 # this is now relative deviation, SF-SF_0 = func => SF = SF_0*(1+func/SF_0)
-                func = ROOT.RooFormulaVar(fname, "Systematic Varation", f"({coeff_a}*@0*@0+{coeff_b}*@0)/{nsf}", ROOT.RooArgList(self.wspace_out.var(name)))
+                func = ROOT.RooFormulaVar(fname, "Systematic Variation", f"({coeff_a}*@0*@0+{coeff_b}*@0)/{nsf}", ROOT.RooArgList(self.wspace_out.var(name)))
 
                 if coeff_a == 0 and coeff_b == 0:
                     func.setAttribute("temp", True)
