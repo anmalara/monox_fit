@@ -3,7 +3,7 @@ import ROOT as rt  # type: ignore
 from collections import defaultdict
 import plotter.cmsstyle as CMS
 from utils.generic.general import oplus
-from utils.workspace.uncertainties import get_all_flat_systematics_functions
+from utils.workspace.uncertainties import get_all_flat_systematics_functions, get_veto_unc
 from utils.generic.logger import initialize_colorized_logger
 
 logger = initialize_colorized_logger(log_level="INFO")
@@ -23,25 +23,24 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
     model_file = rt.TFile.Open(model_filename, "READ")
 
     region_config = {
-        "dimuon": {"sample": "zll", "process": "zmm", "model": "z", "label": "Z(#mu#mu)"},
-        "dielec": {"sample": "zll", "process": "zee", "model": "z", "label": "Z(ee)"},
+        "dimuon": {"sample": "zll", "process": "zmm", "model": "z", "label": "#mu#mu"},
+        "dielec": {"sample": "zll", "process": "zee", "model": "z", "label": "ee"},
         "photon": {"sample": "gjets", "process": "photon", "model": "z", "label": "#gamma"},
         "signal": {"sample": "zjets", "process": "w", "model": "z", "label": "Z/W"},
-        "singleel": {"sample": "wjets", "process": "wen", "model": "w", "label": "W(e#nu)"},
-        "singlemu": {"sample": "wjets", "process": "wmn", "model": "w", "label": "W(#mu#nu)"},
+        "singleel": {"sample": "wjets", "process": "wen", "model": "w", "label": "e#nu"},
+        "singlemu": {"sample": "wjets", "process": "wmn", "model": "w", "label": "#mu#nu"},
     }
     config = region_config[region]
 
     for mode in production_modes:
-        # TODO: fix these names for monojet
         dirname = f"{tag}_{mode}_{config['model']}_category_{category}"
         base_name = f"{mode}_{config['process']}_weights_{category}"
         label = f"R_{{{mode}}}^{{{config['label']}}}"
         ratio = model_file.Get(f"{dirname}/{base_name}")
         subdir = model_file.Get(dirname)
+        model = f"{mode}_{config['sample']}"
 
-        flat_uncertainties = []
-        # TODO: get_veto_unc
+        flat_uncertainties = {}
         for syst_func in get_all_flat_systematics_functions():
             systematics = syst_func(year=year, analysis=analysis)
             for name, region_map in systematics.items():
@@ -49,7 +48,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
                 signal_entry = region_map.get("signal", {})
                 if not ("value" in region_entry or "value" in signal_entry):
                     continue
-                in_region = f"{mode}_{config['sample']}" in region_entry.get("processes", [])
+                in_region = model in region_entry.get("processes", [])
                 in_signal = f"{mode}_zjets" in signal_entry.get("processes", [])
                 unc = None
                 if in_region and in_signal:
@@ -59,9 +58,17 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
                 elif in_region:
                     unc = region_entry["value"]
                 if unc is not None:
-                    flat_uncertainties.append(unc)
+                    flat_uncertainties[name] = unc
                     logger.info(f"Adding to exp: {name} for {region} with value = {unc}")
 
+        for lep, unc in get_veto_unc(model=model, analysis=analysis).items():
+            if unc == "shape":
+                continue
+            name = f"veto_{lep}"
+            flat_uncertainties[name] = unc
+            logger.info(f"Adding to exp: {name} for {region} with value = {unc}")
+
+        logger.info(f"Total flat syst: {flat_uncertainties}")
         # Collect systematics
         unc_dict = defaultdict(lambda: defaultdict(float))
         for key in subdir.GetListOfKeys():
@@ -74,7 +81,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
             up_hist = model_file.Get(f"{dirname}/{name}")
             if "stat_error" in name:
                 syst = "stat"
-            elif any(word in name for word in ["trig", "prefiring", "veto", "eff", "jes", "jer", "photon_scale"]):
+            elif any(word in name for word in ["trig", "prefiring", "veto", "eff", "scale_j", "res_j", "photon_scale"]):
                 syst = "exp"
             elif any(word in name for word in ["theory_sudakov", "theory_nnlo", "ewk", "EWK_ren_scale", "EWK_fac_scale", "EWK_pdf"]):
                 syst = "ewk"
@@ -82,7 +89,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
                 syst = "qcd"
             else:
                 logger.critical(f"Unrecognized variation: {name}", exception_cls=ValueError)
-            logger.debug(f"Adding to {syst}: {name}")
+            logger.info(f"Adding to {syst}: {name}")
             logger.debug(f"Processing systematic '{syst}' for histogram '{name}'")
 
             for b in range(1, ratio.GetNbinsX() + 1):
@@ -100,7 +107,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
             stat = unc_dict["stat"][b]
             ewk = oplus(stat, unc_dict["ewk"][b])
             qcd = oplus(ewk, unc_dict["qcd"][b])
-            tot = oplus(qcd, unc_dict["exp"][b], (oplus(*[x - 1 for x in flat_uncertainties])) * ratio.GetBinContent(b))
+            tot = oplus(qcd, unc_dict["exp"][b], (oplus(*[x - 1 for x in flat_uncertainties.values()])) * ratio.GetBinContent(b))
             bands["ewk"].SetBinError(b, ewk)
             bands["ewk_qcd"].SetBinError(b, qcd)
             bands["total"].SetBinError(b, tot)

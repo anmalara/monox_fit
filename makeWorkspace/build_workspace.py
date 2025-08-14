@@ -5,6 +5,7 @@ import hashlib
 import argparse
 from typing import Optional
 from datetime import date
+from utils.generic.parallelize import timeit
 from utils.generic.logger import initialize_colorized_logger
 from makeWorkspace.make_workspace import create_workspace
 from makeWorkspace.generate_combine_model import generate_combine_model
@@ -85,6 +86,7 @@ def build_workspace(input_dir: str, analysis: str, year: str, tag: str, variable
     logger.info(f"Done! Output path: {os.path.dirname(output_dir)}")
 
 
+@timeit
 def main() -> None:
     """Main function to generate RooWorkspace and datacards for analysis."""
     parser = argparse.ArgumentParser(description="Arguments for workspace creation.")

@@ -49,7 +49,7 @@ def cmodel(
             "qcd_zmm": "Zmm_qcdzll",
             "qcd_zee": "Zee_qcdzll",
             "qcd_w": "signal_qcdwjets",
-            "ewkqcd": "signal_ewkzjets",
+            "ewkqcd": "signal_ewkzjets",  # TODO
             "qcd_photon": "gjets_qcdgjets",
         },
         # Mapping of transfer factor labels to channel names.
@@ -65,9 +65,7 @@ def cmodel(
         # Channels where trigger uncertainties are applied.
         "trigger_channel_list": ["qcd_zmm"],
         # Channels where JES/JER uncertainties are applied.
-        "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],
-        # Channels where theory uncertainties are applied.
-        "theory_channel_list": ["qcd_w", "qcd_photon"],
+        "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],  # TODO missing one?
         # Mapping of transfer factor labels to region names.
         "region_names": {
             "qcd_zmm": "qcd_dimuonCR",

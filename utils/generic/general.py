@@ -31,7 +31,8 @@ def rename_region(label: str) -> str:
 def is_minor_bkg(category: str, hname: str):
     if hname.lower().endswith(("up", "down")):
         return False
-    label, background = hname.split("_")
+    label = hname.split("_")[0]
+    background = hname.replace(f"{label}_", "")
     region = rename_region(label)
     backgrounds = get_processes(analysis=extract_analysis(category), region=region, type="backgrounds")
     return background in backgrounds

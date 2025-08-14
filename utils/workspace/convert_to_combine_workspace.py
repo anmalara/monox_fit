@@ -114,7 +114,7 @@ def convert_to_combine_workspace(
 
                 model_name = f"{cat}_{cr.crname}_{cr_def.model}_model"
                 logger.info(f"Building CR model: {model_name}")
-                cr_expectations.Print()
+                # cr_expectations.Print()
                 # Convert the distribution to RooParametricHist, save to the workspace
                 cr_phist = ROOT.RooParametricHist(
                     model_name,
@@ -137,4 +137,4 @@ def convert_to_combine_workspace(
             continue
         if par.getAttribute("BACKGROUND_NUISANCE"):
             continue  # these aren't in fact used for combine
-        logger.info(f"External nuisance parameter: {par.GetName()} param {par.getVal():.1f} 1.0")
+        logger.debug(f"External nuisance parameter: {par.GetName()} param {par.getVal():.1f} 1.0")
