@@ -96,8 +96,8 @@ def plot_diff_nuis(diffnuis_file: str, outdir: str, category: str) -> None:
     nuisances = canvas.GetListOfPrimitives().FindObject("prefit_nuisancs")
 
     categories = {
-        "exp": lambda l: any(k in l for k in ("CMS_", "lumi", "trigger", "prefiring", "pu", "qcdclosure", "qcdbinning", "qcdfit", "gamma_norm")),
-        "theory": lambda l: any(k in l for k in ("QCDscale", "pdf", "top_Reweight", "UEPS", "Norm", "theory", "ewkqcd")),
+        "exp": lambda l: any(k in l for k in ("CMS_", "lumi", "trigger", "prefiring", "pu", "qcd_closure", "qcdbinning", "qcdfit", "gamma_norm")),
+        "theory": lambda l: any(k in l for k in ("QCDscale", "pdf", "top_pt_reweighting", "UEPS", "Norm", "theory", "ewkqcd")),
         "nlo": lambda l: "ewk_vbf" in l,
         "singlemuon": lambda l: "stat_error" in l and "singlemuon" in l,
         "singleelectron": lambda l: "stat_error" in l and "singleelectron" in l,

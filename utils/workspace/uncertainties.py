@@ -129,9 +129,9 @@ def get_trigger_unc(year: str, analysis: str) -> dict[str, Any]:
                 "singleel": {"value": 0.99, "processes": proc_list(region="singleel")},
             },
             f"CMS_eff_met_trigger_{year}": {
-                "signal": {"value": 1.01, "processes": proc_list(region="signal")},
-                "dimuon": {"value": 1.01, "processes": proc_list(region="dimuon")},
-                "singlemu": {"value": 1.01, "processes": proc_list(region="singlemu")},
+                "dielec": {"value": 1.01, "processes": proc_list(region="dielec")},
+                "singleel": {"value": 1.01, "processes": proc_list(region="singleel")},
+                "photon": {"value": 1.01, "processes": proc_list(region="photon")},
             },
         },
     }[year]
@@ -463,12 +463,12 @@ if __name__ == "__main__":
     grouped = {}
     # return [get_jec_shape, get_prefiring_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
 
-    for unc_func in get_all_flat_systematics_functions():
-        if unc_func in [get_pu_lumi_unc, get_theory_unc, get_higgs_theory_unc, get_misc_unc]:
+    for unc_func in get_all_flat_systematics_functions() + get_all_shapes_functions():
+        if unc_func in [get_pu_lumi_unc, get_theory_unc, get_higgs_theory_unc, get_misc_unc, get_prefiring_shape]:
             continue
         uncertainties = unc_func(year=year, analysis=analysis)
-        # get_uncertainties(grouped=grouped, is_models=True)
-    # print_table(grouped)
+        get_uncertainties(grouped=grouped, is_models=True)
+    print_table(grouped)
 
     for unc_func in get_all_flat_systematics_functions() + get_all_shapes_functions():
         if unc_func in [get_higgs_theory_shape_unc, get_higgs_theory_unc, get_pdf_scale_shape_unc, get_theory_unc]:
