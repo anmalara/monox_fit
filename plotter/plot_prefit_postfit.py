@@ -94,15 +94,16 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         }
         processes = [
             "qcd",
+            "qcd_estimate",
             "qcdzll",
             "ww",
             "zz",
             "wz",
-            "top",
             "ewkwjets",
             "ewkzll",
             "ewkgjets",
             "ewkzjets",
+            "top",
             "qcdgjets",
             "qcd_gjets",
             "qcd_wjets",
@@ -136,6 +137,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         ]
     colors = {
         "qcd": "#9A9EAB",
+        "qcd_estimate": "#9A9EAB",
         "top": "#CF3721",
         "ww": "#2267a1",
         "wz": "#4897D8",
@@ -143,7 +145,7 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         "wgamma": "#4897D8",
         "zgamma": "#4897D8",
         "qcd_gjets": "#859ade",
-        "qcdgjets": "#859ade",
+        "qcdgjets": "#82ba34",
         "ewk_gjets": "#9A9EAB",
         "ewkgjets": "#9A9EAB",
         "qcd_zll": "#82ba34",
@@ -281,8 +283,9 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
     if region == "dielec":
         legname = "Z #rightarrow ee"
 
-    n_leg_entries = (len(h_postfit) + 1) if is_SR else 6
-    legend = CMS.cmsLeg(x1=0.55, y1=0.89 - (n_leg_entries) * 0.05, x2=0.89, y2=0.89, textSize=0.045)
+    n_leg_entries = (len(h_postfit) / 2 + 1) if is_SR else 6
+    legend = CMS.cmsLeg(x1=0.40 if is_SR else 0.55, y1=0.89 - (n_leg_entries) * 0.05, x2=0.89, y2=0.89, textSize=0.045)
+    legend.SetNColumns(2 if is_SR else 1)
 
     def add_entry(name, leg):
         if name in h_postfit:
@@ -290,21 +293,23 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
 
     if is_SR:
         legend.AddEntry(h_data, "Pseudo data", "elp")
-        add_entry(name="qcd_zjets", leg="QCD Z(#nu#nu)+jets")
-        add_entry(name="qcd_wjets", leg="QCD W(l#nu)+jets")
-        add_entry(name="qcd_gjets", leg="QCD #gamma+jets")
-        add_entry(name="ewkwjets", leg="EWK W(l#nu)+jets")
-        add_entry(name="ewk_wjets", leg="EWK W(l#nu)+jets")
-        add_entry(name="ewkzjets", leg="EWK Z(#nu#nu)+jets")
-        add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)+jets")
+        add_entry(name="qcd_zjets", leg="QCD Z(#nu#nu)")
+        add_entry(name="qcd_wjets", leg="QCD W(l#nu)")
         add_entry(name="top", leg="Top quark")
+        add_entry(name="qcd_gjets", leg="QCD #gamma")
+        add_entry(name="qcdgjets", leg="QCD #gamma")
+        add_entry(name="ewkzjets", leg="EWK Z(#nu#nu)")
+        add_entry(name="ewk_zjets", leg="EWK Z(#nu#nu)")
+        add_entry(name="ewkwjets", leg="EWK W(l#nu)")
+        add_entry(name="ewk_wjets", leg="EWK W(l#nu)")
         add_entry(name="wz", leg="WZ")
         add_entry(name="zz", leg="ZZ")
         add_entry(name="ww", leg="WW")
-        add_entry(name="qcdzll", leg="QCD Z(ll)+jets")
+        add_entry(name="qcdzll", leg="QCD Z(ll)")
+        add_entry(name="qcd_estimate", leg="QCD multijet")
         add_entry(name="qcd", leg="QCD multijet")
         if not is_mono:
-            legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)+jets", "f")
+            legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)", "f")
         if sb:
             legend.AddEntry(h_postfit_total_sig_bkg, "S+B post-fit", "f")
 
