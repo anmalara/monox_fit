@@ -34,7 +34,7 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
             "signal": {
                 "signals": ["zh", "wh", "vbf", "ggh"],  # ggzh
                 "models": ["qcd_zjets", "qcd_wjets"],
-                "backgrounds": ["top", "wz", "zz", "ww", "ewkzjets", "ewkwjets"],
+                "backgrounds": ["top", "qcdgjets", "wz", "zz", "ww", "ewkzjets", "ewkwjets"],
                 "data_driven": ["qcd_estimate"],
             },
             "dimuon": {

@@ -65,7 +65,7 @@ def plot_ratio(region: str, category: str, model_filename: str, outdir: str, lum
             if unc == "shape":
                 continue
             name = f"veto_{lep}"
-            flat_uncertainties[name] = unc
+            flat_uncertainties[name] = 1 + unc
             logger.info(f"Adding to exp: {name} for {region} with value = {unc}")
 
         logger.info(f"Total flat syst: {flat_uncertainties}")

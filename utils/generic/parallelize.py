@@ -89,6 +89,7 @@ def multi_thread(func: Callable, arglist: list[dict[str, Any]], ncores: int = 8)
     return results
 
 
+@timeit
 def parallelize(
     commands: Union[list[str], list[list[str]]],
     getoutput: bool = False,
@@ -183,7 +184,8 @@ def parallelize(
     while state.n_completed < state.n_jobs:
         wait_for_process(state)
     if remove_temp_files:
-        _ = map(os.remove, [x.name for x in state.log_files.values()])
+        for log in state.log_files.values():
+            os.remove(log.name)
     return state.outputs
 
 

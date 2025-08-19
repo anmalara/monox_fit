@@ -23,11 +23,6 @@ printcommand-%:
 	@echo ""
 	@echo "End of do_$*.sh"
 
-# Alias for diagnostics
-.PHONY: diag printcommand-diag
-diag: diagnostics
-printcommand-diag: printcommand-diagnostics
-
 # Create datacards
 cards:
 	@echo "Generating cards for channel=$(CHANNEL) year=$(YEAR)"
@@ -37,3 +32,14 @@ cards:
 plots:
 	@echo "Generating plots for channel=$(CHANNEL) year=$(YEAR)"
 	python3 $(SCRIPTDIR)/make_plots.py --channel $(CHANNEL) --year $(YEAR)
+
+# NLL scans
+nll:
+	@echo "Running NLL scans for channel=$(CHANNEL) year=$(YEAR)"
+	python3 $(SCRIPTDIR)/nll_scan.py --channel $(CHANNEL) --year $(YEAR)
+
+# Alias for diagnostics
+.PHONY: diag scan printcommand-diag
+diag: diagnostics
+scan: nll
+printcommand-diag: printcommand-diagnostics
