@@ -74,17 +74,15 @@ def convert_to_combine_workspace(
     for crn in controlregions_def:
         cr_def = __import__(crn)
 
-        # Parametric model expectations
-        # This part is to extract the process that is used to parametrize all the others,
-        # so for vbf, this is QCD Znunu in SR
-        # First, we fetch the expected number of events in every bin, then convert them to a RooParametricHist and save it to the workspace
-        expectations = ROOT.RooArgList()
-        for b in range(nbins):
-            var = wsin_combine.var(f"model_mu_cat_{cat}_{cr_def.model}_bin_{b}")
-            expectations.add(var)
+        if "qcd_zjets" == cr_def.model:
+            # Parametric model expectations
+            # This part is to extract the process that is used to parametrize all the others, that is QCD Znunu in SR
+            # First, we fetch the expected number of events in every bin, then convert them to a RooParametricHist and save it to the workspace
+            expectations = ROOT.RooArgList()
+            for b in range(nbins):
+                var = wsin_combine.var(f"model_mu_cat_{cat}_{cr_def.model}_bin_{b}")
+                expectations.add(var)
 
-        # TODO
-        if (not ("wjet" in cr_def.model)) and (not ("ewk" in cr_def.model)):
             phist = ROOT.RooParametricHist(
                 f"{cat}_signal_{cr_def.model}_model", f"Model Shape for {cr_def.model} in Category {cat}", varl, expectations, samplehist
             )

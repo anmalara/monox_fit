@@ -9,14 +9,14 @@ def get_shape_systematic_sources(category: str) -> list[str]:
     """Return the list of shape-related systematic uncertainty sources."""
     analysis, year = category.split("_")
     sources = {
-        "monojet": {"Run3": ["jecs", "btag", "prefiring_jet", "pdf_scale", "id_shapes"]},
+        "monojet": {
+            "Run3": ["jecs", "btag", "prefiring_jet", "pdf_scale", "id_shapes", "diboson_unc"],
+        },
     }
-    # TODO diboson_unc
     return sources[analysis][year]
 
 
 def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
-    # get_diboson_shape
     shapes = [
         get_jec_shape,
         get_objects_shape_unc,
@@ -25,6 +25,7 @@ def get_all_shapes_functions() -> list[Callable[[str, str], dict[str, Any]]]:
         get_purity_shape,
         get_higgs_theory_shape_unc,
         get_pdf_scale_shape_unc,
+        get_diboson_shape,
     ]
     return shapes
 
@@ -461,7 +462,6 @@ if __name__ == "__main__":
         print("\\end{tabular} \n\\label{tab:sf_systematics} \n\\end{table}")
 
     grouped = {}
-    # return [get_jec_shape, get_prefiring_shape, get_qcd_estimate_shape, get_diboson_shape, get_purity_shape]
 
     for unc_func in get_all_flat_systematics_functions() + get_all_shapes_functions():
         if unc_func in [get_pu_lumi_unc, get_theory_unc, get_higgs_theory_unc, get_misc_unc, get_prefiring_shape]:

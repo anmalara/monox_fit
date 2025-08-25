@@ -2,7 +2,6 @@
 
 import os
 import re
-import pdb  # TODO
 import argparse
 from math import sqrt
 from typing import Optional
@@ -149,87 +148,6 @@ def get_photon_qcd_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.T
     return variations
 
 
-def get_diboson_variations(hist: ROOT.TH1, category: str, process: str) -> dict[str, ROOT.TH1]:
-    """Apply shape variations from a diboson systematic file."""
-    channel = re.sub(r"(loose|tight|_201\d)", "", category)
-    variations: dict[str, ROOT.TH1] = {}
-    shape_file = ROOT.TFile(f"inputs/sys/{category}/shape_diboson_unc.root", "READ")
-    for key in shape_file.GetListOfKeys():
-        key_name = key.GetName()
-        if process not in key_name or channel not in key_name:
-            continue
-        variation_label = key_name.replace(f"{channel}_{process}_", "")
-        variation_name = f"{hist.GetName()}_{variation_label}"
-        varied_hist = hist.Clone(variation_name)
-        varied_hist.SetDirectory(0)
-        varied_hist.Multiply(shape_file.Get(key_name))
-        variations[variation_name] = varied_hist
-    shape_file.Close()
-    return variations
-
-
-def get_signal_theory_variations(hist: ROOT.TH1, category: str) -> dict[str, ROOT.TH1]:
-    """Retrieve signal theory systematic variations from external file."""
-    central_name = hist.GetName()
-    if not central_name.startswith("signal_"):
-        logger.debug(f"Skipping non-signal histogram: {central_name}")
-        return {}
-
-    channel = re.sub(r"(loose|tight|_201\d)", "", category)
-    # Skip vbf for now (TODO)
-    if channel == "vbf":
-        return {}
-
-    real_process = central_name.replace("signal_", "")
-    # Match process type
-    pattern_map = [
-        (r"(vbf|ggh|ggzh|zh|wh)(\d+)?", lambda m: m.group(1)),
-        (r"(vector|axial|pseudoscalar|scalar)_monow_.*", lambda _: "wh"),
-        (r"(vector|axial|pseudoscalar|scalar)_(monoz|monov)_.*", lambda _: "zh"),
-        (r"(vector|axial|pseudoscalar|scalar)_monojet_.*", lambda _: "ggh"),
-        (r"add_md\\d+_d\\d", lambda _: "ggh"),
-        (r"lq_m\\d+_d[\\d,p]+", lambda _: "ggh"),
-        (r".*S3D.*", lambda _: "ggh"),
-        (r".*svj.*", lambda _: "ggh"),
-    ]
-    process_for_unc = None
-    for pattern, extractor in pattern_map:
-        match = re.match(pattern, real_process)
-        if match:
-            process_for_unc = extractor(match)
-            break
-
-    if not process_for_unc:
-        logger.warning(f"No signal theory mapping for process: {real_process}")
-        return {}
-
-    theory_file = ROOT.TFile(f"inputs/sys/{category}/signal_theory_unc.root", "READ")
-    variations: dict[str, ROOT.TH1] = {}
-    unc_types = ["pdf", "scale"]
-    directions = ["Up", "Down"]
-    for unc_type in unc_types:
-        for direction in directions:
-            if unc_type == "scale":
-                hist_name = f"signal_{real_process}_QCDscale_{real_process}_ACCEPT{direction}"
-            elif unc_type == "pdf":
-                hist_name = f"signal_{real_process}_pdf_{real_process}_ACCEPT{direction}"
-
-            variation_key = f"{channel}_{process_for_unc}_{unc_type}{direction}"
-            variation_hist = theory_file.Get(variation_key)
-            logger.info(variation_key, variation_hist)
-            if not variation_hist:
-                logger.warning(f"Missing variation histogram: {variation_key}")
-                continue
-
-            varied_hist = hist.Clone(hist_name)
-            varied_hist.SetDirectory(0)
-            varied_hist.Multiply(variation_hist)
-            variations[hist_name] = varied_hist
-
-    theory_file.Close()
-    return variations
-
-
 def add_histograms(histograms: list[ROOT.TH1], new_name: str) -> ROOT.TH1:
     """Add a list of histograms into a new histogram with a given name."""
     if not histograms:
@@ -247,7 +165,6 @@ def add_histograms(histograms: list[ROOT.TH1], new_name: str) -> ROOT.TH1:
 def get_mergedMC_stat_variations(per_region_minor_backgrounds: dict[str, list[ROOT.TH1]], category: str) -> dict[str, ROOT.TH1]:
     """Create autoMCstats-like per-bin statistical variation histograms for merged MC backgrounds.
 
-    TODO: method not understood yet.
     Args:
         per_region_minor_backgrounds (dict): A mapping of region name to a list of MC background histograms.
         category (str): Analysis category name (used for naming).
@@ -379,26 +296,6 @@ def process_histogram(
         write_variations_to_workspace(variations=photon_qcd_vars, **common_kwargs)
 
     return
-    # TODO: import shapes for photon id
-    if "gjets" in name:
-        pdb.set_trace()
-        photon_id_vars = get_photon_id_variations(hist, category)
-        write_variations_to_workspace(variations=photon_id_vars, **common_kwargs)
-
-    return
-
-    # Diboson variations
-    diboson_processes = ["wz", "ww", "zz", "zgamma", "wgamma"]
-    process = "_".join(name.split("_")[1:])
-    if process in diboson_processes:
-        pdb.set_trace()
-        diboson_vars = get_diboson_variations(hist, category, process)
-        write_variations_to_workspace(variations=diboson_vars, **common_kwargs)
-
-    return
-    # Signal theory variations
-    signal_theory_vars = get_signal_theory_variations(hist, category)
-    write_variations_to_workspace(variations=signal_theory_vars, **common_kwargs)
 
 
 def apply_shapes(

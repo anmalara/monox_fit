@@ -99,8 +99,6 @@ def generate_combine_model(
             convention=convention,
         )
         cmb_categories.append(model)
-
-    for model in cmb_categories:
         logger.info(f"Initializing model channels for model: {model.cname}, cat: {model.catid}")
         # This is where the actual model distributions as a function of QCD Znunu in SR are made for all processes.
         # Processes modelled with `qcd_zjets` are expressed as:

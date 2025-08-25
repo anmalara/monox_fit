@@ -42,32 +42,25 @@ def cmodel(
 
     model_args = {
         "model_name": model,
-        # Name of the target sample in the input ROOT file.
-        "target_name": "signal_qcdzjets",
-        # Mapping of control sample names to their ROOT file entries.
-        "samples_map": {
+        "target_name": "signal_qcdzjets",  # Name of the target sample in the input ROOT file.
+        "samples_map": {  # Mapping of control sample names to their ROOT file entries.
             "qcd_zmm": "Zmm_qcdzll",
             "qcd_zee": "Zee_qcdzll",
             "qcd_w": "signal_qcdwjets",
             "ewkqcd": "signal_ewkzjets",  # TODO
             "qcd_photon": "gjets_qcdgjets",
         },
-        # Mapping of transfer factor labels to channel names.
-        "channel_names": {
+        "channel_names": {  # Mapping of transfer factor labels to channel names.
             "qcd_zmm": "qcd_dimuon",
             "qcd_zee": "qcd_dielectron",
             "qcd_w": "qcd_wjetssignal",
             "ewkqcd": "ewkqcd_signal",
             "qcd_photon": "qcd_photon",
         },
-        # Channels where veto uncertainties are applied.
-        "veto_channel_list": ["qcd_w"],
-        # Channels where trigger uncertainties are applied.
-        "trigger_channel_list": ["qcd_zmm"],
-        # Channels where JES/JER uncertainties are applied.
-        "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],  # TODO missing one?
-        # Mapping of transfer factor labels to region names.
-        "region_names": {
+        "veto_channel_list": ["qcd_w"],  # Channels where veto uncertainties are applied.
+        "trigger_channel_list": ["qcd_zmm"],  # Channels where trigger uncertainties are applied.
+        "jes_jer_channel_list": ["qcd_zmm", "qcd_zee", "qcd_w", "qcd_photon"],  # Channels where JES/JER uncertainties are applied.
+        "region_names": {  # Mapping of transfer factor labels to region names.
             "qcd_zmm": "qcd_dimuonCR",
             "qcd_zee": "qcd_dielectronCR",
             "qcd_w": "qcd_wzCR",

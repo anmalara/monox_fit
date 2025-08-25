@@ -14,7 +14,7 @@ SCRIPTS := diagnostics impacts impacts_condor limits gof
 # Generic rule to run scripts matching the target name: do_<target>.sh
 $(SCRIPTS):
 	@echo "Running script for $@ on channel=$(CHANNEL)"
-	bash $(SCRIPTDIR)/do_$@.sh $(CHANNEL)
+	bash $(SCRIPTDIR)/do_$@.sh $(CHANNEL) $(YEAR)
 
 # Rule to print the content of a script
 printcommand-%:
