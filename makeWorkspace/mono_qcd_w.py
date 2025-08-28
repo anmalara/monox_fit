@@ -22,7 +22,7 @@ def cmodel(
     This function:
     - Reads histograms from the input ROOT file.
     - Computes transfer factors by dividing the target signal by control regions.
-    - Applies systematic uncertainties (JES/JER, and veto nuisances).
+    - Applies systematic uncertainties (JES/JER, theory, and veto nuisances).
     - Adds bin-by-bin statistical uncertainties.
     - Creates and returns a `Category` object.
 
@@ -42,30 +42,19 @@ def cmodel(
 
     model_args = {
         "model_name": model,
-        # Name of the target sample in the input ROOT file.
-        "target_name": "signal_qcdwjets",
-        # Mapping of control sample names to their ROOT file entries.
-        "samples_map": {
+        "target_name": "signal_qcdwjets",  # Name of the target sample in the input ROOT file.
+        "samples_map": {  # Mapping of control sample names to their ROOT file entries.
             "qcd_wmn": "Wmn_qcdwjets",
             "qcd_wen": "Wen_qcdwjets",
         },
-        # Mapping of transfer factor labels to channel names.
-        "channel_names": {
+        "channel_names": {  # Mapping of transfer factor labels to channel names.
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
-        # TODO: lepton veto uncertainties from sys file (ele id, ele reco, mu id, mu iso, tau id; both wmn and wen)
-        # TODO: electron id and iso uncertainties from sys file (wen region only)
-        # TODO: prefiring uncertainties (both wmn and wen)
-        # TODO: pdf uncertainties (both wmn and wen)
-        # Channels where veto uncertainties are applied.
-        "veto_channel_list": ["qcd_wmn", "qcd_wen"],
-        # Channels where trigger uncertainties are applied.
-        "trigger_channel_list": ["qcd_wmn"],
-        # Channels where JES/JER uncertainties are applied.
-        "jes_jer_channel_list": ["qcd_wmn", "qcd_wen"],
-        # Mapping of transfer factor labels to region names.
-        "region_names": {
+        "veto_channel_list": ["qcd_wmn", "qcd_wen"],  # Channels where veto uncertainties are applied.
+        "trigger_channel_list": ["qcd_wmn"],  # Channels where trigger uncertainties are applied.
+        "jes_jer_channel_list": ["qcd_wmn", "qcd_wen"],  # Channels where JES/JER uncertainties are applied.
+        "region_names": {  # Mapping of transfer factor labels to region names.
             "qcd_wmn": "qcd_singlemuon",
             "qcd_wen": "qcd_singleelectron",
         },
@@ -87,6 +76,6 @@ def cmodel(
         **model_args,
     )
 
-    # Specify this is dependant on QCD (Z->nunu / W->lnu) in SR from corresponding channel in vbf_qcd_z
+    # Specify this is dependant on QCD (Z->nunu / W->lnu) in SR from corresponding channel in qcd_z
     cat.setDependant("qcd_zjets", "qcd_wjetssignal")
     return cat
