@@ -97,6 +97,7 @@ def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     m_iso_eff = {"Run3": -0.005}[year]
     m_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
     e_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
+    g_e_veto_eff = {"Run3": 0.02}[year]
 
     results = {}
 
@@ -105,6 +106,7 @@ def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
         f"CMS_eff_m_id_{year}": {"dimuon": 2 * m_id_eff, "singlemu": m_id_eff},
         f"CMS_eff_m_iso_{year}": {"dimuon": 2 * m_iso_eff, "singlemu": m_iso_eff},
         # f"CMS_eff_m_reco_{year}": {"dimuon": 2 * m_reco_eff, "singlemu": m_reco_eff},
+        "CMS_eff_g_id_electron_veto": {"photon": g_e_veto_eff},
     }
 
     for name, entries in lepton_unc.items():
@@ -146,13 +148,17 @@ def get_theory_unc(year: str, analysis: str) -> dict[str, Any]:
         "Run3": {
             "qcdzll": {"Norm_Z": 1.10},  # "QCDscale_ren_Z": 0.97, "QCDscale_fac_Z": 0.94, "pdf_Z": 1.06},
             "qcdwjet": {"Norm_W": 1.10},  # "QCDscale_ren_W": 0.95, "QCDscale_fac_W": 0.93, "pdf_W": 1.05},
-            "qcdgjets": {"Norm_G": 1.10},  # "QCDscale_ren_G": 0.93, "QCDscale_fac_G": 0.98, "pdf_G": 1.03},
+            "qcdgjets": {"Norm_G": 1.10},  # "QCDscale_ren_G": 0.92, "QCDscale_fac_G": 0.97, "pdf_G": 1.05},
             "wz": {"Norm_WZ": 1.20},  # "QCDscale_ren_WZ": 1.10, "QCDscale_fac_WZ": 1.10, "pdf_WZ": 1.10},
             "zz": {"Norm_ZZ": 1.20},  # "QCDscale_ren_ZZ": 1.10, "QCDscale_fac_ZZ": 1.10, "pdf_ZZ": 1.10},
             "ww": {"Norm_WW": 1.20},  # "QCDscale_ren_WW": 1.10, "QCDscale_fac_WW": 1.10, "pdf_WW": 1.10},
-            "wgamma": {"Norm_Wgamma": 1.20},  # "QCDscale_ren_Wgamma": 1.10, "QCDscale_fac_Wgamma": 1.10, "pdf_Wgamma": 1.10},
-            "zgamma": {"Norm_Zgamma": 1.20},  # "QCDscale_ren_Zgamma": 1.10, "QCDscale_fac_Zgamma": 1.10, "pdf_Zgamma": 1.10},
-            "top": {"Norm_ttbar": 1.10},  # "QCDscale_ren_ttbar": 1.02, "QCDscale_fac_ttbar": 0.90, "pdf_ttbar": 0.97},
+            "wgamma": {"Norm_Wgamma": 1.10},  # "QCDscale_ren_Wgamma": 1.05, "QCDscale_fac_Wgamma": 1.02, "pdf_Wgamma": 1.02},
+            "zgamma": {"Norm_Zgamma": 1.10},  # "QCDscale_ren_Zgamma": 1.05, "QCDscale_fac_Zgamma": 1.02, "pdf_Zgamma": 1.02},
+            "top": {"Norm_ttbar": 1.15},  # "QCDscale_ren_ttbar": 0.90, "QCDscale_fac_ttbar": 0.95, "pdf_ttbar": 1.03},
+            "ewkzll": {"Norm_ewkZ": 1.10},  # "QCDscale_ren_ewkZ": 0.95, "QCDscale_fac_ewkZ": 0.95, "pdf_ewkZ": 1.05},
+            "ewkzjets": {"Norm_ewkZ": 1.10},  # "QCDscale_ren_ewkZ": 0.95, "QCDscale_fac_ewkZ": 0.95, "pdf_ewkZ": 1.05},
+            "ewkwjets": {"Norm_ewkW": 1.10},  # "QCDscale_ren_ewkW": 0.95, "QCDscale_fac_ewkW": 0.95, "pdf_ewkW": 1.05},
+            "ewkgjets": {"Norm_ewkG": 1.10},  # "QCDscale_ren_ewkG": 0.95, "QCDscale_fac_ewkG": 0.95, "pdf_ewkG": 1.05},
         }
     }
     systematics = {}
@@ -179,7 +185,6 @@ def get_misc_unc(year: str, analysis: str) -> dict[str, Any]:
             # "UEPS": {"value": 1.168, "processes": ["ggh"]},  # TODO only for VBF?
             f"monojet_{year}_purity_closure": {"photon": {"value": 1.25, "processes": ["qcd_estimate"]}},
             f"monojet_{year}_qcd_closure": {"signal": {"value": 1.25, "processes": ["qcd_estimate"]}},
-            f"gamma_norm_{year}": {"photon": {"value": 1.20, "processes": ["qcd_gjets"]}},
         },
     }[year]
 
