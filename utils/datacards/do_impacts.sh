@@ -49,7 +49,7 @@ CONDOR_OPTS=(--job-mode condor)
 
 # ========== Signal / task ==========
 INJECTED_SIG="" # leave empty to skip --expectSignal
-INJECTED_SIG="0.0"
+INJECTED_SIG="0.5"
 
 if [[ -n "${INJECTED_SIG}" ]]; then
   TAG_SIG="${TAG}_sig${INJECTED_SIG}"
@@ -97,7 +97,7 @@ if ((${#CONDOR_OPTS[@]})) && [[ " ${CONDOR_OPTS[*]} " != *" --dry-run "* ]] && (
     logs_glob="${TASK_NAME}*.out"
     LOGFILE=(${TASK_NAME}*.log)  # Single task logfile produced by combineTool
     cecho cyan "[wait] Condor jobs monitoring: log=${LOGFILE} out=${logs_glob}"
-    sleep 5
+    sleep 30
 
     for i in $(seq 1 50); do
         # Done = number of termination markers in the single task log
@@ -117,6 +117,7 @@ if ((${#CONDOR_OPTS[@]})) && [[ " ${CONDOR_OPTS[*]} " != *" --dry-run "* ]] && (
         fi
         sleep 60
     done
+    sleep 60
 fi
 
 # ========== Collect impacts ==========
@@ -127,7 +128,13 @@ run_or_echo | tee "log_impact_json_${TAG_SIG}.txt"
 # ========== Plot ==========
 cecho blue ">> [${TAG_SIG}] Plotting impacts"
 cmd=(plotImpacts.py -i "impacts.json" -o "impacts_${TAG_SIG}" "${PLOT_OPTS[@]}")
-run_or_echo
+run_or_echo | tee "log_impact_pdf_${TAG_SIG}.txt"
+
+# echo ${TASK_NAME}
+# ========== Cleaning ==========
+mkdir -p job_out combine_output
+mv ${TASK_NAME}* condor_* job_out
+mv higgsCombine*.root combine_output
 
 popd > /dev/null
 popd > /dev/null
