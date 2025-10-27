@@ -27,8 +27,10 @@ EXTRA_OPTS+=(--robustHesse 1)
 EXTRA_OPTS+=(--rMin -5 --rMax 5)
 # EXTRA_OPTS+=(--skipSBFit)
 
-cecho blue ">> Running FitDiagnostics for ${TAG}"
-combine -M FitDiagnostics ${WS} -n "_${TAG}" "${EXTRA_OPTS[@]}" | tee ${LOGFILE}
+METHOD="FitDiagnostics"
+cecho blue ">> Running ${METHOD} for ${TAG}"
+CMD="combine -M ${METHOD} ${WS} -n \"_${TAG}\" ${EXTRA_OPTS[*]}"
+run_with_log "$CMD" "$LOGFILE"
 
 cecho blue ">> Extracting postfit shapes for ${TAG}"
 PostFitShapesFromWorkspace --workspace ${WS} --datacard ${CARD} --output ${SHAPESFILE} \

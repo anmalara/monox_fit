@@ -10,7 +10,7 @@ def get_shape_systematic_sources(category: str) -> list[str]:
     analysis, year = category.split("_")
     sources = {
         "monojet": {
-            "Run3": ["jecs", "btag", "prefiring_jet", "pdf_scale", "id_shapes", "diboson_unc"],
+            "Run3": ["jecs", "btag", "prefiring_jet", "pdf_scale", "id_shapes", "diboson_unc", "qcd_estimate_closure"],
         },
     }
     return sources[analysis][year]
@@ -97,7 +97,6 @@ def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
     m_iso_eff = {"Run3": -0.005}[year]
     m_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
     e_reco_eff = {"Run3": 0.01}[year]  # TODO update for run3
-    g_e_veto_eff = {"Run3": 0.02}[year]
 
     results = {}
 
@@ -106,7 +105,6 @@ def get_objects_eff_unc(year: str, analysis: str) -> dict[str, Any]:
         f"CMS_eff_m_id_{year}": {"dimuon": 2 * m_id_eff, "singlemu": m_id_eff},
         f"CMS_eff_m_iso_{year}": {"dimuon": 2 * m_iso_eff, "singlemu": m_iso_eff},
         # f"CMS_eff_m_reco_{year}": {"dimuon": 2 * m_reco_eff, "singlemu": m_reco_eff},
-        "CMS_eff_g_id_electron_veto": {"photon": g_e_veto_eff},
     }
 
     for name, entries in lepton_unc.items():
@@ -287,7 +285,7 @@ def get_jes_variations_names(year: str) -> list[str]:
         "CMS_scale_j_FlavorQCD",
         "CMS_scale_j_HF",
         f"CMS_scale_j_HF_{year}",
-        # "CMS_scale_j_RelativeBal", #TODO
+        "CMS_scale_j_RelativeBal",
         f"CMS_scale_j_RelativeSample_{year}",
     ]
     if year == "Run3":
@@ -316,8 +314,10 @@ def get_prefiring_shape(year: str, analysis: str) -> dict[str, Any]:
 def get_qcd_variations_names() -> list[str]:
     """Get the list of QCD variations."""
     qcd_names = [
-        "qcdbinning",
-        "qcdfit",
+        "syst_binning1",
+        "syst_binning2",
+        "syst_extrap1",
+        "syst_extrap2",
     ]
     return qcd_names
 

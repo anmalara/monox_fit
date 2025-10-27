@@ -14,3 +14,16 @@ cecho() {
 
     echo -e "${code}$*${NC:-\033[0m}"
 }
+
+run_with_log() {
+    local CMD="$1"
+    local LOGFILE="$2"
+    local DEBUG="${DEBUG:-0}"
+
+    cecho cyan "[command] $CMD"
+     if (( DEBUG )); then
+        return 0
+    fi
+    eval "$CMD" | tee "$LOGFILE"
+    cecho green "[ok] Command completed successfully."
+}

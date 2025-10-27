@@ -506,7 +506,8 @@ def do_stat_unc(
             err = histogram.GetBinError(b)
             content = histogram.GetBinContent(b)
             # Safety
-            if (content <= 0) or (err / content < 0.001):
+            # if (content <= 0) or (err / content < 0.001):
+            if content <= 0:
                 logger.critical(f"Undefined behaviour for {histogram.GetName()} in bin {b}: content = {content}, error = {err}.", exception_cls=ValueError)
 
             # Careful: The bin count "b" in this loop starts at 1. In the combine model, we want it to start from 0!
