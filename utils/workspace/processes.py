@@ -6,9 +6,9 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
     processes = {
         "vbf": {
             "signal": {
-                "signals": ["zh", "wh", "vbf", "ggh"],
+                "signals": ["zh", "wh", "vbf", "ggh", "ggzh"],
                 "models": ["qcd_zjets", "qcd_wjets", "ewk_zjets", "ewk_wjets"],
-                "backgrounds": ["qcdzll", "ewkzll", "top", "wz", "zz", "ww"],
+                "backgrounds": ["qcdzll", "top", "wz", "zz", "ww"],
             },
             "dimuon": {
                 "models": ["qcd_zll", "ewk_zll"],
@@ -32,7 +32,7 @@ def get_processes(analysis: str, region: str, type: str) -> list[str]:
         },
         "monojet": {
             "signal": {
-                "signals": ["zh", "wh", "vbf", "ggh"],  # ggzh
+                "signals": ["zh", "wh", "vbf", "ggh", "ggzh"],
                 "models": ["qcd_zjets", "qcd_wjets"],
                 "backgrounds": ["top", "qcdgjets", "wz", "zz", "ww", "ewkzjets", "ewkwjets"],
                 "data_driven": ["qcd_estimate"],
@@ -157,6 +157,7 @@ if __name__ == "__main__":
             "ggh": "ggH",
             "wh": "\\WH",
             "zh": "\\ZH",
+            "ggzh": "ggZH",
             "ww": "\\WW",
             "zz": "\\ZZ",
             "wz": "\\WZ",

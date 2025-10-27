@@ -11,6 +11,7 @@ DEBUG=0
 CHANNEL="$1"
 YEAR="$2"
 FOLDER="impacts_folder"
+FOLDER="impacts_folder_asimov"
 
 mkdir -p "${FOLDER}"
 pushd "${FOLDER}" > /dev/null
@@ -34,7 +35,7 @@ EXTRA_OPTS+=(--squareDistPoiStep)
 EXTRA_OPTS+=(-t -1)  # Asimov toys
 
 PLOT_OPTS=()
-PLOT_OPTS+=(--blind)
+# PLOT_OPTS+=(--blind)
 PLOT_OPTS+=(--summary)
 
 PARALLEL=50
@@ -49,7 +50,7 @@ CONDOR_OPTS=(--job-mode condor)
 
 # ========== Signal / task ==========
 INJECTED_SIG="" # leave empty to skip --expectSignal
-INJECTED_SIG="0.5"
+# INJECTED_SIG="0.5"
 
 if [[ -n "${INJECTED_SIG}" ]]; then
   TAG_SIG="${TAG}_sig${INJECTED_SIG}"
@@ -99,7 +100,7 @@ if ((${#CONDOR_OPTS[@]})) && [[ " ${CONDOR_OPTS[*]} " != *" --dry-run "* ]] && (
     cecho cyan "[wait] Condor jobs monitoring: log=${LOGFILE} out=${logs_glob}"
     sleep 30
 
-    for i in $(seq 1 50); do
+    for i in $(seq 1 500); do
         # Done = number of termination markers in the single task log
         total=$(ls -1 ${logs_glob} 2>/dev/null | wc -l)
         done_jobs=$(grep -E -c '^Job terminated\.|Normal termination' "${LOGFILE}" 2>/dev/null || echo 0)

@@ -321,6 +321,8 @@ def apply_shapes(
         varname = key.GetName()
         if "_over_" in varname:
             continue
+        if "qcd_estimate_closure" in source and ("signal_qcd_estimate" not in name or "syst" not in varname):
+            continue
         if "id_shapes" in source:
             if varname[: varname.find("CMS")] not in name:
                 continue
@@ -342,35 +344,6 @@ def apply_shapes(
         write_histogram_to_workspace(hist=varied_hist, name=variation_name, **common_kwargs)
 
     shapes_file.Close()
-
-
-def add_qcd_to_workspace(category: str, workspace: ROOT.RooWorkspace, output_dir: ROOT.TDirectory, observable: ROOT.RooRealVar, variable: str):
-    """Add QCD estimate as a nominal histogram and all shapes uncertainties to the workspace."""
-
-    common_kwargs = {"category": category, "workspace": workspace, "output_dir": output_dir, "observable": observable}
-    qcd_file_path = f"inputs/sys/{variable}/{category}/systematics_qcd_estimate_signal.root"
-    logger.debug(f"Copying content {qcd_file_path} into workspace")
-    qcd_file = ROOT.TFile(qcd_file_path, "READ")
-    qcd_dir = qcd_file.Get(f"category_{category}")
-
-    for syst in get_qcd_variations_names():
-        for direction in ["Up", "Down"]:
-            hist = qcd_dir.Get(f"signal_qcd_{category}_{syst}{direction}").Clone(f"signal_qcd_estimate_{category}_{syst}{direction}")
-            if not isinstance(hist, (ROOT.TH1D, ROOT.TH1F)):
-                continue
-
-            ensure_nonzero_integral(hist=hist)
-            merge_overflow_into_last_bin(hist=hist)
-            write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
-
-    # Nominal histogram
-    hist = qcd_dir.Get(f"signal_qcd").Clone(f"signal_qcd_estimate")
-
-    ensure_nonzero_integral(hist=hist)
-    merge_overflow_into_last_bin(hist=hist)
-    write_histogram_to_workspace(hist=hist, name=hist.GetName(), **common_kwargs)
-
-    qcd_file.Close()
 
 
 def create_workspace(
@@ -429,8 +402,6 @@ def create_workspace(
         output_dir=output_dir,
         observable=observable,
     )
-
-    add_qcd_to_workspace(category=category, workspace=workspace, output_dir=output_dir, observable=observable, variable=variable)
 
     # Finalize workspace and close files
     output_dir.cd()

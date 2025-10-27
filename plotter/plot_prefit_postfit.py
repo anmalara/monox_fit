@@ -308,8 +308,6 @@ def plot_prefit_postfit(region: str, category: str, shapes_filename: str, outdir
         add_entry(name="qcdzll", leg="QCD Z(ll)")
         add_entry(name="qcd_estimate", leg="QCD multijet")
         add_entry(name="qcd", leg="QCD multijet")
-        if not is_mono:
-            legend.AddEntry(h_postfit["ewkzll"], "EWK Z(ll)", "f")
         if sb:
             legend.AddEntry(h_postfit_total_sig_bkg, "S+B post-fit", "f")
 
